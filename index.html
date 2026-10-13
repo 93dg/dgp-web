@@ -24,6 +24,14 @@ input,select{background:var(--card);color:var(--tx);border:1px solid var(--bd);b
 button{background:var(--ac);color:#111;border:0;border-radius:8px;padding:10px;font:inherit;font-weight:600;cursor:pointer}
 #out{background:none;color:var(--mut);padding:4px 8px;font-weight:400}
 .top{display:flex;justify-content:space-between;align-items:center}
+#add{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px}
+#add .row{display:flex;gap:8px}
+#add input{flex:1}
+.res{display:flex;gap:10px;align-items:center;padding:8px;border-radius:8px;cursor:pointer}
+.res:hover{background:var(--bg)}
+.res img{width:34px;height:50px;object-fit:cover;border-radius:4px;background:var(--bd)}
+.notas{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.notas button{min-width:40px}
 #msg{color:var(--mut);padding:24px 0;text-align:center}
 </style>
 </head>
@@ -37,8 +45,17 @@ button{background:var(--ac);color:#111;border:0;border-radius:8px;padding:10px;f
   <div id="lm" class="m"></div>
 </form>
 <div id="app" hidden>
-  <div class="top"><h1>Mis valoraciones</h1><button id="out">Salir</button></div>
+  <div class="top"><h1>Mis valoraciones</h1><div><button id="addb">+ Añadir</button> <button id="out">Salir</button></div></div>
   <div id="stats"></div>
+  <div id="add" hidden>
+    <div class="row"><input id="tq" type="search" placeholder="Buscar película o serie…"><button id="tgo">Buscar</button></div>
+    <div id="tres"></div>
+    <div id="tsel" hidden>
+      <div id="tinfo" class="t"></div>
+      <div class="notas" id="tnotas"></div>
+    </div>
+    <div id="tmsg" class="m"></div>
+  </div>
   <div class="bar">
     <input id="q" type="search" placeholder="Buscar título, director, género…">
     <select id="o">
@@ -52,7 +69,7 @@ button{background:var(--ac);color:#111;border:0;border-radius:8px;padding:10px;f
   </div>
   <div id="msg">Cargando…</div>
   <div id="list"></div>
-  <div class="m" style="text-align:center;margin-top:16px">v1.1 · 2026-10-12</div>
+  <div class="m" style="text-align:center;margin-top:16px">v1.2 · 2026-10-13</div>
 </div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
@@ -119,6 +136,50 @@ $('login').addEventListener('submit',async e=>{
   if(error)$('lm').textContent=error.message;else iniciar();
 });
 $('out').addEventListener('click',async()=>{await sb.auth.signOut();iniciar()});
+
+// ---- Añadir valoración (TMDb) ----
+let elegido=null;
+$('addb').addEventListener('click',()=>{$('add').hidden=!$('add').hidden;if(!$('add').hidden)$('tq').focus()});
+async function tmdbCall(body){
+  const {data:d,error}=await sb.functions.invoke('tmdb',{body});
+  if(error)throw error;
+  if(d&&d.error)throw new Error(d.error);
+  return d;
+}
+async function buscar(){
+  const q=$('tq').value.trim();if(!q)return;
+  $('tmsg').textContent='Buscando…';$('tsel').hidden=true;elegido=null;
+  try{
+    const {results}=await tmdbCall({q});
+    $('tmsg').textContent=results.length?'':'Sin resultados';
+    $('tres').innerHTML=results.map(r=>`<div class="res" data-id="${r.id}" data-type="${r.type}">
+      <img src="${r.poster||''}" alt=""><div><div class="t">${esc(r.title)}</div><div class="m">${r.year||''} · ${r.type==='tv'?'Serie':'Película'}</div></div></div>`).join('');
+  }catch(e){$('tmsg').textContent='Error: '+e.message}
+}
+$('tgo').addEventListener('click',buscar);
+$('tq').addEventListener('keydown',e=>{if(e.key==='Enter')buscar()});
+$('tres').addEventListener('click',async e=>{
+  const el=e.target.closest('.res');if(!el)return;
+  $('tmsg').textContent='Cargando ficha…';
+  try{
+    elegido=await tmdbCall({id:Number(el.dataset.id),type:el.dataset.type});
+    $('tres').innerHTML='';$('tmsg').textContent='';
+    $('tinfo').textContent=elegido.title+(elegido.year?' ('+elegido.year+')':'')+' — elige tu nota:';
+    $('tnotas').innerHTML=[...Array(10)].map((_,i)=>`<button data-n="${i+1}">${i+1}</button>`).join('');
+    $('tsel').hidden=false;
+  }catch(err){$('tmsg').textContent='Error: '+err.message}
+});
+$('tnotas').addEventListener('click',async e=>{
+  const b=e.target.closest('button');if(!b||!elegido)return;
+  const row={...elegido,your_rating:Number(b.dataset.n),date_rated:new Date().toISOString().slice(0,10)};
+  const {error}=await sb.from('imdb_ratings').upsert(row,{onConflict:'const'});
+  if(error){$('tmsg').textContent='No se pudo guardar: '+error.message;return}
+  $('tmsg').textContent='Guardado: '+row.title+' → '+row.your_rating;
+  $('tsel').hidden=true;elegido=null;$('tq').value='';
+  data=await cargar();pintar();
+  $('stats').textContent=data.length+' títulos · nota media '+(data.reduce((t,x)=>t+(x.your_rating||0),0)/data.length).toFixed(2);
+});
+
 iniciar();
 ['q','o','n'].forEach(id=>$(id).addEventListener('input',pintar));
 </script>

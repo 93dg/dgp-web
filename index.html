@@ -149,6 +149,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[t
 .res img{width:34px;height:50px;object-fit:cover;border-radius:6px;background:var(--bd)}
 .nbtn{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
 .nbtn button{border:1px solid var(--bd);border-radius:999px;padding:6px 14px;color:var(--tx);font-weight:600}
+.mv{transition:opacity .2s}.mv.out{opacity:0}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:40;display:flex;align-items:center;gap:14px;background:var(--s1);border:1px solid var(--bd);border-left:3px solid var(--pos);border-radius:14px;padding:10px 16px;box-shadow:0 12px 40px rgba(0,0,0,.35);max-width:calc(100vw - 24px)}
+.toast .tx2{font-size:.9rem;overflow-wrap:anywhere}
+.toast .und{display:flex;flex-direction:column;align-items:center;gap:2px}
+.toast .und button{padding:2px 6px}
+.toast .und .m{font-variant-numeric:tabular-nums}
+.toast .tb{display:block;height:3px;border-radius:999px;background:var(--pos);width:100%;transform-origin:left;transition:transform 1s linear}
+@media(min-width:900px){.toast{bottom:28px}}
 @media(max-width:600px){.tab{padding:9px 7px;font-size:.9rem}.tabs{gap:0 2px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -166,7 +174,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[t
   <aside class="side">
     <div class="brand">DGP</div>
     <nav id="nav" aria-label="Secciones"></nav>
-    <div class="foot"><span class="m"><span id="version">V1.12</span></span><button id="out">Salir</button></div>
+    <div class="foot"><span class="m"><span id="version">V1.13</span></span><button id="out">Salir</button></div>
   </aside>
   <div>
   <div class="main">
@@ -213,6 +221,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[t
   <nav class="tabbar" id="tabbar" aria-label="Secciones"></nav>
 </div>
 
+<div class="toast" id="toast" hidden role="status"><span class="tx2" id="ttx"></span><div class="und"><button id="tund">Deshacer</button><span class="m" id="tcnt"></span><i class="tb" id="tbar"></i></div></div>
 <div class="pal" id="pal" hidden role="dialog" aria-label="Buscar o ir a">
   <div class="palbox"><input id="palq" type="search" placeholder="Escribe una sección, un apartado o un comercio" aria-label="Buscar o ir a" autocomplete="off"><div class="palres" id="palres"></div></div>
 </div>
@@ -405,7 +414,7 @@ $('dtools').addEventListener('click',e=>{
 });
 function desplegarTodo(cont,abrir){
   cont.querySelectorAll('.row').forEach(row=>{const tg=row.querySelector('[data-tog]');if(!tg)return;
-    const det=row.querySelector('.rdet');if(det.hidden===!abrir)return;toggleFila(tg,abrir)});
+    const det=row.querySelector('.rdet');if(!det||det.hidden===!abrir)return;toggleFila(tg,abrir)});
 }
 
 /* piezas de fila */
@@ -415,10 +424,17 @@ function filaMov(r){
   const i=Number(r.datos.i),at='data-id="'+r.id+'"';
   return `<div class="mv"><div class="lnx"><span class="l">${fesp(r.datos.f)}${r.datos.d?' · '+esc(r.datos.d):''}${r.datos.t==='pend'?' · <b class="warn">Por revisar</b>':''}</span><b class="num ${sg(i)}">${f2(i)}</b></div>${seg(OPT_T,r.datos.t,at)}</div>`;
 }
-const cab=(k,av_,tit,sub,imp,cl,ab)=>`<div class="rmain" data-tog tabindex="0" role="button" aria-expanded="${ab}">${av_}<div class="rt"><div class="rn">${tit}</div><div class="rs">${sub}</div></div><div class="ra ${cl||''}">${imp}</div>${CHEV}</div>`;
+const cab=(k,av_,tit,sub,imp,cl,ab,exp=true)=>exp?`<div class="rmain" data-tog tabindex="0" role="button" aria-expanded="${ab}">${av_}<div class="rt"><div class="rn">${tit}</div><div class="rs">${sub}</div></div><div class="ra ${cl||''}">${imp}</div>${CHEV}</div>`:`<div class="rmain" style="cursor:default">${av_}<div class="rt"><div class="rn">${tit}</div><div class="rs">${sub}</div></div><div class="ra ${cl||''}">${imp}</div></div>`;
+function detalleG(g){
+  const pe=g.rs.filter(r=>r.datos.t==='pend'),he=g.rs.filter(r=>r.datos.t!=='pend');
+  if(!g.pend)return he.slice(0,150).map(filaMov).join('');
+  const k='rv:'+g.g,ab=abiertas.has(k);
+  return pe.slice(0,150).map(filaMov).join('')+(he.length?`<button data-hech="${encodeURIComponent(g.g)}" aria-expanded="${ab}" style="justify-self:start">${ab?'Ocultar revisados':'Ver revisados ('+he.length+')'}</button><div ${ab?'':'hidden'}>${he.slice(0,150).map(filaMov).join('')}</div>`:'');
+}
 function filaG(g){
   const k='g:'+g.g,ab=abiertas.has(k),at='data-g="'+encodeURIComponent(g.g)+'"';
-  return `<article class="row ${g.pend?'pd':'ok'}" data-k="${esc(k)}">${cab(k,av(g.g),esc(cap(g.g)),`${g.pend?'<b class="st warn">Por revisar</b> · ':(g.cur==='mixto'?'<b class="st">Reparto mixto</b> · ':'')}${esc(g.cat)} · ${g.n} ${g.n===1?'movimiento':'movimientos'} · ${rango(g)}`,f2(g.tot),sg(g.tot),ab)}${seg(OPT_T,g.cur,at)}<div class="rdet" ${ab?'':'hidden'}>${ab?g.rs.slice(0,150).map(filaMov).join(''):''}</div></article>`;
+  const uno=g.n===1;
+  return `<article class="row ${g.pend?'pd':'ok'}" data-k="${esc(k)}">${cab(k,av(g.g),esc(cap(g.g)),`${g.pend?'<b class="st warn">Por revisar</b> · ':(g.cur==='mixto'?'<b class="st">Reparto mixto</b> · ':'')}${esc(g.cat)} · ${uno?'1 movimiento · '+fesp(g.rs[0].datos.f)+(g.rs[0].datos.d?' · '+esc(g.rs[0].datos.d):''):g.n+' movimientos · '+rango(g)}`,f2(g.tot),sg(g.tot),ab&&!uno,!uno)}${seg(OPT_T,g.cur,at)}${uno?'':`<div class="rdet" ${ab?'':'hidden'}>${ab?detalleG(g):''}</div>`}</article>`;
 }
 function filaM(r){
   const i=Number(r.datos.i),pd=r.datos.t==='pend',at='data-id="'+r.id+'"',k='m:'+r.id,ab=abiertas.has(k);
@@ -495,10 +511,10 @@ function pintarRevisar(){
 }
 async function aplicarGrupo(g,v){
   const rs=dr.filter(r=>r.datos.g===g&&TIPOS_MOV.includes(r.datos.t));
-  const prev=rs.map(r=>[r,r.datos.t]);
-  rs.forEach(r=>r.datos.t=v);
+  const prev=rs.map(r=>[r,{...r.datos}]);
+  rs.forEach(r=>r.datos={...r.datos,t:v});
   const {error}=await sb.rpc('set_tipo',{p_seccion:sec.id,p_grupo:g,p_tipo:v});
-  if(error){prev.forEach(([r,t])=>r.datos.t=t);alert(error.message);return null}
+  if(error){prev.forEach(([r,d])=>r.datos=d);alert(error.message);return null}
   return prev;
 }
 async function revisarAccion(a){
@@ -506,38 +522,66 @@ async function revisarAccion(a){
   if(a==='s'){omitidos.add(cola[0].g);pintarRevisar();return}
   if(a==='ver'){dq=cola[0].g;irA('g','t');return}
   if(a==='z'){
-    const u=deshacer.pop();if(!u)return;
-    u.prev.forEach(([r,t])=>r.datos.t=t);
-    await Promise.all(u.prev.map(([r])=>sb.from('registros').update({datos:r.datos}).eq('id',r.id)));
-    omitidos.delete(u.g);postCambio();return;
+    await deshacerUltimo();return;
   }
   const g=cola[0].g,prev=await aplicarGrupo(g,a);
-  if(prev){deshacer.push({g,prev});postCambio()}
+  if(prev){anotarUndo('Marcado como '+NT[a]+': '+cap(g),prev,g);postCambio()}
 }
+let tT=null,tN=0;
+function anotarUndo(txt,prev,g){
+  deshacer.push({txt,prev,g});
+  $('ttx').textContent=txt;$('toast').hidden=false;tN=5;
+  const bar=$('tbar');bar.style.transition='none';bar.style.transform='scaleX(1)';
+  void bar.offsetWidth;bar.style.transition='transform 5s linear';bar.style.transform='scaleX(0)';
+  $('tcnt').textContent=tN+' s';
+  clearInterval(tT);tT=setInterval(()=>{tN--;if(tN<=0){clearInterval(tT);$('toast').hidden=true}else $('tcnt').textContent=tN+' s'},1000);
+}
+async function deshacerUltimo(){
+  const u=deshacer.pop();if(!u)return;
+  clearInterval(tT);$('toast').hidden=true;
+  u.prev.forEach(([r,d])=>r.datos=d);
+  await Promise.all(u.prev.map(([r,d])=>sb.from('registros').update({datos:d}).eq('id',r.id)));
+  omitidos.delete(u.g);postCambio();
+}
+$('tund').addEventListener('click',deshacerUltimo);
 function postCambio(){pintarHero();pintarTabsD();if(dTab()!=='r')pintarToolsD();pintarLista()}
 
 /* clicks de las listas */
 $('dlist').addEventListener('click',async e=>{
   const rv=e.target.closest('[data-rv]');if(rv&&!rv.disabled){revisarAccion(rv.dataset.rv);return}
   const mo=e.target.closest('[data-more]');if(mo){lim+=60;pintarLista();return}
+  const hb=e.target.closest('[data-hech]');
+  if(hb){const k='rv:'+decodeURIComponent(hb.dataset.hech),d=hb.nextElementSibling,ab=d.hidden;d.hidden=!ab;hb.setAttribute('aria-expanded',ab);
+    hb.textContent=ab?'Ocultar revisados':'Ver revisados ('+d.querySelectorAll('.mv').length+')';if(ab)abiertas.add(k);else abiertas.delete(k);return}
   const o=e.target.closest('[data-v]');
   if(o){
-    const row=o.closest('.row');let v=o.dataset.v,err;
+    const row=o.closest('.row'),mv=o.closest('.mv');let v=o.dataset.v,err,prev,desc;
     if(o.dataset.k==='s'){
-      const r=dr.find(x=>x.id===o.dataset.id),cur=r.datos.s===undefined?'':String(r.datos.s),datos={...r.datos};
+      const r=dr.find(x=>x.id===o.dataset.id),cur=r.datos.s===undefined?'':String(r.datos.s),datos={...r.datos};prev=[[r,{...r.datos}]];
       if(cur===v)delete datos.s;else datos.s=v==='true';
       ({error:err}=await sb.from('registros').update({datos}).eq('id',r.id));if(err){alert(err.message);return}r.datos=datos;
+      desc=datos.s===undefined?'Vuelve a por revisar: '+cap(r.datos.c):(datos.s?'Marcado como saldado: ':'Marcado como aún lo debo: ')+cap(r.datos.c);
     }else if(o.dataset.g!==undefined){
       const g=decodeURIComponent(o.dataset.g),G=grupos().find(x=>x.g===g);
       if(G&&G.cur===v)v='pend';
-      const prev=await aplicarGrupo(g,v);if(!prev)return;
+      prev=await aplicarGrupo(g,v);if(!prev)return;
+      desc=(v==='pend'?'Vuelve a por revisar: ':'Marcado como '+NT[v]+': ')+cap(g);
     }else{
       const r=dr.find(x=>x.id===o.dataset.id);if(r.datos.t===v)v='pend';
-      const datos={...r.datos,t:v};
+      const datos={...r.datos,t:v};prev=[[r,{...r.datos}]];
       ({error:err}=await sb.from('registros').update({datos}).eq('id',r.id));if(err){alert(err.message);return}r.datos=datos;
+      desc=(v==='pend'?'Vuelve a por revisar: ':'Marcado como '+NT[v]+': ')+cap(r.datos.c);
     }
-    const sale=row&&!row.parentElement.closest('.row')&&dEst()!=='t';
-    if(sale){row.classList.add('out');setTimeout(postCambio,200)}else postCambio();
+    anotarUndo(desc,prev,null);
+    const k=row&&row.dataset.k||'';let pdNow=null;
+    if(k.startsWith('g:'))pdNow=(grupos().find(x=>'g:'+x.g===k)||{}).pend;
+    else if(k.startsWith('m:'))pdNow=(dr.find(x=>'m:'+x.id===k)||{}).datos?.t==='pend';
+    else if(k.startsWith('a:'))pdNow=(dr.find(x=>'a:'+x.id===k)||{}).datos?.s===undefined;
+    const est=dEst(),sale=row&&pdNow!==null&&pdNow!==undefined&&est!=='t'&&((est==='p'&&!pdNow)||(est==='r'&&pdNow));
+    const sigue=mv&&row&&row.classList.contains('pd')&&pdNow&&v!=='pend';
+    if(sale){row.classList.add('out');setTimeout(postCambio,200)}
+    else if(sigue){mv.classList.add('out');setTimeout(postCambio,200)}
+    else postCambio();
     return;
   }
   const tg=e.target.closest('[data-tog]');
@@ -552,7 +596,7 @@ $('dlist').addEventListener('click',async e=>{
 function toggleFila(tg,forzar){
   const row=tg.closest('.row'),k=row.dataset.k,det=row.querySelector('.rdet');
   const ab=forzar===undefined?det.hidden:forzar;det.hidden=!ab;tg.setAttribute('aria-expanded',ab);
-  if(ab){abiertas.add(k);if(k.startsWith('g:')&&!det.innerHTML){const g=grupos().find(x=>'g:'+x.g===k);det.innerHTML=g?g.rs.slice(0,150).map(filaMov).join(''):''}}
+  if(ab){abiertas.add(k);if(k.startsWith('g:')&&!det.innerHTML){const g=grupos().find(x=>'g:'+x.g===k);det.innerHTML=g?detalleG(g):''}}
   else abiertas.delete(k);
 }
 document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-tog]')){e.preventDefault();e.target.click()}});

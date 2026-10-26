@@ -102,7 +102,7 @@ button{background:none;border:0;color:var(--ac);font:inherit;font-weight:700;pad
     <div id="list"></div>
   </div>
 
-  <div class="m" style="text-align:center;margin-top:16px"><span id="version">V1.04</span></div>
+  <div class="m" style="text-align:center;margin-top:16px"><span id="version">V1.05</span></div>
 </div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
@@ -329,6 +329,11 @@ $('dctl').addEventListener('submit',async e=>{
 });
 const fesp=s=>s?s.split('-').reverse().join('/'):'';
 const opts=(lista,sel,attr)=>`<div class="opts">${lista.map(([v,t])=>`<button class="opt ${String(v)===String(sel)?'on':''}" ${attr} data-v="${v}">${t}</button>`).join('')}</div>`;
+const rango=g=>{const f=g.rs.map(r=>r.datos.f).filter(Boolean).sort();return f.length?(f[0]===f[f.length-1]?fesp(f[0]):'del '+fesp(f[0])+' al '+fesp(f[f.length-1])):''};
+const verMov=g=>{
+  const rs=g.rs.slice().sort((a,b)=>String(b.datos.f).localeCompare(String(a.datos.f))),k='v:'+g.g,ab=abiertas.has(k);
+  return `<button data-ver="${encodeURIComponent(k)}" style="align-self:flex-start">${ab?'Ocultar movimientos':'Ver movimientos ('+g.n+')'}</button><div class="dt" ${ab?'':'hidden'}>${rs.slice(0,100).map(r=>{const i=Number(r.datos.i);return linea(fesp(r.datos.f)+(r.datos.d?' · '+esc(r.datos.d):''),f2(i),sg(i))}).join('')}${rs.length>100?'<div class="m">Se muestran los 100 más recientes.</div>':''}</div>`;
+};
 const fila=(cab,sub,o)=>`<div class="card">${cab}<div class="m">${sub}</div>${o||''}</div>`;
 const cab=(a,b,c)=>linea(esc(cap(a)),b,c);
 const titulo=(t,n)=>`<div class="m" style="margin:12px 0 6px">${t} (${n})</div>`;
@@ -344,11 +349,11 @@ function pintarDlista(){
   let html='';
   if(t==='g'){
     const G={};
-    base.filter(ok).forEach(r=>{const g=G[r.datos.g]??={g:r.datos.g,cat:r.datos.cat,n:0,tot:0,t:new Set()};g.n++;g.tot+=Number(r.datos.i);g.t.add(r.datos.t)});
+    base.filter(ok).forEach(r=>{const g=G[r.datos.g]??={g:r.datos.g,cat:r.datos.cat,n:0,tot:0,t:new Set(),rs:[]};g.rs.push(r);g.n++;g.tot+=Number(r.datos.i);g.t.add(r.datos.t)});
     const L=Object.values(G).sort((a,b)=>Math.abs(b.tot)-Math.abs(a.tot));
     html=dividir(L,g=>!g.t.has('pend'),g=>{
       const cur=g.t.size>1?'mixto':[...g.t][0];
-      return fila(cab(g.g,f2(g.tot),sg(g.tot)),esc(g.cat)+' · '+g.n+(g.n===1?' movimiento':' movimientos')+(cur==='mixto'?' · Reparto mixto':''),opts(OPT_T,cur,'data-g="'+encodeURIComponent(g.g)+'"'));
+      return fila(cab(g.g,f2(g.tot),sg(g.tot)),esc(g.cat)+' · '+g.n+(g.n===1?' movimiento':' movimientos')+' · '+rango(g)+(cur==='mixto'?' · Reparto mixto':''),opts(OPT_T,cur,'data-g="'+encodeURIComponent(g.g)+'"')+verMov(g));
     },200);
   }else if(t==='m'){
     const L=base.filter(ok).sort((a,b)=>String(b.datos.f).localeCompare(String(a.datos.f)));
@@ -367,6 +372,10 @@ function pintarDlista(){
   $('dlista').innerHTML=html;
 }
 $('dlista').addEventListener('click',async e=>{
+  const vb=e.target.closest('[data-ver]');
+  if(vb){const k=decodeURIComponent(vb.dataset.ver),dt=vb.nextElementSibling;dt.hidden=!dt.hidden;
+    if(dt.hidden)abiertas.delete(k);else abiertas.add(k);
+    vb.textContent=dt.hidden?'Ver movimientos ('+dt.querySelectorAll('.ln').length+')':'Ocultar movimientos';return}
   const o=e.target.closest('[data-v]');
   if(o){
     let err;

@@ -24,11 +24,13 @@ button{background:none;border:0;color:var(--ac);font:inherit;font-weight:700;pad
 .hd{cursor:pointer}
 .ln{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
 .ln .l{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .ln .l{white-space:normal;overflow:visible}
 .ln .r{flex:0 0 auto;white-space:nowrap;font-variant-numeric:tabular-nums}
 .dt{margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);display:flex;flex-direction:column;gap:8px}
 .fld{display:flex;flex-direction:column;gap:4px}
 .blk{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;margin-bottom:10px}
 .bh{display:flex;justify-content:space-between;align-items:baseline;cursor:pointer;font-weight:600}
+.bh .ex{font-weight:700;margin-right:6px}
 .bh .a{color:var(--ac);font-weight:700;font-size:.9rem}
 .bb{margin-top:8px}
 .big{font-size:1.8rem;font-weight:700}
@@ -102,7 +104,7 @@ button{background:none;border:0;color:var(--ac);font:inherit;font-weight:700;pad
     <div id="list"></div>
   </div>
 
-  <div class="m" style="text-align:center;margin-top:16px"><span id="version">V1.05</span></div>
+  <div class="m" style="text-align:center;margin-top:16px"><span id="version">V1.06</span></div>
 </div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
@@ -131,9 +133,9 @@ async function guardarUI(){
 }
 
 // ---- Componentes comunes ----
-function bloque(id,titulo,cuerpo){
-  const p=!!(UI.plegado||{})[id];
-  return `<section class="blk"><div class="bh" data-fold="${id}"><span>${esc(titulo)}</span><span class="a">${p?'Abrir':'Cerrar'}</span></div><div class="bb" ${p?'hidden':''}>${cuerpo}</div></section>`;
+function bloque(id,titulo,cuerpo,extra){
+  const v=(UI.plegado||{})[id],p=v===undefined?id==='d-res':!!v;
+  return `<section class="blk"><div class="bh" data-fold="${id}"><span>${esc(titulo)}</span><span>${extra?`<span class="ex">${extra}</span> `:''}<span class="a">${p?'Abrir':'Cerrar'}</span></span></div><div class="bb" ${p?'hidden':''}>${cuerpo}</div></section>`;
 }
 function tarjeta(clave,cab,sub,detalle,abierta){
   return `<div class="card"><div class="hd" data-k="${encodeURIComponent(clave)}">${cab}${sub?`<div class="m">${sub}</div>`:''}</div><div class="dt" ${abierta?'':'hidden'}>${detalle}</div></div>`;
@@ -146,8 +148,8 @@ function filtro(id,resumen,panel){
 const abiertas=new Set();
 document.addEventListener('click',e=>{
   const fo=e.target.closest('[data-fold]');
-  if(fo){const p={...(UI.plegado||{})};p[fo.dataset.fold]=!p[fo.dataset.fold];setUI('plegado',p);
-    fo.nextElementSibling.hidden=p[fo.dataset.fold];fo.querySelector('.a').textContent=p[fo.dataset.fold]?'Abrir':'Cerrar';return}
+  if(fo){const bb=fo.nextElementSibling,p={...(UI.plegado||{})};bb.hidden=!bb.hidden;p[fo.dataset.fold]=bb.hidden;setUI('plegado',p);
+    fo.querySelector('.a').textContent=bb.hidden?'Abrir':'Cerrar';return}
   const fi=e.target.closest('[data-filt]');
   if(fi){const a={...(UI.fabierto||{})};a[fi.dataset.filt]=!a[fi.dataset.filt];setUI('fabierto',a);
     fi.classList.toggle('on',a[fi.dataset.filt]);fi.nextElementSibling.hidden=!a[fi.dataset.filt];return}
@@ -278,7 +280,7 @@ function resumenDeuda(){
 }
 function pintarDres(){
   const R=resumenDeuda(),c=sec.config||{};
-  const cuerpo=`<div class="m">Debes a Diana</div><div class="big">${f0(R.total)}</div>
+  const cuerpo=`<div class="big">${f0(R.total)}</div>
   <div class="stack" style="margin:10px 0 0">
   ${linea('Deuda anterior que aún debes',f0(R.previo))}
   ${linea('Alquiler, '+R.meses+' meses de '+f0(c.alquiler||0),f0(R.alq))}
@@ -288,7 +290,7 @@ function pintarDres(){
   ${R.saldN?linea('Deuda anterior ya saldada ('+R.saldN+')',f0(R.saldPrev)):''}
   </div>
   <div class="m">${R.np?`Faltan por revisar ${R.np} movimientos (${f0(R.pendSum)} en gastos); mientras tanto no cuentan en la deuda.`:'Todo clasificado.'}</div>`;
-  $('dres').innerHTML=bloque('d-res','Resumen',cuerpo);
+  $('dres').innerHTML=bloque('d-res','Debes a Diana',cuerpo,f0(R.total));
 }
 const dTab=()=>UI.deuda_tab||'g';
 const dFil=()=>({cat:'',...(UI.deuda_f||{})});
@@ -296,8 +298,13 @@ const resumenDF=()=>dFil().cat||'Todas las categorías';
 const OPT_T=[['comp','Compartido'],['mio','Mío'],['diana','Solo Diana'],['ign','Ignorar']];
 const TABS=[['g','Comercios'],['m','Movimientos'],['a','Deuda anterior'],['p','Mis pagos']];
 let dq='';
+function cuentas(){
+  const m=dr.filter(r=>r.datos.t==='pend'),gs=new Set(m.map(r=>r.datos.g));
+  return {g:gs.size,m:m.length,a:dr.filter(r=>r.datos.t==='previo'&&r.datos.s===undefined).length,p:0};
+}
 function montarDeudaTabs(){
-  $('dtabs').innerHTML=TABS.map(([k,t])=>`<button class="pill ${dTab()===k?'on':''}" data-dt="${k}">${t}</button>`).join('');
+  const cn=cuentas();
+  $('dtabs').innerHTML=TABS.map(([k,t])=>`<button class="pill ${dTab()===k?'on':''}" data-dt="${k}">${t}${cn[k]?' · '+cn[k]:''}</button>`).join('');
   montarDeudaCtl();pintarDlista();
 }
 $('dtabs').addEventListener('click',e=>{const b=e.target.closest('[data-dt]');if(!b)return;setUI('deuda_tab',b.dataset.dt);montarDeudaTabs();b.scrollIntoView({inline:'center',block:'nearest'})});
@@ -327,20 +334,23 @@ $('dctl').addEventListener('submit',async e=>{
   if(error){alert(error.message);return}
   dr.push(r);e.target.reset();e.target.hidden=true;pintarDres();pintarDlista();
 });
+function refTabs(){const cn=cuentas();document.querySelectorAll('#dtabs [data-dt]').forEach(b=>{const t=TABS.find(x=>x[0]===b.dataset.dt)[1];b.textContent=t+(cn[b.dataset.dt]?' · '+cn[b.dataset.dt]:'')})}
 const fesp=s=>s?s.split('-').reverse().join('/'):'';
 const opts=(lista,sel,attr)=>`<div class="opts">${lista.map(([v,t])=>`<button class="opt ${String(v)===String(sel)?'on':''}" ${attr} data-v="${v}">${t}</button>`).join('')}</div>`;
 const rango=g=>{const f=g.rs.map(r=>r.datos.f).filter(Boolean).sort();return f.length?(f[0]===f[f.length-1]?fesp(f[0]):'del '+fesp(f[0])+' al '+fesp(f[f.length-1])):''};
+const botonTodo=()=>`<button id="vtodo" style="align-self:flex-start">${abiertas.size?'Plegar todo':'Desplegar todo'}</button>`;
 const verMov=g=>{
   const rs=g.rs.slice().sort((a,b)=>String(b.datos.f).localeCompare(String(a.datos.f))),k='v:'+g.g,ab=abiertas.has(k);
   return `<button data-ver="${encodeURIComponent(k)}" style="align-self:flex-start">${ab?'Ocultar movimientos':'Ver movimientos ('+g.n+')'}</button><div class="dt" ${ab?'':'hidden'}>${rs.slice(0,100).map(r=>{const i=Number(r.datos.i);return linea(fesp(r.datos.f)+(r.datos.d?' · '+esc(r.datos.d):''),f2(i),sg(i))}).join('')}${rs.length>100?'<div class="m">Se muestran los 100 más recientes.</div>':''}</div>`;
 };
 const fila=(cab,sub,o)=>`<div class="card">${cab}<div class="m">${sub}</div>${o||''}</div>`;
 const cab=(a,b,c)=>linea(esc(cap(a)),b,c);
-const titulo=(t,n)=>`<div class="m" style="margin:12px 0 6px">${t} (${n})</div>`;
-function dividir(L,rev,pintar,tope){
+const titulo=(t,n,x)=>`<div class="m" style="margin:12px 0 6px">${t} (${n})${x?' · '+x:''}</div>`;
+const deshacer=(attr,v)=>`<button ${attr} data-v="${v}" style="align-self:flex-start">Volver a por revisar</button>`;
+function dividir(L,rev,pintar,tope,imp){
   const A=L.filter(x=>!rev(x)),B=L.filter(rev);
-  const trozo=(X,t)=>X.length?titulo(t,X.length)+X.slice(0,tope).map(pintar).join('')+(X.length>tope?`<div class="m">Se muestran ${tope} de ${X.length}; usa el buscador para acotar.</div>`:''):'';
-  return trozo(A,'Por revisar')+trozo(B,'Revisado')||'<div class="m">No hay nada que mostrar.</div>';
+  const trozo=(X,t,r)=>X.length?titulo(t,X.length,imp&&!r?imp(X):'')+X.slice(0,tope).map(x=>pintar(x,r)).join('')+(X.length>tope?`<div class="m">Se muestran ${tope} de ${X.length}; usa el buscador para acotar.</div>`:''):'';
+  return trozo(A,'Por revisar',false)+trozo(B,'Revisado',true)||'<div class="m">No hay nada que mostrar.</div>';
 }
 function pintarDlista(){
   const t=dTab(),f=dFil(),q=dq.toLowerCase().trim();
@@ -351,20 +361,20 @@ function pintarDlista(){
     const G={};
     base.filter(ok).forEach(r=>{const g=G[r.datos.g]??={g:r.datos.g,cat:r.datos.cat,n:0,tot:0,t:new Set(),rs:[]};g.rs.push(r);g.n++;g.tot+=Number(r.datos.i);g.t.add(r.datos.t)});
     const L=Object.values(G).sort((a,b)=>Math.abs(b.tot)-Math.abs(a.tot));
-    html=dividir(L,g=>!g.t.has('pend'),g=>{
+    html=botonTodo()+dividir(L,g=>!g.t.has('pend'),(g,rv)=>{
       const cur=g.t.size>1?'mixto':[...g.t][0];
-      return fila(cab(g.g,f2(g.tot),sg(g.tot)),esc(g.cat)+' · '+g.n+(g.n===1?' movimiento':' movimientos')+' · '+rango(g)+(cur==='mixto'?' · Reparto mixto':''),opts(OPT_T,cur,'data-g="'+encodeURIComponent(g.g)+'"')+verMov(g));
-    },200);
+      return fila(cab(g.g,f2(g.tot),sg(g.tot)),esc(g.cat)+' · '+g.n+(g.n===1?' movimiento':' movimientos')+' · '+rango(g)+(cur==='mixto'?' · Reparto mixto':''),opts(OPT_T,cur,'data-g="'+encodeURIComponent(g.g)+'"')+(rv?deshacer('data-g="'+encodeURIComponent(g.g)+'"','pend'):'')+verMov(g));
+    },200,X=>f0(X.reduce((a,g)=>a+Math.max(0,-g.tot),0))+' en gastos');
   }else if(t==='m'){
     const L=base.filter(ok).sort((a,b)=>String(b.datos.f).localeCompare(String(a.datos.f)));
-    html=dividir(L,r=>r.datos.t!=='pend',r=>{const i=Number(r.datos.i);
-      return fila(cab(r.datos.c,f2(i),sg(i)),fesp(r.datos.f)+' · '+esc(r.datos.cat)+(r.datos.d?' · '+esc(r.datos.d):''),opts(OPT_T,r.datos.t,'data-id="'+r.id+'"'));
-    },200);
+    html=dividir(L,r=>r.datos.t!=='pend',(r,rv)=>{const i=Number(r.datos.i);
+      return fila(cab(r.datos.c,f2(i),sg(i)),fesp(r.datos.f)+' · '+esc(r.datos.cat)+(r.datos.d?' · '+esc(r.datos.d):''),opts(OPT_T,r.datos.t,'data-id="'+r.id+'"')+(rv?deshacer('data-id="'+r.id+'"','pend'):''));
+    },200,X=>f0(X.reduce((a,r)=>a+Math.max(0,-Number(r.datos.i)),0))+' en gastos');
   }else if(t==='a'){
     const L=dr.filter(r=>r.datos.t==='previo').sort((a,b)=>String(a.datos.f||'').localeCompare(String(b.datos.f||'')));
     const deb=L.filter(r=>!r.datos.s).reduce((x,r)=>x+Number(r.datos.i),0),sal=L.filter(r=>r.datos.s).reduce((x,r)=>x+Number(r.datos.i),0);
     html=`<div class="card">${linea('Lo que aún debes',f0(deb))}${linea('Ya saldado',f0(sal))}<div class="m">Deuda acumulada hasta el 19/11/2025. Marca cada línea: Saldado no cuenta, Aún lo debo sí cuenta.</div></div>`+
-    dividir(L,r=>r.datos.s!==undefined,r=>fila(cab(r.datos.c,f2(Number(r.datos.i))),fesp(r.datos.f)||'Sin fecha',opts([[true,'Saldado'],[false,'Aún lo debo']],r.datos.s===undefined?'':r.datos.s,'data-id="'+r.id+'" data-k="s"')),100);
+    dividir(L,r=>r.datos.s!==undefined,(r,rv)=>fila(cab(r.datos.c,f2(Number(r.datos.i))),fesp(r.datos.f)||'Sin fecha',opts([[true,'Saldado'],[false,'Aún lo debo']],r.datos.s===undefined?'':r.datos.s,'data-id="'+r.id+'" data-k="s"')+(rv?deshacer('data-id="'+r.id+'" data-k="s"',''):'')),100,X=>f0(X.reduce((a,r)=>a+Number(r.datos.i),0)));
   }else{
     const L=dr.filter(r=>r.datos.t==='pago').sort((a,b)=>String(b.datos.f||'').localeCompare(String(a.datos.f||'')));
     html=L.length?L.map(r=>fila(cab(r.datos.c,f2(Number(r.datos.i)),'pos'),fesp(r.datos.f),`<button data-delpago="${r.id}" style="align-self:flex-start">Borrar</button>`)).join(''):'<div class="m">Aún no has registrado ningún pago a Diana.</div>';
@@ -372,6 +382,11 @@ function pintarDlista(){
   $('dlista').innerHTML=html;
 }
 $('dlista').addEventListener('click',async e=>{
+  if(e.target.id==='vtodo'){
+    const abrir=!abiertas.size;
+    document.querySelectorAll('#dlista [data-ver]').forEach(b=>{const k=decodeURIComponent(b.dataset.ver),dt=b.nextElementSibling;dt.hidden=!abrir;
+      if(abrir)abiertas.add(k);else abiertas.delete(k);b.textContent=abrir?'Ocultar movimientos':'Ver movimientos ('+dt.querySelectorAll('.ln').length+')'});
+    e.target.textContent=abrir?'Plegar todo':'Desplegar todo';return}
   const vb=e.target.closest('[data-ver]');
   if(vb){const k=decodeURIComponent(vb.dataset.ver),dt=vb.nextElementSibling;dt.hidden=!dt.hidden;
     if(dt.hidden)abiertas.delete(k);else abiertas.add(k);
@@ -385,12 +400,12 @@ $('dlista').addEventListener('click',async e=>{
       if(!err)dr.forEach(r=>{if(r.datos.g===g&&TIPOS_MOV.includes(r.datos.t))r.datos.t=o.dataset.v});
     }else{
       const r=dr.find(x=>x.id===o.dataset.id),datos={...r.datos};
-      if(o.dataset.k==='s')datos.s=o.dataset.v==='true';else datos.t=o.dataset.v;
+      if(o.dataset.k==='s'){if(o.dataset.v==='')delete datos.s;else datos.s=o.dataset.v==='true'}else datos.t=o.dataset.v;
       ({error:err}=await sb.from('registros').update({datos}).eq('id',r.id));
       if(!err)r.datos=datos;
     }
     if(err){alert(err.message);return}
-    pintarDres();pintarDlista();return;
+    pintarDres();pintarDlista();refTabs();return;
   }
   const d=e.target.closest('[data-delpago]');
   if(d&&confirm('¿Borrar este pago?')){

@@ -36,6 +36,9 @@ button{background:none;border:0;color:var(--ac);font:inherit;font-weight:700;pad
 .fil{display:flex;flex-direction:column;gap:8px}
 .fil .pill{align-self:flex-start}
 .fpanel{display:flex;flex-direction:column;gap:8px;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px}
+.opts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.opt{border:1px solid var(--bd);border-radius:999px;padding:6px 12px;color:var(--tx);font-weight:500;font-size:.9rem}
+.opt.on{border-color:var(--ac);font-weight:700}
 .chk{display:flex;gap:8px;align-items:center}
 .chk input{width:auto}
 #login{max-width:340px;margin:20vh auto;display:flex;flex-direction:column;gap:10px}
@@ -99,7 +102,7 @@ button{background:none;border:0;color:var(--ac);font:inherit;font-weight:700;pad
     <div id="list"></div>
   </div>
 
-  <div class="m" style="text-align:center;margin-top:16px"><span id="version">V1.03</span></div>
+  <div class="m" style="text-align:center;margin-top:16px"><span id="version">V1.04</span></div>
 </div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
@@ -277,25 +280,27 @@ function pintarDres(){
   const R=resumenDeuda(),c=sec.config||{};
   const cuerpo=`<div class="m">Debes a Diana</div><div class="big">${f0(R.total)}</div>
   <div class="stack" style="margin:10px 0 0">
-  ${linea('Saldo previo pendiente',f0(R.previo))}
+  ${linea('Deuda anterior que aún debes',f0(R.previo))}
   ${linea('Alquiler, '+R.meses+' meses de '+f0(c.alquiler||0),f0(R.alq))}
   ${linea('Mitad de los gastos compartidos',f0(R.comp))}
   ${linea('Gastos míos al 100 %',f0(R.mio))}
   ${linea('Pagos que le has hecho',f0(-R.pagos))}
-  ${R.saldN?linea('Líneas saldadas, no cuentan ('+R.saldN+')',f0(R.saldPrev)):''}
+  ${R.saldN?linea('Deuda anterior ya saldada ('+R.saldN+')',f0(R.saldPrev)):''}
   </div>
-  <div class="m">${R.np?`Hay ${R.np} movimientos sin clasificar (${f0(R.pendSum)} en gastos) que aún no cuentan.`:'Todo clasificado.'}</div>`;
+  <div class="m">${R.np?`Faltan por revisar ${R.np} movimientos (${f0(R.pendSum)} en gastos); mientras tanto no cuentan en la deuda.`:'Todo clasificado.'}</div>`;
   $('dres').innerHTML=bloque('d-res','Resumen',cuerpo);
 }
 const dTab=()=>UI.deuda_tab||'g';
-const dFil=()=>({cat:'',solo:true,...(UI.deuda_f||{})});
-const resumenDF=()=>{const f=dFil();return (f.solo?'Solo sin clasificar':'Todos los movimientos')+(f.cat?', '+f.cat:'')};
+const dFil=()=>({cat:'',...(UI.deuda_f||{})});
+const resumenDF=()=>dFil().cat||'Todas las categorías';
+const OPT_T=[['comp','Compartido'],['mio','Mío'],['diana','Solo Diana'],['ign','Ignorar']];
+const TABS=[['g','Comercios'],['m','Movimientos'],['a','Deuda anterior'],['p','Mis pagos']];
 let dq='';
 function montarDeudaTabs(){
-  $('dtabs').innerHTML=[['g','Por comercio'],['m','Movimientos'],['p','Previo y pagos']].map(([k,t])=>`<button class="pill ${dTab()===k?'on':''}" data-dt="${k}">${t}</button>`).join('');
+  $('dtabs').innerHTML=TABS.map(([k,t])=>`<button class="pill ${dTab()===k?'on':''}" data-dt="${k}">${t}</button>`).join('');
   montarDeudaCtl();pintarDlista();
 }
-$('dtabs').addEventListener('click',e=>{const b=e.target.closest('[data-dt]');if(!b)return;setUI('deuda_tab',b.dataset.dt);montarDeudaTabs()});
+$('dtabs').addEventListener('click',e=>{const b=e.target.closest('[data-dt]');if(!b)return;setUI('deuda_tab',b.dataset.dt);montarDeudaTabs();b.scrollIntoView({inline:'center',block:'nearest'})});
 function montarDeudaCtl(){
   const t=dTab();
   if(t==='p'){
@@ -303,18 +308,14 @@ function montarDeudaCtl(){
     <form id="pf" class="stack" hidden><input name="f" type="date" required><input name="c" placeholder="Concepto"><input name="i" placeholder="Importe en euros" inputmode="decimal" required><button style="align-self:flex-start">Guardar pago</button></form>`;
     return;
   }
+  if(t==='a'){$('dctl').innerHTML='';return}
   const f=dFil(),cats=[...new Set(dr.map(r=>r.datos.cat).filter(Boolean))].filter(c=>!['Saldo previo','Pago'].includes(c)).sort((a,b)=>a.localeCompare(b,'es'));
-  const panel=`<label class="chk"><input type="checkbox" id="dp" ${f.solo?'checked':''}>Solo sin clasificar</label>
-  <div class="fld"><label class="m">Categoría</label><select id="dc"><option value="">Todas</option>${cats.map(c=>`<option${c===f.cat?' selected':''}>${esc(c)}</option>`).join('')}</select></div>`;
+  const panel=`<div class="fld"><label class="m">Categoría</label><select id="dc"><option value="">Todas</option>${cats.map(c=>`<option${c===f.cat?' selected':''}>${esc(c)}</option>`).join('')}</select></div>`;
   $('dctl').innerHTML=`<input id="dq" type="search" placeholder="Buscar" value="${esc(dq)}">`+filtro('deuda',resumenDF(),panel);
 }
 $('dctl').addEventListener('input',e=>{if(e.target.id==='dq'){dq=e.target.value;pintarDlista()}});
 $('dctl').addEventListener('change',e=>{
-  if(e.target.id==='dp'||e.target.id==='dc'){
-    setUI('deuda_f',{solo:$('dp').checked,cat:$('dc').value});
-    $('dctl').querySelector('.pill').textContent=resumenDF();
-    pintarDlista();
-  }
+  if(e.target.id==='dc'){setUI('deuda_f',{cat:$('dc').value});$('dctl').querySelector('.pill').textContent=resumenDF();pintarDlista()}
 });
 $('dctl').addEventListener('click',e=>{if(e.target.id==='padd')$('pf').hidden=!$('pf').hidden});
 $('dctl').addEventListener('submit',async e=>{
@@ -326,62 +327,61 @@ $('dctl').addEventListener('submit',async e=>{
   if(error){alert(error.message);return}
   dr.push(r);e.target.reset();e.target.hidden=true;pintarDres();pintarDlista();
 });
-const selTipo=(cur,attr)=>`<div class="fld"><label class="m">Reparto</label><select ${attr}>`+TIPOS_MOV.map(k=>`<option value="${k}"${k===cur?' selected':''}>${TIPOS[k]}</option>`).join('')+(cur==='mixto'?'<option value="mixto" selected>Mixto</option>':'')+'</select></div>';
-const saldoBtn=r=>`<button data-saldo="${r.id}" style="align-self:flex-start">${r.datos.s?'Marcar pendiente':'Marcar saldado'}</button>`;
 const fesp=s=>s?s.split('-').reverse().join('/'):'';
+const opts=(lista,sel,attr)=>`<div class="opts">${lista.map(([v,t])=>`<button class="opt ${String(v)===String(sel)?'on':''}" ${attr} data-v="${v}">${t}</button>`).join('')}</div>`;
+const fila=(cab,sub,o)=>`<div class="card">${cab}<div class="m">${sub}</div>${o||''}</div>`;
+const cab=(a,b,c)=>linea(esc(cap(a)),b,c);
+const titulo=(t,n)=>`<div class="m" style="margin:12px 0 6px">${t} (${n})</div>`;
+function dividir(L,rev,pintar,tope){
+  const A=L.filter(x=>!rev(x)),B=L.filter(rev);
+  const trozo=(X,t)=>X.length?titulo(t,X.length)+X.slice(0,tope).map(pintar).join('')+(X.length>tope?`<div class="m">Se muestran ${tope} de ${X.length}; usa el buscador para acotar.</div>`:''):'';
+  return trozo(A,'Por revisar')+trozo(B,'Revisado')||'<div class="m">No hay nada que mostrar.</div>';
+}
 function pintarDlista(){
   const t=dTab(),f=dFil(),q=dq.toLowerCase().trim();
   const base=dr.filter(r=>!['previo','pago'].includes(r.datos.t));
   const ok=r=>(!f.cat||r.datos.cat===f.cat)&&(!q||(r.datos.c+' '+(r.datos.d||'')+' '+r.datos.g).toLowerCase().includes(q));
-  const vacio='<div class="m">No hay nada que mostrar con este filtro.</div>';
   let html='';
   if(t==='g'){
     const G={};
     base.filter(ok).forEach(r=>{const g=G[r.datos.g]??={g:r.datos.g,cat:r.datos.cat,n:0,tot:0,t:new Set()};g.n++;g.tot+=Number(r.datos.i);g.t.add(r.datos.t)});
-    const L=Object.values(G).filter(g=>!f.solo||g.t.has('pend')).sort((a,b)=>Math.abs(b.tot)-Math.abs(a.tot));
-    html=L.length?L.map(g=>{
+    const L=Object.values(G).sort((a,b)=>Math.abs(b.tot)-Math.abs(a.tot));
+    html=dividir(L,g=>!g.t.has('pend'),g=>{
       const cur=g.t.size>1?'mixto':[...g.t][0];
-      return tarjeta('g:'+g.g,linea(esc(cap(g.g)),f2(g.tot),sg(g.tot)),esc(g.cat)+' · '+g.n+(g.n===1?' movimiento':' movimientos')+' · '+(cur==='mixto'?'Mixto':TIPOS[cur]),selTipo(cur,'data-g="'+encodeURIComponent(g.g)+'"'),abiertas.has('g:'+g.g));
-    }).join(''):vacio;
+      return fila(cab(g.g,f2(g.tot),sg(g.tot)),esc(g.cat)+' · '+g.n+(g.n===1?' movimiento':' movimientos')+(cur==='mixto'?' · Reparto mixto':''),opts(OPT_T,cur,'data-g="'+encodeURIComponent(g.g)+'"'));
+    },200);
   }else if(t==='m'){
-    const A=base.filter(r=>ok(r)&&(!f.solo||r.datos.t==='pend')).sort((a,b)=>String(b.datos.f).localeCompare(String(a.datos.f)));
-    html=A.slice(0,200).map(r=>{const i=Number(r.datos.i);
-      return tarjeta('m:'+r.id,linea(esc(cap(r.datos.c)),f2(i),sg(i)),fesp(r.datos.f)+' · '+esc(r.datos.cat)+' · '+TIPOS[r.datos.t]+(r.datos.s?' · Saldado':''),(r.datos.d?`<div class="m">${esc(r.datos.d)}</div>`:'')+selTipo(r.datos.t,'data-id="'+r.id+'"')+saldoBtn(r),abiertas.has('m:'+r.id));
-    }).join('')+(A.length>200?`<div class="m">Se muestran 200 de ${A.length}; usa el buscador para acotar.</div>`:'');
-    if(!A.length)html=vacio;
+    const L=base.filter(ok).sort((a,b)=>String(b.datos.f).localeCompare(String(a.datos.f)));
+    html=dividir(L,r=>r.datos.t!=='pend',r=>{const i=Number(r.datos.i);
+      return fila(cab(r.datos.c,f2(i),sg(i)),fesp(r.datos.f)+' · '+esc(r.datos.cat)+(r.datos.d?' · '+esc(r.datos.d):''),opts(OPT_T,r.datos.t,'data-id="'+r.id+'"'));
+    },200);
+  }else if(t==='a'){
+    const L=dr.filter(r=>r.datos.t==='previo').sort((a,b)=>String(a.datos.f||'').localeCompare(String(b.datos.f||'')));
+    const deb=L.filter(r=>!r.datos.s).reduce((x,r)=>x+Number(r.datos.i),0),sal=L.filter(r=>r.datos.s).reduce((x,r)=>x+Number(r.datos.i),0);
+    html=`<div class="card">${linea('Lo que aún debes',f0(deb))}${linea('Ya saldado',f0(sal))}<div class="m">Deuda acumulada hasta el 19/11/2025. Marca cada línea: Saldado no cuenta, Aún lo debo sí cuenta.</div></div>`+
+    dividir(L,r=>r.datos.s!==undefined,r=>fila(cab(r.datos.c,f2(Number(r.datos.i))),fesp(r.datos.f)||'Sin fecha',opts([[true,'Saldado'],[false,'Aún lo debo']],r.datos.s===undefined?'':r.datos.s,'data-id="'+r.id+'" data-k="s"')),100);
   }else{
-    const L=dr.filter(r=>['previo','pago'].includes(r.datos.t)).sort((a,b)=>String(a.datos.f||'').localeCompare(String(b.datos.f||'')));
-    const pv=L.filter(r=>r.datos.t==='previo'),tp=pv.filter(r=>!r.datos.s).reduce((x,r)=>x+Number(r.datos.i),0),ts=pv.filter(r=>r.datos.s).reduce((x,r)=>x+Number(r.datos.i),0);
-    html=`<div class="card">${linea('Pendiente',f0(tp))}${linea('Saldado',f0(ts))}<div class="m">${pv.length} líneas de saldo previo; las saldadas no cuentan en la deuda.</div></div>`+L.map(r=>{const i=Number(r.datos.i),pg=r.datos.t==='pago';
-      const acc=pg?`<button data-delpago="${r.id}" style="align-self:flex-start">Borrar</button>`:saldoBtn(r);
-      return tarjeta('p:'+r.id,linea(esc(cap(r.datos.c)),f2(i),pg?'pos':''),(fesp(r.datos.f)||'Sin fecha')+' · '+(pg?'Pago tuyo':'Saldo previo')+(r.datos.s?' · Saldado':''),acc,abiertas.has('p:'+r.id));
-    }).join('');
+    const L=dr.filter(r=>r.datos.t==='pago').sort((a,b)=>String(b.datos.f||'').localeCompare(String(a.datos.f||'')));
+    html=L.length?L.map(r=>fila(cab(r.datos.c,f2(Number(r.datos.i)),'pos'),fesp(r.datos.f),`<button data-delpago="${r.id}" style="align-self:flex-start">Borrar</button>`)).join(''):'<div class="m">Aún no has registrado ningún pago a Diana.</div>';
   }
   $('dlista').innerHTML=html;
 }
-$('dlista').addEventListener('change',async e=>{
-  const s=e.target.closest('select');if(!s||s.value==='mixto')return;
-  if(s.dataset.g!==undefined){
-    const g=decodeURIComponent(s.dataset.g);
-    const {error}=await sb.rpc('set_tipo',{p_seccion:sec.id,p_grupo:g,p_tipo:s.value});
-    if(error){alert(error.message);return}
-    dr.forEach(r=>{if(r.datos.g===g&&TIPOS_MOV.includes(r.datos.t))r.datos.t=s.value});
-  }else{
-    const r=dr.find(x=>x.id===s.dataset.id),datos={...r.datos,t:s.value};
-    const {error}=await sb.from('registros').update({datos}).eq('id',r.id);
-    if(error){alert(error.message);return}
-    r.datos=datos;
-  }
-  pintarDres();pintarDlista();
-});
 $('dlista').addEventListener('click',async e=>{
-  const sd=e.target.closest('[data-saldo]');
-  if(sd){
-    const r=dr.find(x=>x.id===sd.dataset.saldo),datos={...r.datos,s:!r.datos.s};
-    if(!datos.s)delete datos.s;
-    const {error}=await sb.from('registros').update({datos}).eq('id',r.id);
-    if(error){alert(error.message);return}
-    r.datos=datos;pintarDres();pintarDlista();return;
+  const o=e.target.closest('[data-v]');
+  if(o){
+    let err;
+    if(o.dataset.g!==undefined){
+      const g=decodeURIComponent(o.dataset.g);
+      ({error:err}=await sb.rpc('set_tipo',{p_seccion:sec.id,p_grupo:g,p_tipo:o.dataset.v}));
+      if(!err)dr.forEach(r=>{if(r.datos.g===g&&TIPOS_MOV.includes(r.datos.t))r.datos.t=o.dataset.v});
+    }else{
+      const r=dr.find(x=>x.id===o.dataset.id),datos={...r.datos};
+      if(o.dataset.k==='s')datos.s=o.dataset.v==='true';else datos.t=o.dataset.v;
+      ({error:err}=await sb.from('registros').update({datos}).eq('id',r.id));
+      if(!err)r.datos=datos;
+    }
+    if(err){alert(err.message);return}
+    pintarDres();pintarDlista();return;
   }
   const d=e.target.closest('[data-delpago]');
   if(d&&confirm('¿Borrar este pago?')){

@@ -43,6 +43,14 @@ th{color:var(--mut);font-weight:600;cursor:pointer;user-select:none;position:sti
 td.n,th.n{text-align:right}
 tr:last-child td{border-bottom:0}
 .del{background:none;color:var(--mut);padding:2px 8px;font-weight:400}
+.sum{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px}
+.sum .big{font-size:1.9rem;font-weight:700;color:var(--ac)}
+.sum table td{border:0;padding:3px 0}.sum table td:last-child{text-align:right}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tabs button{background:var(--card);color:var(--tx);border:1px solid var(--bd);font-weight:500}
+.tabs button.on{background:var(--ac);color:#111}
+td select{padding:4px;border-radius:6px}
+tr.pend td{background:rgba(245,197,24,.07)}
 #tf{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px}
 </style>
 </head>
@@ -63,6 +71,13 @@ tr:last-child td{border-bottom:0}
     <form id="tf" hidden></form>
     <div id="tstat" class="m" style="margin-bottom:8px"></div>
     <div class="tw"><table id="tt"></table></div>
+  </div>
+  <div id="v-deuda" hidden>
+    <div class="sum" id="dres"></div>
+    <div class="tabs" id="dtabs"><button data-v="g" class="on">Por comercio</button><button data-v="m">Movimientos</button><button data-v="p">Previo y pagos</button></div>
+    <div class="bar" id="dfil"><input id="dq" type="search" placeholder="Buscar…"><select id="dc"><option value="">Todas las categorías</option></select><label class="m" style="align-self:center"><input type="checkbox" id="dp" checked> solo sin clasificar</label></div>
+    <form id="pf" class="bar" hidden><input name="f" type="date" required><input name="c" placeholder="Concepto" style="flex:2"><input name="i" placeholder="Importe €" inputmode="decimal" required><button>Añadir pago</button></form>
+    <div class="tw"><table id="dt"></table></div>
   </div>
   <div id="v-imdb" hidden>
   <div class="bar"><button id="addb">+ Añadir</button></div>
@@ -90,7 +105,7 @@ tr:last-child td{border-bottom:0}
   <div id="msg">Cargando…</div>
   <div id="list"></div>
   </div>
-  <div class="m" style="text-align:center;margin-top:16px">v1.3 · 2026-10-26</div>
+  <div class="m" style="text-align:center;margin-top:16px">v1.4 · 2026-10-26</div>
 </div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
@@ -154,9 +169,10 @@ async function abrir(slug){
   sec=secs.find(s=>s.slug===slug);if(!sec)return;
   try{localStorage.setItem('dgp_sec',slug)}catch(_){}
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.s===slug));
-  const imdb=sec.tipo==='imdb';
-  $('v-imdb').hidden=!imdb;$('v-tabla').hidden=imdb;
+  const imdb=sec.tipo==='imdb',deu=sec.tipo==='deuda';
+  $('v-imdb').hidden=!imdb;$('v-deuda').hidden=!deu;$('v-tabla').hidden=imdb||deu;
   if(imdb)return;
+  if(deu){await cargarDeuda();return}
   const c=sec.config||{};ord=c.orden||null;dir=c.dir==='asc'?1:-1;
   $('tq2').value='';$('tf').hidden=true;
   $('tstat').textContent='Cargando…';
@@ -203,6 +219,99 @@ $('tf').addEventListener('submit',async e=>{
   const {data:r,error}=await sb.from('registros').insert({seccion_id:sec.id,datos}).select().single();
   if(error){alert(error.message);return}
   filas.push(r);$('tf').hidden=true;pintarTabla();
+});
+
+// ---- Deuda Diana ----
+const TIPOS={pend:'Sin clasificar',comp:'Compartido 50%',mio:'Mío 100%',diana:'Solo Diana',ign:'Ignorar'};
+const eur=n=>n.toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+let dr=[],dv='g';
+async function cargarDeuda(){
+  $('dres').textContent='Cargando…';
+  let all=[],from=0;
+  while(true){
+    const {data:r,error}=await sb.from('registros').select('*').eq('seccion_id',sec.id).range(from,from+999);
+    if(error){$('dres').textContent='Error: '+error.message;return}
+    all=all.concat(r);if(r.length<1000)break;from+=1000;
+  }
+  dr=all;
+  const cats=[...new Set(dr.map(r=>r.datos.cat).filter(Boolean))].sort();
+  $('dc').innerHTML='<option value="">Todas las categorías</option>'+cats.map(c=>`<option>${esc(c)}</option>`).join('');
+  pintarDeuda();
+}
+function resumenDeuda(){
+  const c=sec.config||{};
+  const S=t=>dr.filter(r=>r.datos.t===t).reduce((a,r)=>a+Number(r.datos.i),0);
+  const previo=S('previo'),comp=-S('comp')/2,mio=-S('mio'),pagos=S('pago');
+  const [y,m]=(c.alquiler_desde||'2025-12').split('-').map(Number),h=new Date();
+  const meses=Math.max(0,(h.getFullYear()-y)*12+h.getMonth()+1-m+1);
+  const alq=meses*(c.alquiler||0);
+  const total=previo+alq+comp+mio-pagos;
+  const pend=dr.filter(r=>r.datos.t==='pend');
+  const pendSum=pend.reduce((a,r)=>a+Math.max(0,-Number(r.datos.i)),0);
+  return {previo,alq,meses,comp,mio,pagos,total,np:pend.length,pendSum};
+}
+function pintarDeuda(){
+  const R=resumenDeuda();
+  $('dres').innerHTML=`<div class="m">Debes a Diana</div><div class="big">${eur(R.total)}</div>
+  <table><tr><td>Saldo previo (a 19/11/2025)</td><td>${eur(R.previo)}</td></tr>
+  <tr><td>Alquiler (${R.meses} meses × ${eur((sec.config||{}).alquiler||0)})</td><td>${eur(R.alq)}</td></tr>
+  <tr><td>Mitad de gastos compartidos</td><td>${eur(R.comp)}</td></tr>
+  <tr><td>Gastos míos al 100%</td><td>${eur(R.mio)}</td></tr>
+  <tr><td>Pagos que le has hecho</td><td>− ${eur(R.pagos)}</td></tr></table>
+  <div class="m" style="margin-top:6px">${R.np?`⚠ ${R.np} movimientos sin clasificar (${eur(R.pendSum)} en gastos): aún no cuentan.`:'Todo clasificado.'}</div>`;
+  document.querySelectorAll('#dtabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===dv));
+  $('dfil').hidden=dv==='p';$('pf').hidden=dv!=='p';
+  const q=$('dq').value.toLowerCase().trim(),cat=$('dc').value,solo=$('dp').checked;
+  const sel=(cur,attr)=>`<select ${attr}>`+Object.entries(TIPOS).map(([k,v])=>`<option value="${k}"${k===cur?' selected':''}>${v}</option>`).join('')+(cur==='mixto'?'<option value="mixto" selected>Mixto</option>':'')+'</select>';
+  const base=dr.filter(r=>!['previo','pago'].includes(r.datos.t));
+  const ok=r=>(!cat||r.datos.cat===cat)&&(!q||(r.datos.c+' '+(r.datos.d||'')+' '+r.datos.g).toLowerCase().includes(q));
+  if(dv==='g'){
+    const G={};
+    base.filter(ok).forEach(r=>{const g=G[r.datos.g]??={g:r.datos.g,cat:r.datos.cat,n:0,tot:0,t:new Set()};g.n++;g.tot+=Number(r.datos.i);g.t.add(r.datos.t)});
+    let L=Object.values(G).filter(g=>!solo||g.t.has('pend')).sort((a,b)=>Math.abs(b.tot)-Math.abs(a.tot));
+    $('dt').innerHTML='<thead><tr><th>Comercio</th><th>Categoría</th><th class="n">Nº</th><th class="n">Total</th><th>Reparto</th></tr></thead><tbody>'+
+      L.map(g=>`<tr class="${g.t.has('pend')?'pend':''}"><td>${esc(g.g)}</td><td>${esc(g.cat)}</td><td class="n">${g.n}</td><td class="n">${eur(g.tot)}</td><td>${sel(g.t.size>1?'mixto':[...g.t][0],'data-g="'+esc(g.g)+'"')}</td></tr>`).join('')+'</tbody>';
+  }else if(dv==='m'){
+    const L=base.filter(r=>ok(r)&&(!solo||r.datos.t==='pend')).sort((a,b)=>String(b.datos.f).localeCompare(String(a.datos.f))).slice(0,400);
+    $('dt').innerHTML='<thead><tr><th>Fecha</th><th>Concepto</th><th>Cat.</th><th class="n">€</th><th>Reparto</th></tr></thead><tbody>'+
+      L.map(r=>`<tr class="${r.datos.t==='pend'?'pend':''}"><td>${r.datos.f||''}</td><td>${esc(r.datos.c)}${r.datos.d?' <span class="m">'+esc(r.datos.d.slice(0,40))+'</span>':''}</td><td>${esc(r.datos.cat)}</td><td class="n">${eur(Number(r.datos.i))}</td><td>${sel(r.datos.t,'data-id="'+r.id+'"')}</td></tr>`).join('')+'</tbody>'+(base.filter(ok).length>400?'<tfoot><tr><td colspan="5" class="m">Mostrando 400; usa el buscador para acotar.</td></tr></tfoot>':'');
+  }else{
+    const L=dr.filter(r=>['previo','pago'].includes(r.datos.t)).sort((a,b)=>String(a.datos.f||'').localeCompare(String(b.datos.f||'')));
+    $('dt').innerHTML='<thead><tr><th>Fecha</th><th>Concepto</th><th>Tipo</th><th class="n">€</th><th></th></tr></thead><tbody>'+
+      L.map(r=>`<tr><td>${r.datos.f||'—'}</td><td>${esc(r.datos.c)}</td><td>${r.datos.t==='pago'?'Pago mío':'Saldo previo'}</td><td class="n">${eur(Number(r.datos.i))}</td><td>${r.datos.t==='pago'?`<button class="del" data-id="${r.id}">✕</button>`:''}</td></tr>`).join('')+'</tbody>';
+  }
+}
+$('dtabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b){dv=b.dataset.v;pintarDeuda()}});
+['dq','dc','dp'].forEach(id=>$(id).addEventListener('input',pintarDeuda));
+$('dt').addEventListener('change',async e=>{
+  const s2=e.target.closest('select');if(!s2||s2.value==='mixto')return;
+  if(s2.dataset.g!==undefined){
+    const {error}=await sb.rpc('set_tipo',{p_seccion:sec.id,p_grupo:s2.dataset.g,p_tipo:s2.value});
+    if(error){alert(error.message);return}
+    dr.forEach(r=>{if(r.datos.g===s2.dataset.g&&['pend','comp','mio','diana','ign'].includes(r.datos.t))r.datos.t=s2.value});
+  }else{
+    const r=dr.find(x=>x.id===s2.dataset.id);const datos={...r.datos,t:s2.value};
+    const {error}=await sb.from('registros').update({datos}).eq('id',r.id);
+    if(error){alert(error.message);return}
+    r.datos=datos;
+  }
+  pintarDeuda();
+});
+$('dt').addEventListener('click',async e=>{
+  const d=e.target.closest('.del');
+  if(d&&dv==='p'&&confirm('¿Borrar este pago?')){
+    const {error}=await sb.from('registros').delete().eq('id',d.dataset.id);
+    if(error){alert(error.message);return}
+    dr=dr.filter(r=>r.id!==d.dataset.id);pintarDeuda();
+  }
+});
+$('pf').addEventListener('submit',async e=>{
+  e.preventDefault();const f=e.target.elements;
+  const datos={f:f.f.value,c:f.c.value.trim()||'Pago',i:Number(f.i.value.replace(',','.')),t:'pago',cat:'Pago'};
+  if(!(datos.i>0))return;
+  const {data:r,error}=await sb.from('registros').insert({seccion_id:sec.id,datos}).select().single();
+  if(error){alert(error.message);return}
+  dr.push(r);e.target.reset();pintarDeuda();
 });
 
 async function iniciar(){

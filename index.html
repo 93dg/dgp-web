@@ -99,7 +99,7 @@ button{background:none;border:0;color:var(--ac);font:inherit;font-weight:700;pad
     <div id="list"></div>
   </div>
 
-  <div class="m" style="text-align:center;margin-top:16px"><span id="version">V1.02</span></div>
+  <div class="m" style="text-align:center;margin-top:16px"><span id="version">V1.03</span></div>
 </div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
@@ -263,23 +263,26 @@ async function cargarDeuda(){
 }
 function resumenDeuda(){
   const c=sec.config||{};
-  const S=t=>dr.filter(r=>r.datos.t===t).reduce((a,r)=>a+Number(r.datos.i),0);
+  const S=t=>dr.filter(r=>r.datos.t===t&&!r.datos.s).reduce((a,r)=>a+Number(r.datos.i),0);
   const previo=S('previo'),comp=-S('comp')/2,mio=-S('mio'),pagos=S('pago');
   const [y,m]=(c.alquiler_desde||'2025-12').split('-').map(Number),h=new Date();
   const meses=Math.max(0,(h.getFullYear()-y)*12+h.getMonth()+1-m+1);
   const alq=meses*(c.alquiler||0);
   const pend=dr.filter(r=>r.datos.t==='pend');
-  return {previo,alq,meses,comp,mio,pagos,total:previo+alq+comp+mio-pagos,np:pend.length,pendSum:pend.reduce((a,r)=>a+Math.max(0,-Number(r.datos.i)),0)};
+  const sald=dr.filter(r=>r.datos.s&&['previo','comp','mio'].includes(r.datos.t));
+  const saldN=sald.length,saldPrev=sald.filter(r=>r.datos.t==='previo').reduce((a,r)=>a+Number(r.datos.i),0);
+  return {saldN,saldPrev,previo,alq,meses,comp,mio,pagos,total:previo+alq+comp+mio-pagos,np:pend.length,pendSum:pend.reduce((a,r)=>a+Math.max(0,-Number(r.datos.i)),0)};
 }
 function pintarDres(){
   const R=resumenDeuda(),c=sec.config||{};
   const cuerpo=`<div class="m">Debes a Diana</div><div class="big">${f0(R.total)}</div>
   <div class="stack" style="margin:10px 0 0">
-  ${linea('Saldo previo a 19/11/2025',f0(R.previo))}
+  ${linea('Saldo previo pendiente',f0(R.previo))}
   ${linea('Alquiler, '+R.meses+' meses de '+f0(c.alquiler||0),f0(R.alq))}
   ${linea('Mitad de los gastos compartidos',f0(R.comp))}
   ${linea('Gastos míos al 100 %',f0(R.mio))}
   ${linea('Pagos que le has hecho',f0(-R.pagos))}
+  ${R.saldN?linea('Líneas saldadas, no cuentan ('+R.saldN+')',f0(R.saldPrev)):''}
   </div>
   <div class="m">${R.np?`Hay ${R.np} movimientos sin clasificar (${f0(R.pendSum)} en gastos) que aún no cuentan.`:'Todo clasificado.'}</div>`;
   $('dres').innerHTML=bloque('d-res','Resumen',cuerpo);
@@ -289,7 +292,7 @@ const dFil=()=>({cat:'',solo:true,...(UI.deuda_f||{})});
 const resumenDF=()=>{const f=dFil();return (f.solo?'Solo sin clasificar':'Todos los movimientos')+(f.cat?', '+f.cat:'')};
 let dq='';
 function montarDeudaTabs(){
-  $('dtabs').innerHTML=[['g','Por comercio'],['m','Movimientos'],['p','Pagos y saldo previo']].map(([k,t])=>`<button class="pill ${dTab()===k?'on':''}" data-dt="${k}">${t}</button>`).join('');
+  $('dtabs').innerHTML=[['g','Por comercio'],['m','Movimientos'],['p','Previo y pagos']].map(([k,t])=>`<button class="pill ${dTab()===k?'on':''}" data-dt="${k}">${t}</button>`).join('');
   montarDeudaCtl();pintarDlista();
 }
 $('dtabs').addEventListener('click',e=>{const b=e.target.closest('[data-dt]');if(!b)return;setUI('deuda_tab',b.dataset.dt);montarDeudaTabs()});
@@ -324,6 +327,7 @@ $('dctl').addEventListener('submit',async e=>{
   dr.push(r);e.target.reset();e.target.hidden=true;pintarDres();pintarDlista();
 });
 const selTipo=(cur,attr)=>`<div class="fld"><label class="m">Reparto</label><select ${attr}>`+TIPOS_MOV.map(k=>`<option value="${k}"${k===cur?' selected':''}>${TIPOS[k]}</option>`).join('')+(cur==='mixto'?'<option value="mixto" selected>Mixto</option>':'')+'</select></div>';
+const saldoBtn=r=>`<button data-saldo="${r.id}" style="align-self:flex-start">${r.datos.s?'Marcar pendiente':'Marcar saldado'}</button>`;
 const fesp=s=>s?s.split('-').reverse().join('/'):'';
 function pintarDlista(){
   const t=dTab(),f=dFil(),q=dq.toLowerCase().trim();
@@ -342,13 +346,15 @@ function pintarDlista(){
   }else if(t==='m'){
     const A=base.filter(r=>ok(r)&&(!f.solo||r.datos.t==='pend')).sort((a,b)=>String(b.datos.f).localeCompare(String(a.datos.f)));
     html=A.slice(0,200).map(r=>{const i=Number(r.datos.i);
-      return tarjeta('m:'+r.id,linea(esc(cap(r.datos.c)),f2(i),sg(i)),fesp(r.datos.f)+' · '+esc(r.datos.cat)+' · '+TIPOS[r.datos.t],(r.datos.d?`<div class="m">${esc(r.datos.d)}</div>`:'')+selTipo(r.datos.t,'data-id="'+r.id+'"'),abiertas.has('m:'+r.id));
+      return tarjeta('m:'+r.id,linea(esc(cap(r.datos.c)),f2(i),sg(i)),fesp(r.datos.f)+' · '+esc(r.datos.cat)+' · '+TIPOS[r.datos.t]+(r.datos.s?' · Saldado':''),(r.datos.d?`<div class="m">${esc(r.datos.d)}</div>`:'')+selTipo(r.datos.t,'data-id="'+r.id+'"')+saldoBtn(r),abiertas.has('m:'+r.id));
     }).join('')+(A.length>200?`<div class="m">Se muestran 200 de ${A.length}; usa el buscador para acotar.</div>`:'');
     if(!A.length)html=vacio;
   }else{
     const L=dr.filter(r=>['previo','pago'].includes(r.datos.t)).sort((a,b)=>String(a.datos.f||'').localeCompare(String(b.datos.f||'')));
-    html=L.map(r=>{const i=Number(r.datos.i);
-      return `<div class="card">${linea(esc(cap(r.datos.c)),f2(i),r.datos.t==='pago'?'pos':'')}<div class="m">${fesp(r.datos.f)||'Sin fecha'} · ${r.datos.t==='pago'?'Pago tuyo':'Saldo previo'}</div>${r.datos.t==='pago'?`<button data-delpago="${r.id}">Borrar</button>`:''}</div>`;
+    const pv=L.filter(r=>r.datos.t==='previo'),tp=pv.filter(r=>!r.datos.s).reduce((x,r)=>x+Number(r.datos.i),0),ts=pv.filter(r=>r.datos.s).reduce((x,r)=>x+Number(r.datos.i),0);
+    html=`<div class="card">${linea('Pendiente',f0(tp))}${linea('Saldado',f0(ts))}<div class="m">${pv.length} líneas de saldo previo; las saldadas no cuentan en la deuda.</div></div>`+L.map(r=>{const i=Number(r.datos.i),pg=r.datos.t==='pago';
+      const acc=pg?`<button data-delpago="${r.id}" style="align-self:flex-start">Borrar</button>`:saldoBtn(r);
+      return tarjeta('p:'+r.id,linea(esc(cap(r.datos.c)),f2(i),pg?'pos':''),(fesp(r.datos.f)||'Sin fecha')+' · '+(pg?'Pago tuyo':'Saldo previo')+(r.datos.s?' · Saldado':''),acc,abiertas.has('p:'+r.id));
     }).join('');
   }
   $('dlista').innerHTML=html;
@@ -369,6 +375,14 @@ $('dlista').addEventListener('change',async e=>{
   pintarDres();pintarDlista();
 });
 $('dlista').addEventListener('click',async e=>{
+  const sd=e.target.closest('[data-saldo]');
+  if(sd){
+    const r=dr.find(x=>x.id===sd.dataset.saldo),datos={...r.datos,s:!r.datos.s};
+    if(!datos.s)delete datos.s;
+    const {error}=await sb.from('registros').update({datos}).eq('id',r.id);
+    if(error){alert(error.message);return}
+    r.datos=datos;pintarDres();pintarDlista();return;
+  }
   const d=e.target.closest('[data-delpago]');
   if(d&&confirm('¿Borrar este pago?')){
     const {error}=await sb.from('registros').delete().eq('id',d.dataset.delpago);

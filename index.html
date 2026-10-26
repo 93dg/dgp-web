@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Mis valoraciones</title>
+<title>DGP</title>
 <style>
 :root{--bg:#0f1115;--card:#181b22;--tx:#e8eaf0;--mut:#8b93a7;--ac:#f5c518;--bd:#262a35}
 @media(prefers-color-scheme:light){:root{--bg:#f6f7f9;--card:#fff;--tx:#14161c;--mut:#5d6578;--ac:#b8860b;--bd:#e3e6ec}}
@@ -33,6 +33,17 @@ button{background:var(--ac);color:#111;border:0;border-radius:8px;padding:10px;f
 .notas{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
 .notas button{min-width:40px}
 #msg{color:var(--mut);padding:24px 0;text-align:center}
+#nav{display:flex;gap:6px;overflow-x:auto;margin:8px 0 14px;padding-bottom:4px}
+#nav button{background:var(--card);color:var(--tx);border:1px solid var(--bd);white-space:nowrap;font-weight:500}
+#nav button.on{background:var(--ac);color:#111;border-color:var(--ac);font-weight:700}
+.tw{overflow-x:auto;border:1px solid var(--bd);border-radius:10px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--bd);white-space:nowrap}
+th{color:var(--mut);font-weight:600;cursor:pointer;user-select:none;position:sticky;top:0;background:var(--card)}
+td.n,th.n{text-align:right}
+tr:last-child td{border-bottom:0}
+.del{background:none;color:var(--mut);padding:2px 8px;font-weight:400}
+#tf{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px}
 </style>
 </head>
 <body>
@@ -45,7 +56,16 @@ button{background:var(--ac);color:#111;border:0;border-radius:8px;padding:10px;f
   <div id="lm" class="m"></div>
 </form>
 <div id="app" hidden>
-  <div class="top"><h1>Mis valoraciones</h1><div><button id="addb">+ Añadir</button> <button id="out">Salir</button></div></div>
+  <div class="top"><h1>DGP</h1><button id="out">Salir</button></div>
+  <nav id="nav"></nav>
+  <div id="v-tabla" hidden>
+    <div class="bar"><input id="tq2" type="search" placeholder="Buscar…"><button id="tadd">+ Añadir</button></div>
+    <form id="tf" hidden></form>
+    <div id="tstat" class="m" style="margin-bottom:8px"></div>
+    <div class="tw"><table id="tt"></table></div>
+  </div>
+  <div id="v-imdb" hidden>
+  <div class="bar"><button id="addb">+ Añadir</button></div>
   <div id="stats"></div>
   <div id="add" hidden>
     <div class="row"><input id="tq" type="search" placeholder="Buscar película o serie…"><button id="tgo">Buscar</button></div>
@@ -69,7 +89,8 @@ button{background:var(--ac);color:#111;border:0;border-radius:8px;padding:10px;f
   </div>
   <div id="msg">Cargando…</div>
   <div id="list"></div>
-  <div class="m" style="text-align:center;margin-top:16px">v1.2 · 2026-10-13</div>
+  </div>
+  <div class="m" style="text-align:center;margin-top:16px">v1.3 · 2026-10-26</div>
 </div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
@@ -118,10 +139,77 @@ function pintar(){
 }
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
+// ---- Secciones ----
+let secs=[],sec=null,filas=[],ord=null,dir=1;
+async function cargarSecciones(){
+  const {data:r,error}=await sb.from('secciones').select('*').order('orden');
+  if(error){$('nav').textContent='No se pudieron cargar las secciones: '+error.message;return}
+  secs=r;
+  $('nav').innerHTML=secs.map(s=>`<button data-s="${s.slug}">${esc(s.icono)} ${esc(s.nombre)}</button>`).join('');
+  const last=localStorage.getItem('dgp_sec');
+  abrir((secs.find(s=>s.slug===last)||secs[0]||{}).slug);
+}
+$('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(b)abrir(b.dataset.s)});
+async function abrir(slug){
+  sec=secs.find(s=>s.slug===slug);if(!sec)return;
+  try{localStorage.setItem('dgp_sec',slug)}catch(_){}
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.s===slug));
+  const imdb=sec.tipo==='imdb';
+  $('v-imdb').hidden=!imdb;$('v-tabla').hidden=imdb;
+  if(imdb)return;
+  const c=sec.config||{};ord=c.orden||null;dir=c.dir==='asc'?1:-1;
+  $('tq2').value='';$('tf').hidden=true;
+  $('tstat').textContent='Cargando…';
+  const {data:r,error}=await sb.from('registros').select('*').eq('seccion_id',sec.id).order('creado');
+  if(error){$('tstat').textContent='Error: '+error.message;return}
+  filas=r;pintarTabla();
+}
+function pintarTabla(){
+  const cols=(sec.config||{}).columnas||[];
+  const q=$('tq2').value.toLowerCase().trim();
+  let f=filas.filter(r=>!q||cols.some(c=>String(r.datos[c.k]??'').toLowerCase().includes(q)));
+  if(ord)f.sort((a,b)=>{
+    const A=a.datos[ord]??'',B=b.datos[ord]??'';
+    return (typeof A==='number'&&typeof B==='number'?A-B:String(A).localeCompare(String(B)))*dir;
+  });
+  $('tstat').textContent=f.length+' de '+filas.length+' registros';
+  $('tt').innerHTML='<thead><tr>'+cols.map(c=>`<th class="${c.n?'n':''}" data-k="${c.k}">${esc(c.t)}${ord===c.k?(dir>0?' ▲':' ▼'):''}</th>`).join('')+'<th></th></tr></thead><tbody>'+
+    f.map(r=>'<tr>'+cols.map(c=>{const v=r.datos[c.k];return `<td class="${c.n?'n':''}">${c.n&&typeof v==='number'?v.toLocaleString('es-ES'):esc(v)}</td>`}).join('')+`<td><button class="del" data-id="${r.id}" title="Borrar">✕</button></td></tr>`).join('')+'</tbody>';
+}
+$('tt').addEventListener('click',async e=>{
+  const th=e.target.closest('th[data-k]');
+  if(th){dir=ord===th.dataset.k?-dir:1;ord=th.dataset.k;pintarTabla();return}
+  const d=e.target.closest('.del');
+  if(d&&confirm('¿Borrar este registro?')){
+    const {error}=await sb.from('registros').delete().eq('id',d.dataset.id);
+    if(error){alert(error.message);return}
+    filas=filas.filter(r=>r.id!==d.dataset.id);pintarTabla();
+  }
+});
+$('tq2').addEventListener('input',pintarTabla);
+$('tadd').addEventListener('click',()=>{
+  const cols=(sec.config||{}).columnas||[];
+  $('tf').innerHTML=cols.map(c=>`<input name="${c.k}" placeholder="${esc(c.t)}" ${c.n?'inputmode="decimal"':''}>`).join('')+'<button>Guardar</button>';
+  $('tf').hidden=!$('tf').hidden;
+});
+$('tf').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const cols=(sec.config||{}).columnas||[],datos={};
+  cols.forEach(c=>{
+    const v=e.target.elements[c.k].value.trim();if(v==='')return;
+    datos[c.k]=c.n?Number(v.replace(',','.')):v;
+  });
+  if(!Object.keys(datos).length)return;
+  const {data:r,error}=await sb.from('registros').insert({seccion_id:sec.id,datos}).select().single();
+  if(error){alert(error.message);return}
+  filas.push(r);$('tf').hidden=true;pintarTabla();
+});
+
 async function iniciar(){
   const {data:{session}}=await sb.auth.getSession();
   $('login').hidden=!!session;$('app').hidden=!session;
   if(!session)return;
+  cargarSecciones();
   try{
     data=await cargar();
     const media=data.length?(data.reduce((t,x)=>t+(x.your_rating||0),0)/data.length).toFixed(2):'–';

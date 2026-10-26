@@ -107,7 +107,7 @@ button{background:none;border:0;color:var(--ac);font:inherit;font-weight:700;pad
     <div id="list"></div>
   </div>
 
-  <div class="m" style="text-align:center;margin-top:16px"><span id="version">V1.09</span></div>
+  <div class="m" style="text-align:center;margin-top:16px"><span id="version">V1.10</span></div>
 </div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
@@ -269,12 +269,16 @@ async function cargarDeuda(){
   }
   dr=all;pintarDres();montarDeudaTabs();
 }
+function mesesAlq(){
+  const c=sec.config||{},[y,m]=(c.alquiler_desde||'2025-12').split('-').map(Number),h=new Date(),L=[];
+  for(let a=y,b=m;a*12+b<=h.getFullYear()*12+h.getMonth()+1;b++){if(b>12){b=1;a++}L.push([a,b])}
+  return L;
+}
 function resumenDeuda(){
   const c=sec.config||{};
   const S=t=>dr.filter(r=>r.datos.t===t&&!r.datos.s).reduce((a,r)=>a+Number(r.datos.i),0);
   const previo=S('previo'),comp=-S('comp')/2,mio=-S('mio'),pagos=S('pago');
-  const [y,m]=(c.alquiler_desde||'2025-12').split('-').map(Number),h=new Date();
-  const meses=Math.max(0,(h.getFullYear()-y)*12+h.getMonth()+1-m+1);
+  const meses=mesesAlq().length;
   const alq=meses*(c.alquiler||0);
   const pend=dr.filter(r=>r.datos.t==='pend');
   const sald=dr.filter(r=>r.datos.s&&['previo','comp','mio'].includes(r.datos.t));
@@ -299,7 +303,7 @@ const dTab=()=>UI.deuda_tab||'g';
 const dFil=()=>({cat:'',...(UI.deuda_f||{})});
 const resumenDF=()=>dFil().cat||'Todas las categorías';
 const OPT_T=[['comp','Compartido'],['mio','Mío'],['diana','Solo Diana'],['ign','Ignorar']];
-const TABS=[['g','Comercios'],['m','Movimientos'],['a','Deuda anterior'],['p','Mis pagos']];
+const TABS=[['g','Comercios'],['m','Movimientos'],['a','Deuda anterior'],['q','Alquiler'],['p','Mis pagos']];
 let dq='';
 function cuentas(){
   const m=dr.filter(r=>r.datos.t==='pend'),gs=new Set(m.map(r=>r.datos.g));
@@ -318,7 +322,7 @@ function montarDeudaCtl(){
     <form id="pf" class="stack" hidden><input name="f" type="date" required><input name="c" placeholder="Concepto"><input name="i" placeholder="Importe en euros" inputmode="decimal" required><button style="align-self:flex-start">Guardar pago</button></form>`;
     return;
   }
-  if(t==='a'){$('dctl').innerHTML='';return}
+  if(t==='a'||t==='q'){$('dctl').innerHTML='';return}
   const f=dFil(),cats=[...new Set(dr.map(r=>r.datos.cat).filter(Boolean))].filter(c=>!['Saldo previo','Pago'].includes(c)).sort((a,b)=>a.localeCompare(b,'es'));
   const panel=`<div class="fld"><label class="m">Categoría</label><select id="dc"><option value="">Todas</option>${cats.map(c=>`<option${c===f.cat?' selected':''}>${esc(c)}</option>`).join('')}</select></div>`;
   $('dctl').innerHTML=`<input id="dq" type="search" placeholder="Buscar" value="${esc(dq)}">`+filtro('deuda',resumenDF(),panel);
@@ -338,6 +342,7 @@ $('dctl').addEventListener('submit',async e=>{
   dr.push(r);e.target.reset();e.target.hidden=true;pintarDres();pintarDlista();
 });
 function refTabs(){const cn=cuentas();document.querySelectorAll('#dtabs [data-dt]').forEach(b=>{const t=TABS.find(x=>x[0]===b.dataset.dt)[1];b.textContent=t+(cn[b.dataset.dt]?' · '+cn[b.dataset.dt]:'')})}
+const mes=x=>x?cap(new Date(x[0],x[1]-1,1).toLocaleDateString('es-ES',{month:'long',year:'numeric'})):'';
 const fesp=s=>s?s.split('-').reverse().join('/'):'';
 const opts=(lista,sel,attr)=>`<div class="opts">${lista.map(([v,t])=>`<button class="opt ${String(v)===String(sel)?'on':''}" ${attr} data-v="${v}">${t}</button>`).join('')}</div>`;
 const rango=g=>{const f=g.rs.map(r=>r.datos.f).filter(Boolean).sort();return f.length?(f[0]===f[f.length-1]?fesp(f[0]):'del '+fesp(f[0])+' al '+fesp(f[f.length-1])):''};
@@ -392,6 +397,9 @@ function pintarDlista(){
     const deb=L.filter(r=>!r.datos.s).reduce((x,r)=>x+Number(r.datos.i),0),sal=L.filter(r=>r.datos.s).reduce((x,r)=>x+Number(r.datos.i),0);
     html=`<div class="card">${linea('Lo que aún debes',f0(deb))}${linea('Ya saldado',f0(sal))}<div class="m">Deuda acumulada hasta el 19/11/2025. Marca cada línea: Saldado no cuenta, Aún lo debo sí cuenta.</div></div>`+
     dividir(L,r=>r.datos.s===undefined?null:(r.datos.s?'Saldado':'Aún lo debo'),['Aún lo debo','Saldado'],(r,rv)=>fila(cab(r.datos.c,f2(Number(r.datos.i))),fesp(r.datos.f)||'Sin fecha',opts([[true,'Saldado'],[false,'Aún lo debo']],r.datos.s===undefined?'':r.datos.s,'data-id="'+r.id+'" data-k="s"')+(rv?deshacer('data-id="'+r.id+'" data-k="s"',''):'')),100,X=>f0(X.reduce((a,r)=>a+Number(r.datos.i),0)),'a');
+  }else if(t==='q'){
+    const c=sec.config||{},ms=mesesAlq(),im=c.alquiler||0;
+    html=`<div class="card">${linea('Total de alquiler',f0(ms.length*im))}<div class="m">${ms.length} meses de ${f0(im)}, la mitad de ${f0(im*2)}. Empieza en ${mes(ms[0])} y suma cada mes. Se paga en efectivo y no figura en el banco.</div></div>`+ms.slice().reverse().map(x=>fila(cab(mes(x),f2(im)),'Mitad del alquiler')).join('');
   }else{
     const L=dr.filter(r=>r.datos.t==='pago').sort((a,b)=>String(b.datos.f||'').localeCompare(String(a.datos.f||'')));
     html=L.length?L.map(r=>fila(cab(r.datos.c,f2(Number(r.datos.i)),'pos'),fesp(r.datos.f),`<button data-delpago="${r.id}" style="align-self:flex-start">Borrar</button>`)).join(''):'<div class="m">Aún no has registrado ningún pago a Diana.</div>';

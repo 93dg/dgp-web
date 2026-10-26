@@ -174,7 +174,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[t
   <aside class="side">
     <div class="brand">DGP</div>
     <nav id="nav" aria-label="Secciones"></nav>
-    <div class="foot"><span class="m"><span id="version">V1.13</span></span><button id="out">Salir</button></div>
+    <div class="foot"><span class="m"><span id="version">V1.14</span></span><button id="out">Salir</button></div>
   </aside>
   <div>
   <div class="main">
@@ -396,6 +396,10 @@ function pintarTabsD(){
   $('dtabs').innerHTML=TABS.map(([k,t])=>`<button class="tab ${dTab()===k?'on':''}" role="tab" aria-selected="${dTab()===k}" data-dt="${k}">${t}${cn[k]?`<span class="bd">${cn[k]}</span>`:''}</button>`).join('');
 }
 $('dtabs').addEventListener('click',e=>{const b=e.target.closest('[data-dt]');if(b)irA(b.dataset.dt)});
+const ORD0={g:{k:'i',d:'desc'},m:{k:'f',d:'desc'},a:{k:'f',d:'asc'}};
+const dOrd=()=>({...ORD0[dTab()],...(UI['deuda_ord_'+dTab()]||{})});
+const etqOrd=(k,o)=>o.k!==k?(k==='f'?'Fecha':'Importe'):(k==='f'?(o.d==='desc'?'Fecha, reciente primero':'Fecha, antigua primero'):(o.d==='desc'?'Importe, mayor primero':'Importe, menor primero'));
+const ordenar=(L,vf,vi)=>{const o=dOrd(),s=o.d==='desc'?-1:1;return L.sort((a,b)=>{if(o.k==='f'){const A=vf(a)||'',B=vf(b)||'';return s*A.localeCompare(B)}return s*(vi(a)-vi(b))})};
 function pintarToolsD(){
   const t=dTab(),est=dEst();
   if(t==='r'||t==='q'||t==='p'){$('dtools').innerHTML='';return}
@@ -403,13 +407,15 @@ function pintarToolsD(){
   const cn=cuentas(),pn=t==='a'?cn.a:(t==='g'?cn.g:cn.m);
   $('dtools').innerHTML=`<div class="tools"><input id="dq" class="grow" type="search" placeholder="Buscar" aria-label="Buscar en Deuda Diana" value="${esc(dq)}">
     <div class="seg2" role="group" aria-label="Estado">${[['p','Por revisar'+(pn?' · '+pn:'')],['r','Revisados'],['t','Todos']].map(([k,l])=>`<button data-est="${k}" class="${est===k?'on':''}" aria-pressed="${est===k}">${l}</button>`).join('')}</div>
-    <button data-all>Desplegar todo</button></div>`+
+    <div class="seg2" role="group" aria-label="Ordenar por">${['f','i'].map(k=>`<button data-ord="${k}" class="${dOrd().k===k?'on':''}" aria-pressed="${dOrd().k===k}">${etqOrd(k,dOrd())}</button>`).join('')}</div>
+    ${t==='a'?'':'<button data-all>Desplegar todo</button>'}</div>`+
     (t==='a'?'':`<div class="chips">${['',...cats].map(c=>`<button class="chip ${dCat()===c?'on':''}" data-cat="${esc(c)}" aria-pressed="${dCat()===c}">${c?esc(c):'Todas las categorías'}</button>`).join('')}</div>`);
 }
 $('dtools').addEventListener('input',e=>{if(e.target.id==='dq'){dq=e.target.value;lim=60;pintarLista()}});
 $('dtools').addEventListener('click',e=>{
   const s=e.target.closest('[data-est]');if(s){setUI('deuda_est',s.dataset.est);lim=60;pintarToolsD();pintarLista();return}
   const c=e.target.closest('[data-cat]');if(c){setUI('deuda_cat',c.dataset.cat);lim=60;pintarToolsD();pintarLista();return}
+  const od=e.target.closest('[data-ord]');if(od){const o=dOrd(),k=od.dataset.ord;setUI('deuda_ord_'+dTab(),{k,d:o.k===k?(o.d==='desc'?'asc':'desc'):'desc'});lim=60;pintarToolsD();pintarLista();return}
   const a=e.target.closest('[data-all]');if(a){const abrir=a.textContent==='Desplegar todo';desplegarTodo($('dlist'),abrir);a.textContent=abrir?'Plegar todo':'Desplegar todo'}
 });
 function desplegarTodo(cont,abrir){
@@ -459,16 +465,16 @@ function pintarLista(){
   if(t==='r')return pintarRevisar();
   if(t==='g'){
     let L=grupos().filter(g=>(!cat||g.cat===cat)&&(!q||g.g.includes(q)||g.rs.some(r=>(r.datos.c+' '+(r.datos.d||'')).toLowerCase().includes(q)))&&pasaEst(g.pend));
-    L.sort((a,b)=>Math.abs(b.tot)-Math.abs(a.tot));
+    ordenar(L,g=>g.rs[0]&&g.rs[0].datos.f,g=>Math.abs(g.tot));
     h=cabeceras(L,g=>g.pend,filaG);
   }else if(t==='m'){
     let L=dr.filter(r=>!['previo','pago'].includes(r.datos.t)&&(!cat||r.datos.cat===cat)&&(!q||(r.datos.c+' '+(r.datos.d||'')+' '+r.datos.g).toLowerCase().includes(q))&&pasaEst(r.datos.t==='pend'));
-    L.sort((a,b)=>String(b.datos.f).localeCompare(String(a.datos.f)));
+    ordenar(L,r=>r.datos.f,r=>Math.abs(Number(r.datos.i)));
     h=cabeceras(L,r=>r.datos.t==='pend',filaM);
   }else if(t==='a'){
     const P=dr.filter(r=>r.datos.t==='previo'),deb=P.filter(r=>!r.datos.s).reduce((x,r)=>x+Number(r.datos.i),0),sal=P.filter(r=>r.datos.s).reduce((x,r)=>x+Number(r.datos.i),0);
     let L=P.filter(r=>(!q||(r.datos.c).toLowerCase().includes(q))&&pasaEst(r.datos.s===undefined));
-    L.sort((a,b)=>String(a.datos.f||'').localeCompare(String(b.datos.f||'')));
+    ordenar(L,r=>r.datos.f,r=>Math.abs(Number(r.datos.i)));
     h=`<div class="m" style="margin-bottom:6px">Deuda acumulada hasta el 19/11/2025. Aún debes <b class="num">${f0(deb)}</b>; saldado <b class="num">${f0(sal)}</b>. Pulsa de nuevo la opción elegida para volver a por revisar.</div>`+cabeceras(L,r=>r.datos.s===undefined,filaA);
   }else if(t==='q'){
     const c=sec.config||{},ms=mesesAlq(),im=c.alquiler||0;

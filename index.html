@@ -38,6 +38,8 @@ button{background:none;border:0;color:var(--ac);font:inherit;font-weight:700;pad
 .fil{display:flex;flex-direction:column;gap:8px}
 .fil .pill{align-self:flex-start}
 .fpanel{display:flex;flex-direction:column;gap:8px;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px}
+.mv{padding:8px 0;border-top:1px solid var(--bd)}
+.mv .opts{margin-top:6px}
 .opts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .opt{border:1px solid var(--bd);border-radius:999px;padding:6px 12px;color:var(--tx);font-weight:500;font-size:.9rem}
 .opt.on{border-color:var(--ac);font-weight:700}
@@ -104,7 +106,7 @@ button{background:none;border:0;color:var(--ac);font:inherit;font-weight:700;pad
     <div id="list"></div>
   </div>
 
-  <div class="m" style="text-align:center;margin-top:16px"><span id="version">V1.06</span></div>
+  <div class="m" style="text-align:center;margin-top:16px"><span id="version">V1.07</span></div>
 </div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
@@ -341,7 +343,7 @@ const rango=g=>{const f=g.rs.map(r=>r.datos.f).filter(Boolean).sort();return f.l
 const botonTodo=()=>`<button id="vtodo" style="align-self:flex-start">${abiertas.size?'Plegar todo':'Desplegar todo'}</button>`;
 const verMov=g=>{
   const rs=g.rs.slice().sort((a,b)=>String(b.datos.f).localeCompare(String(a.datos.f))),k='v:'+g.g,ab=abiertas.has(k);
-  return `<button data-ver="${encodeURIComponent(k)}" style="align-self:flex-start">${ab?'Ocultar movimientos':'Ver movimientos ('+g.n+')'}</button><div class="dt" ${ab?'':'hidden'}>${rs.slice(0,100).map(r=>{const i=Number(r.datos.i);return linea(fesp(r.datos.f)+(r.datos.d?' · '+esc(r.datos.d):''),f2(i),sg(i))}).join('')}${rs.length>100?'<div class="m">Se muestran los 100 más recientes.</div>':''}</div>`;
+  return `<button data-ver="${encodeURIComponent(k)}" style="align-self:flex-start">${ab?'Ocultar movimientos':'Ver movimientos ('+g.n+')'}</button><div class="dt" ${ab?'':'hidden'}>${rs.slice(0,100).map(r=>{const i=Number(r.datos.i),at='data-id="'+r.id+'"';return `<div class="mv">${linea(fesp(r.datos.f)+(r.datos.d?' · '+esc(r.datos.d):''),f2(i),sg(i))}${opts(OPT_T,r.datos.t,at)}${r.datos.t!=='pend'?deshacer(at,'pend'):''}</div>`}).join('')}${rs.length>100?'<div class="m">Se muestran los 100 más recientes.</div>':''}</div>`;
 };
 const fila=(cab,sub,o)=>`<div class="card">${cab}<div class="m">${sub}</div>${o||''}</div>`;
 const cab=(a,b,c)=>linea(esc(cap(a)),b,c);
@@ -363,7 +365,7 @@ function pintarDlista(){
     const L=Object.values(G).sort((a,b)=>Math.abs(b.tot)-Math.abs(a.tot));
     html=botonTodo()+dividir(L,g=>!g.t.has('pend'),(g,rv)=>{
       const cur=g.t.size>1?'mixto':[...g.t][0];
-      return fila(cab(g.g,f2(g.tot),sg(g.tot)),esc(g.cat)+' · '+g.n+(g.n===1?' movimiento':' movimientos')+' · '+rango(g)+(cur==='mixto'?' · Reparto mixto':''),opts(OPT_T,cur,'data-g="'+encodeURIComponent(g.g)+'"')+(rv?deshacer('data-g="'+encodeURIComponent(g.g)+'"','pend'):'')+verMov(g));
+      return fila(cab(g.g,f2(g.tot),sg(g.tot)),esc(g.cat)+' · '+g.n+(g.n===1?' movimiento':' movimientos')+' · '+rango(g)+(cur==='mixto'?' · Reparto mixto':''),'<div class="m" style="margin-top:8px">Todo el comercio</div>'+opts(OPT_T,cur,'data-g="'+encodeURIComponent(g.g)+'"')+(rv?deshacer('data-g="'+encodeURIComponent(g.g)+'"','pend'):'')+verMov(g));
     },200,X=>f0(X.reduce((a,g)=>a+Math.max(0,-g.tot),0))+' en gastos');
   }else if(t==='m'){
     const L=base.filter(ok).sort((a,b)=>String(b.datos.f).localeCompare(String(a.datos.f)));

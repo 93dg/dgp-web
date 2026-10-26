@@ -107,7 +107,7 @@ button{background:none;border:0;color:var(--ac);font:inherit;font-weight:700;pad
     <div id="list"></div>
   </div>
 
-  <div class="m" style="text-align:center;margin-top:16px"><span id="version">V1.08</span></div>
+  <div class="m" style="text-align:center;margin-top:16px"><span id="version">V1.09</span></div>
 </div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
@@ -137,7 +137,7 @@ async function guardarUI(){
 
 // ---- Componentes comunes ----
 function bloque(id,titulo,cuerpo,extra){
-  const v=(UI.plegado||{})[id],p=v===undefined?id==='d-res':!!v;
+  const v=(UI.plegado||{})[id],p=v===undefined?(id==='d-res'||id.startsWith('c-')):!!v;
   return `<section class="blk"><div class="bh" data-fold="${id}"><span>${esc(titulo)}</span><span>${extra?`<span class="ex">${extra}</span> `:''}<span class="a">${p?'Abrir':'Cerrar'}</span></span></div><div class="bb" ${p?'hidden':''}>${cuerpo}</div></section>`;
 }
 function tarjeta(clave,cab,sub,detalle,abierta){
@@ -358,10 +358,16 @@ const fila=(cab,sub,o)=>`<div class="card">${cab}<div class="m">${sub}</div>${o|
 const cab=(a,b,c)=>linea(esc(cap(a)),b,c);
 const titulo=(t,n,x)=>`<div class="m" style="margin:12px 0 6px">${t} (${n})${x?' · '+x:''}</div>`;
 const deshacer=(attr,v)=>`<button ${attr} data-v="${v}" style="align-self:flex-start">Volver a por revisar</button>`;
-function dividir(L,rev,pintar,tope,imp){
-  const A=L.filter(x=>!rev(x)),B=L.filter(rev);
-  const trozo=(X,t,r)=>X.length?titulo(t,X.length,imp&&!r?imp(X):'')+X.slice(0,tope).map(x=>pintar(x,r)).join('')+(X.length>tope?`<div class="m">Se muestran ${tope} de ${X.length}; usa el buscador para acotar.</div>`:''):'';
-  return trozo(A,'Por revisar',false)+trozo(B,'Revisado',true)||'<div class="m">No hay nada que mostrar.</div>';
+const NT={comp:'Compartido',mio:'Mío',diana:'Solo Diana',ign:'Ignorar'};
+function dividir(L,cat,orden,pintar,tope,imp,pref){
+  const A=L.filter(x=>cat(x)===null),M={};
+  L.forEach(x=>{const c=cat(x);if(c!==null)(M[c]??=[]).push(x)});
+  const lim=(X,r)=>X.slice(0,tope).map(x=>pintar(x,r)).join('')+(X.length>tope?`<div class="m">Se muestran ${tope} de ${X.length}; usa el buscador para acotar.</div>`:'');
+  let h=A.length?titulo('Por revisar',A.length,imp?imp(A):'')+lim(A,false):'<div class="m" style="margin:12px 0 6px">Nada por revisar.</div>';
+  Object.keys(M).sort((x,y)=>orden.indexOf(x)-orden.indexOf(y)).forEach(c=>{
+    h+=bloque('c-'+pref+'-'+c,c+' ('+M[c].length+')',lim(M[c],true),imp?imp(M[c]):'');
+  });
+  return h;
 }
 function pintarDlista(){
   const t=dTab(),f=dFil(),q=dq.toLowerCase().trim();
@@ -372,20 +378,20 @@ function pintarDlista(){
     const G={};
     base.filter(ok).forEach(r=>{const g=G[r.datos.g]??={g:r.datos.g,cat:r.datos.cat,n:0,tot:0,t:new Set(),rs:[]};g.rs.push(r);g.n++;g.tot+=Number(r.datos.i);g.t.add(r.datos.t)});
     const L=Object.values(G).sort((a,b)=>Math.abs(b.tot)-Math.abs(a.tot));
-    html=botonTodo()+dividir(L,g=>!g.t.has('pend'),(g,rv)=>{
+    html=botonTodo()+dividir(L,g=>g.t.has('pend')?null:(g.t.size>1?'Reparto mixto':NT[[...g.t][0]]),['Compartido','Mío','Solo Diana','Ignorar','Reparto mixto'],(g,rv)=>{
       const cur=g.t.size>1?'mixto':[...g.t][0];
       return fila(cab(g.g,f2(g.tot),sg(g.tot)),esc(g.cat)+' · '+g.n+(g.n===1?' movimiento':' movimientos')+' · '+rango(g)+(cur==='mixto'?' · Reparto mixto':''),'<div class="m" style="margin-top:8px">Todo el comercio</div>'+opts(OPT_T,cur,'data-g="'+encodeURIComponent(g.g)+'"')+(rv?deshacer('data-g="'+encodeURIComponent(g.g)+'"','pend'):'')+verMov(g,rv));
-    },200,X=>f0(X.reduce((a,g)=>a+Math.max(0,-g.tot),0))+' en gastos');
+    },200,X=>f0(X.reduce((a,g)=>a+Math.max(0,-g.tot),0)),'g');
   }else if(t==='m'){
     const L=base.filter(ok).sort((a,b)=>String(b.datos.f).localeCompare(String(a.datos.f)));
-    html=dividir(L,r=>r.datos.t!=='pend',(r,rv)=>{const i=Number(r.datos.i);
+    html=dividir(L,r=>r.datos.t==='pend'?null:NT[r.datos.t],['Compartido','Mío','Solo Diana','Ignorar'],(r,rv)=>{const i=Number(r.datos.i);
       return fila(cab(r.datos.c,f2(i),sg(i)),fesp(r.datos.f)+' · '+esc(r.datos.cat)+(r.datos.d?' · '+esc(r.datos.d):''),opts(OPT_T,r.datos.t,'data-id="'+r.id+'"')+(rv?deshacer('data-id="'+r.id+'"','pend'):''));
-    },200,X=>f0(X.reduce((a,r)=>a+Math.max(0,-Number(r.datos.i)),0))+' en gastos');
+    },200,X=>f0(X.reduce((a,r)=>a+Math.max(0,-Number(r.datos.i)),0)),'m');
   }else if(t==='a'){
     const L=dr.filter(r=>r.datos.t==='previo').sort((a,b)=>String(a.datos.f||'').localeCompare(String(b.datos.f||'')));
     const deb=L.filter(r=>!r.datos.s).reduce((x,r)=>x+Number(r.datos.i),0),sal=L.filter(r=>r.datos.s).reduce((x,r)=>x+Number(r.datos.i),0);
     html=`<div class="card">${linea('Lo que aún debes',f0(deb))}${linea('Ya saldado',f0(sal))}<div class="m">Deuda acumulada hasta el 19/11/2025. Marca cada línea: Saldado no cuenta, Aún lo debo sí cuenta.</div></div>`+
-    dividir(L,r=>r.datos.s!==undefined,(r,rv)=>fila(cab(r.datos.c,f2(Number(r.datos.i))),fesp(r.datos.f)||'Sin fecha',opts([[true,'Saldado'],[false,'Aún lo debo']],r.datos.s===undefined?'':r.datos.s,'data-id="'+r.id+'" data-k="s"')+(rv?deshacer('data-id="'+r.id+'" data-k="s"',''):'')),100,X=>f0(X.reduce((a,r)=>a+Number(r.datos.i),0)));
+    dividir(L,r=>r.datos.s===undefined?null:(r.datos.s?'Saldado':'Aún lo debo'),['Aún lo debo','Saldado'],(r,rv)=>fila(cab(r.datos.c,f2(Number(r.datos.i))),fesp(r.datos.f)||'Sin fecha',opts([[true,'Saldado'],[false,'Aún lo debo']],r.datos.s===undefined?'':r.datos.s,'data-id="'+r.id+'" data-k="s"')+(rv?deshacer('data-id="'+r.id+'" data-k="s"',''):'')),100,X=>f0(X.reduce((a,r)=>a+Number(r.datos.i),0)),'a');
   }else{
     const L=dr.filter(r=>r.datos.t==='pago').sort((a,b)=>String(b.datos.f||'').localeCompare(String(a.datos.f||'')));
     html=L.length?L.map(r=>fila(cab(r.datos.c,f2(Number(r.datos.i)),'pos'),fesp(r.datos.f),`<button data-delpago="${r.id}" style="align-self:flex-start">Borrar</button>`)).join(''):'<div class="m">Aún no has registrado ningún pago a Diana.</div>';

@@ -150,6 +150,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[t
 .nbtn{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
 .nbtn button{border:1px solid var(--bd);border-radius:999px;padding:6px 14px;color:var(--tx);font-weight:600}
 .mv{transition:opacity .2s}.mv.out{opacity:0}
+.nota{grid-column:1/-1;width:100%;font-size:16px;padding:9px 12px;border-radius:10px;border:1px dashed var(--bd);background:transparent}
+.nota:focus{border-style:solid;border-color:var(--ac)}
+.nota.ok{border-style:solid;border-color:var(--pos)}
+.nota.err{border-style:solid;border-color:var(--neg)}
+.addn{grid-column:1/-1;justify-self:start;color:var(--mut);font-weight:600;font-size:.85rem;padding:6px 4px;min-height:32px}
+.nt{color:var(--mut);font-style:italic}
 .toast{position:fixed;left:12px;right:12px;margin:0 auto;width:max-content;max-width:min(560px,calc(100vw - 24px));bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:40;display:flex;align-items:center;gap:12px;background:var(--s1);border:1px solid var(--bd);border-left:3px solid var(--pos);border-radius:14px;padding:10px 8px 13px 14px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.35)}
 .toast[hidden]{display:none}
 .toast .tx2{flex:1;min-width:0;font-size:.9rem;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
@@ -175,7 +181,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[t
   <aside class="side">
     <div class="brand">DGP</div>
     <nav id="nav" aria-label="Secciones"></nav>
-    <div class="foot"><span class="m"><span id="version">V1.15</span></span><button id="out">Salir</button></div>
+    <div class="foot"><span class="m"><span id="version">V1.16</span></span><button id="out">Salir</button></div>
   </aside>
   <div>
   <div class="main">
@@ -385,7 +391,7 @@ function grupos(){
     const g=G[r.datos.g]??={g:r.datos.g,cat:r.datos.cat,n:0,tot:0,t:new Set(),rs:[]};
     g.rs.push(r);g.n++;g.tot+=Number(r.datos.i);g.t.add(r.datos.t);
   });
-  return Object.values(G).map(g=>{g.pend=g.t.has('pend');g.cur=g.pend?'pend':(g.t.size>1?'mixto':[...g.t][0]);g.rs.sort((a,b)=>String(b.datos.f).localeCompare(String(a.datos.f)));return g});
+  return Object.values(G).map(g=>{g.rs.sort((a,b)=>String(b.datos.f).localeCompare(String(a.datos.f)));g.pend=g.t.has('pend');g.pr=g.rs.filter(r=>r.datos.t==='pend');g.tp=g.pr.reduce((a,r)=>a+Number(r.datos.i),0);g.vis=g.pend?g.tp:g.tot;g.cur=g.pend?'pend':(g.t.size>1?'mixto':[...g.t][0]);g.rs.sort((a,b)=>String(b.datos.f).localeCompare(String(a.datos.f)));return g});
 }
 const rango=g=>{const f=g.rs.map(r=>r.datos.f).filter(Boolean).sort();return f.length?(f[0]===f[f.length-1]?fesp(f[0]):fesp(f[0])+' a '+fesp(f[f.length-1])):''};
 function cuentas(){
@@ -427,29 +433,32 @@ function desplegarTodo(cont,abrir){
 /* piezas de fila */
 const seg=(lista,sel,attr,cls)=>`<div class="seg ${cls||''}" role="group">${lista.map(([v,t])=>`<button class="${String(v)===String(sel)?'on':''}" aria-pressed="${String(v)===String(sel)}" ${attr} data-v="${v}">${t}</button>`).join('')}</div>`;
 const campos=L=>L.filter(x=>x[1]!==''&&x[1]!=null).map(([a,b,c])=>`<div class="mv solo"><div class="lnx"><span class="m">${a}</span><b class="num ${c||''}">${b}</b></div></div>`).join('');
+const notaUI=r=>r.datos.n?`<input class="nota" data-nota="${r.id}" value="${esc(r.datos.n)}" maxlength="500" aria-label="Nota del cargo" placeholder="Nota">`:`<button class="addn" data-addnota="${r.id}">Añadir nota</button>`;
+const ntSub=r=>r.datos.n?` · <span class="nt">${esc(r.datos.n)}</span>`:'';
 function filaMov(r){
   const i=Number(r.datos.i),at='data-id="'+r.id+'"';
-  return `<div class="mv"><div class="lnx"><span class="l">${fesp(r.datos.f)}${r.datos.d?' · '+esc(r.datos.d):''}${r.datos.t==='pend'?' · <b class="warn">Por revisar</b>':''}</span><b class="num ${sg(i)}">${f2(i)}</b></div>${seg(OPT_T,r.datos.t,at)}</div>`;
+  return `<div class="mv"><div class="lnx"><span class="l">${fesp(r.datos.f)}${r.datos.d?' · '+esc(r.datos.d):''}${r.datos.t==='pend'?' · <b class="warn">Por revisar</b>':''}</span><b class="num ${sg(i)}">${f2(i)}</b></div>${seg(OPT_T,r.datos.t,at)}${notaUI(r)}</div>`;
 }
 const cab=(k,av_,tit,sub,imp,cl,ab,exp=true)=>exp?`<div class="rmain" data-tog tabindex="0" role="button" aria-expanded="${ab}">${av_}<div class="rt"><div class="rn">${tit}</div><div class="rs">${sub}</div></div><div class="ra ${cl||''}">${imp}</div>${CHEV}</div>`:`<div class="rmain" style="cursor:default">${av_}<div class="rt"><div class="rn">${tit}</div><div class="rs">${sub}</div></div><div class="ra ${cl||''}">${imp}</div></div>`;
+const etqH=he=>he.length+' · '+f2(he.reduce((a,r)=>a+Number(r.datos.i),0));
 function detalleG(g){
   const pe=g.rs.filter(r=>r.datos.t==='pend'),he=g.rs.filter(r=>r.datos.t!=='pend');
   if(!g.pend)return he.slice(0,150).map(filaMov).join('');
   const k='rv:'+g.g,ab=abiertas.has(k);
-  return pe.slice(0,150).map(filaMov).join('')+(he.length?`<button data-hech="${encodeURIComponent(g.g)}" aria-expanded="${ab}" style="justify-self:start">${ab?'Ocultar revisados':'Ver revisados ('+he.length+')'}</button><div ${ab?'':'hidden'}>${he.slice(0,150).map(filaMov).join('')}</div>`:'');
+  return pe.slice(0,150).map(filaMov).join('')+(he.length?`<button data-hech="${encodeURIComponent(g.g)}" data-lbl="${etqH(he)}" aria-expanded="${ab}" style="justify-self:start">${ab?'Ocultar revisados':'Ver revisados ('+etqH(he)+')'}</button><div ${ab?'':'hidden'}>${he.slice(0,150).map(filaMov).join('')}</div>`:'');
 }
 function filaG(g){
   const k='g:'+g.g,ab=abiertas.has(k),at='data-g="'+encodeURIComponent(g.g)+'"';
   const uno=g.n===1;
-  return `<article class="row ${g.pend?'pd':'ok'}" data-k="${esc(k)}">${cab(k,av(g.g),esc(cap(g.g)),`${g.pend?'<b class="st warn">Por revisar</b> · ':(g.cur==='mixto'?'<b class="st">Reparto mixto</b> · ':'')}${esc(g.cat)} · ${uno?'1 movimiento · '+fesp(g.rs[0].datos.f)+(g.rs[0].datos.d?' · '+esc(g.rs[0].datos.d):''):g.n+' movimientos · '+rango(g)}`,f2(g.tot),sg(g.tot),ab&&!uno,!uno)}${seg(OPT_T,g.cur,at)}${uno?'':`<div class="rdet" ${ab?'':'hidden'}>${ab?detalleG(g):''}</div>`}</article>`;
+  return `<article class="row ${g.pend?'pd':'ok'}" data-k="${esc(k)}">${cab(k,av(g.g),esc(cap(g.g)),`${g.pend?'<b class="st warn">Por revisar</b> · ':(g.cur==='mixto'?'<b class="st">Reparto mixto</b> · ':'')}${esc(g.cat)} · ${uno?'1 movimiento · '+fesp(g.rs[0].datos.f)+(g.rs[0].datos.d?' · '+esc(g.rs[0].datos.d):''):(g.pend&&g.pr.length<g.n?g.pr.length+' de '+g.n+' por revisar':g.n+' movimientos')+' · '+rango({rs:g.pend?g.pr:g.rs})}`,f2(g.vis),sg(g.vis),ab&&!uno,!uno)}${seg(OPT_T,g.cur,at)}${uno?notaUI(g.rs[0]):`<div class="rdet" ${ab?'':'hidden'}>${ab?detalleG(g):''}</div>`}</article>`;
 }
 function filaM(r){
   const i=Number(r.datos.i),pd=r.datos.t==='pend',at='data-id="'+r.id+'"',k='m:'+r.id,ab=abiertas.has(k);
-  return `<article class="row ${pd?'pd':'ok'}" data-k="${k}">${cab(k,av(r.datos.c),esc(cap(r.datos.c)),`${pd?'<b class="st warn">Por revisar</b> · ':''}${fesp(r.datos.f)} · ${esc(r.datos.cat)}`,f2(i),sg(i),ab)}${seg(OPT_T,r.datos.t,at)}<div class="rdet" ${ab?'':'hidden'}>${campos([['Fecha',fesp(r.datos.f)],['Concepto',esc(r.datos.c)],['Detalle del banco',esc(r.datos.d||'')],['Categoría',esc(r.datos.cat||'')],['Comercio agrupado',esc(cap(r.datos.g||''))],['Importe',f2(i),sg(i)],['Reparto',r.datos.t==='pend'?'Por revisar':NT[r.datos.t]]])}</div></article>`;
+  return `<article class="row ${pd?'pd':'ok'}" data-k="${k}">${cab(k,av(r.datos.c),esc(cap(r.datos.c)),`${pd?'<b class="st warn">Por revisar</b> · ':''}${fesp(r.datos.f)} · ${esc(r.datos.cat)}${ntSub(r)}`,f2(i),sg(i),ab)}${seg(OPT_T,r.datos.t,at)}<div class="rdet" ${ab?'':'hidden'}>${campos([['Fecha',fesp(r.datos.f)],['Concepto',esc(r.datos.c)],['Detalle del banco',esc(r.datos.d||'')],['Categoría',esc(r.datos.cat||'')],['Comercio agrupado',esc(cap(r.datos.g||''))],['Importe',f2(i),sg(i)],['Reparto',r.datos.t==='pend'?'Por revisar':NT[r.datos.t]]])}${notaUI(r)}</div></article>`;
 }
 function filaA(r){
   const i=Number(r.datos.i),un=r.datos.s===undefined,k='a:'+r.id,ab=abiertas.has(k);
-  return `<article class="row ${un?'pd':'ok'}" data-k="${k}">${cab(k,av(r.datos.c),esc(cap(r.datos.c)),`${un?'<b class="st warn">Por revisar</b> · ':''}${fesp(r.datos.f)||'Sin fecha'}`,f2(i),'',ab)}${seg([[true,'Saldado'],[false,'Aún lo debo']],un?'':r.datos.s,'data-id="'+r.id+'" data-k="s"','dos')}<div class="rdet" ${ab?'':'hidden'}>${campos([['Concepto',esc(r.datos.c)],['Fecha',fesp(r.datos.f)||'Sin fecha'],['Importe',f2(i)],['Estado',un?'Por revisar':(r.datos.s?'Saldado, no cuenta':'Aún lo debes, cuenta')]])}</div></article>`;
+  return `<article class="row ${un?'pd':'ok'}" data-k="${k}">${cab(k,av(r.datos.c),esc(cap(r.datos.c)),`${un?'<b class="st warn">Por revisar</b> · ':''}${fesp(r.datos.f)||'Sin fecha'}${ntSub(r)}`,f2(i),'',ab)}${seg([[true,'Saldado'],[false,'Aún lo debo']],un?'':r.datos.s,'data-id="'+r.id+'" data-k="s"','dos')}<div class="rdet" ${ab?'':'hidden'}>${campos([['Concepto',esc(r.datos.c)],['Fecha',fesp(r.datos.f)||'Sin fecha'],['Importe',f2(i)],['Estado',un?'Por revisar':(r.datos.s?'Saldado, no cuenta':'Aún lo debes, cuenta')]])}${notaUI(r)}</div></article>`;
 }
 const pasaEst=pd=>dEst()==='t'||(dEst()==='p'?pd:!pd);
 function cabeceras(items,pdf,pinta){
@@ -465,11 +474,11 @@ function pintarLista(){
   let h='';
   if(t==='r')return pintarRevisar();
   if(t==='g'){
-    let L=grupos().filter(g=>(!cat||g.cat===cat)&&(!q||g.g.includes(q)||g.rs.some(r=>(r.datos.c+' '+(r.datos.d||'')).toLowerCase().includes(q)))&&pasaEst(g.pend));
-    ordenar(L,g=>g.rs[0]&&g.rs[0].datos.f,g=>Math.abs(g.tot));
+    let L=grupos().filter(g=>(!cat||g.cat===cat)&&(!q||g.g.includes(q)||g.rs.some(r=>(r.datos.c+' '+(r.datos.d||'')+' '+(r.datos.n||'')).toLowerCase().includes(q)))&&pasaEst(g.pend));
+    ordenar(L,g=>g.rs[0]&&g.rs[0].datos.f,g=>Math.abs(g.vis));
     h=cabeceras(L,g=>g.pend,filaG);
   }else if(t==='m'){
-    let L=dr.filter(r=>!['previo','pago'].includes(r.datos.t)&&(!cat||r.datos.cat===cat)&&(!q||(r.datos.c+' '+(r.datos.d||'')+' '+r.datos.g).toLowerCase().includes(q))&&pasaEst(r.datos.t==='pend'));
+    let L=dr.filter(r=>!['previo','pago'].includes(r.datos.t)&&(!cat||r.datos.cat===cat)&&(!q||(r.datos.c+' '+(r.datos.d||'')+' '+r.datos.g+' '+(r.datos.n||'')).toLowerCase().includes(q))&&pasaEst(r.datos.t==='pend'));
     ordenar(L,r=>r.datos.f,r=>Math.abs(Number(r.datos.i)));
     h=cabeceras(L,r=>r.datos.t==='pend',filaM);
   }else if(t==='a'){
@@ -484,14 +493,14 @@ function pintarLista(){
   }else{
     const L=dr.filter(r=>r.datos.t==='pago').sort((a,b)=>String(b.datos.f||'').localeCompare(String(a.datos.f||'')));
     h=`<form class="form pg" id="pf"><input name="f" type="date" required aria-label="Fecha"><input name="c" placeholder="Concepto" aria-label="Concepto"><input name="i" placeholder="Importe en euros" inputmode="decimal" aria-label="Importe en euros" required><button>Añadir pago</button></form>`+
-      (L.length?L.map(r=>{const k='p:'+r.id,ab=abiertas.has(k);return `<article class="row ok" data-k="${k}">${cab(k,av(r.datos.c),esc(cap(r.datos.c)),fesp(r.datos.f),f2(Number(r.datos.i)),'pos',ab)}<div class="rdet" ${ab?'':'hidden'}>${campos([['Fecha',fesp(r.datos.f)],['Concepto',esc(r.datos.c)],['Importe',f2(Number(r.datos.i)),'pos']])}<button data-delpago="${r.id}">Borrar</button></div></article>`}).join(''):'<div class="vacio">Aún no has registrado ningún pago a Diana.</div>');
+      (L.length?L.map(r=>{const k='p:'+r.id,ab=abiertas.has(k);return `<article class="row ok" data-k="${k}">${cab(k,av(r.datos.c),esc(cap(r.datos.c)),fesp(r.datos.f),f2(Number(r.datos.i)),'pos',ab)}<div class="rdet" ${ab?'':'hidden'}>${campos([['Fecha',fesp(r.datos.f)],['Concepto',esc(r.datos.c)],['Importe',f2(Number(r.datos.i)),'pos']])}${notaUI(r)}<button data-delpago="${r.id}">Borrar</button></div></article>`}).join(''):'<div class="vacio">Aún no has registrado ningún pago a Diana.</div>');
   }
   $('dlist').innerHTML=h;
 }
 
 /* revisar: una tarjeta cada vez, con teclado */
 function colaRevisar(){
-  const all=grupos(),G=all.filter(g=>g.pend).sort((a,b)=>Math.abs(b.tot)-Math.abs(a.tot));
+  const all=grupos(),G=all.filter(g=>g.pend).sort((a,b)=>Math.abs(b.vis)-Math.abs(a.vis));
   return {cola:G.filter(g=>!omitidos.has(g.g)).concat(G.filter(g=>omitidos.has(g.g))),total:all.length};
 }
 function pintarRevisar(){
@@ -500,27 +509,31 @@ function pintarRevisar(){
     const R=resumenDeuda();
     $('dlist').innerHTML=`<div class="rev"><div class="rcard" style="border-left-color:var(--pos)"><h2>Todo revisado</h2><div class="tot num">${f0(R.total)}</div><div class="m">Es lo que debes a Diana con todos los gastos clasificados.</div>${deshacer.length?'<div class="racc" style="margin-top:12px"><button data-rv="z">Deshacer la última</button></div>':''}</div></div>`;return;
   }
-  const g=cola[0],sh=g.rs.slice(0,5);
+  const g=cola[0],sh=g.pr.slice(0,5);
   $('dlist').innerHTML=`<div class="rev">
-   <div class="m"><b class="num">${cola.length}</b> comercios por revisar, ${f0(cola.reduce((a,x)=>a+Math.max(0,-x.tot),0))} en gastos</div>
+   <div class="m"><b class="num">${cola.length}</b> comercios por revisar, ${f0(cola.reduce((a,x)=>a+Math.max(0,-x.vis),0))} en gastos</div>
    <div class="rprog" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${hechos}"><i style="width:${total?hechos/total*100:0}%"></i></div>
    <div class="m">${hechos} de ${total} revisados</div>
    <div class="rcard">
-    <div class="rmain" style="cursor:default">${av(g.g)}<div class="rt"><h2>${esc(cap(g.g))}</h2><div class="rs">${esc(g.cat)} · ${g.n} ${g.n===1?'movimiento':'movimientos'} · ${rango(g)}</div></div></div>
-    <div class="tot num ${sg(g.tot)}">${f2(g.tot)}</div>
+    <div class="rmain" style="cursor:default">${av(g.g)}<div class="rt"><h2>${esc(cap(g.g))}</h2><div class="rs">${esc(g.cat)} · ${g.pr.length} ${g.pr.length===1?'movimiento':'movimientos'}${g.pr.length<g.n?' por revisar de '+g.n:''} · ${rango({rs:g.pr})}</div></div></div>
+    <div class="tot num ${sg(g.vis)}">${f2(g.vis)}</div>
     <div class="m" style="margin-bottom:8px">Últimos movimientos</div>
-    ${sh.map(r=>`<div class="mv solo"><div class="lnx"><span class="l">${fesp(r.datos.f)}${r.datos.d?' · '+esc(r.datos.d):''}</span><b class="num ${sg(Number(r.datos.i))}">${f2(Number(r.datos.i))}</b></div></div>`).join('')}
-    ${g.n>5?`<div class="m">y ${g.n-5} más</div>`:''}
+    ${sh.map(r=>`<div class="mv solo"><div class="lnx"><span class="l">${fesp(r.datos.f)}${r.datos.d?' · '+esc(r.datos.d):''}${ntSub(r)}</span><b class="num ${sg(Number(r.datos.i))}">${f2(Number(r.datos.i))}</b></div></div>`).join('')}
+    ${g.pr.length>5?`<div class="m">y ${g.pr.length-5} más</div>`:''}
     <div class="rbtns">${OPT_T.map(([v,t,k])=>`<button class="rbtn" data-rv="${v}"><span>${t}</span><kbd>${k}</kbd><small>${{comp:'Debes la mitad',mio:'Lo debes entero',diana:'Corresponde a Diana',ign:'No cuenta'}[v]}</small></button>`).join('')}</div>
     <div class="racc"><button data-rv="s">Saltar</button><button data-rv="z" ${deshacer.length?'':'disabled style="opacity:.4"'}>Deshacer la última</button><button data-rv="ver">Clasificar movimiento a movimiento</button></div>
     <div class="m hint" style="margin-top:8px">Teclas 1 a 4 para clasificar, S para saltar, Z para deshacer.</div>
    </div></div>`;
 }
 async function aplicarGrupo(g,v){
-  const rs=dr.filter(r=>r.datos.g===g&&TIPOS_MOV.includes(r.datos.t));
+  const todos=dr.filter(r=>r.datos.g===g&&TIPOS_MOV.includes(r.datos.t));
+  const soloPend=v!=='pend'&&todos.some(r=>r.datos.t==='pend');
+  const rs=soloPend?todos.filter(r=>r.datos.t==='pend'):todos;
   const prev=rs.map(r=>[r,{...r.datos}]);
   rs.forEach(r=>r.datos={...r.datos,t:v});
-  const {error}=await sb.rpc('set_tipo',{p_seccion:sec.id,p_grupo:g,p_tipo:v});
+  let error;
+  if(soloPend){const R=await Promise.all(rs.map(r=>sb.from('registros').update({datos:r.datos}).eq('id',r.id)));error=(R.find(x=>x&&x.error)||{}).error}
+  else({error}=await sb.rpc('set_tipo',{p_seccion:sec.id,p_grupo:g,p_tipo:v}));
   if(error){prev.forEach(([r,d])=>r.datos=d);alert(error.message);return null}
   return prev;
 }
@@ -553,13 +566,27 @@ async function deshacerUltimo(){
 $('tund').addEventListener('click',deshacerUltimo);
 function postCambio(){pintarHero();pintarTabsD();if(dTab()!=='r')pintarToolsD();pintarLista()}
 
+/* notas de cada cargo */
+async function guardarNota(inp){
+  const r=dr.find(x=>x.id===inp.dataset.nota);if(!r)return;
+  const v=inp.value.trim().slice(0,500),datos={...r.datos};if(v)datos.n=v;else delete datos.n;
+  if((datos.n||'')===(r.datos.n||''))return;
+  const prev=r.datos;r.datos=datos;inp.classList.remove('err');
+  const {error}=await sb.from('registros').update({datos}).eq('id',r.id);
+  if(error){r.datos=prev;inp.classList.add('err');alert(error.message);return}
+  inp.classList.add('ok');setTimeout(()=>inp.classList.remove('ok'),1200);
+}
+$('dlist').addEventListener('change',e=>{if(e.target.matches('[data-nota]'))guardarNota(e.target)});
+$('dlist').addEventListener('keydown',e=>{if(e.target.matches('[data-nota]')&&e.key==='Enter'){e.preventDefault();e.target.blur()}});
 /* clicks de las listas */
 $('dlist').addEventListener('click',async e=>{
+  const an=e.target.closest('[data-addnota]');
+  if(an){const i=document.createElement('input');i.className='nota';i.dataset.nota=an.dataset.addnota;i.maxLength=500;i.placeholder='Nota';i.setAttribute('aria-label','Nota del cargo');an.replaceWith(i);i.focus();return}
   const rv=e.target.closest('[data-rv]');if(rv&&!rv.disabled){revisarAccion(rv.dataset.rv);return}
   const mo=e.target.closest('[data-more]');if(mo){lim+=60;pintarLista();return}
   const hb=e.target.closest('[data-hech]');
   if(hb){const k='rv:'+decodeURIComponent(hb.dataset.hech),d=hb.nextElementSibling,ab=d.hidden;d.hidden=!ab;hb.setAttribute('aria-expanded',ab);
-    hb.textContent=ab?'Ocultar revisados':'Ver revisados ('+d.querySelectorAll('.mv').length+')';if(ab)abiertas.add(k);else abiertas.delete(k);return}
+    hb.textContent=ab?'Ocultar revisados':'Ver revisados ('+hb.dataset.lbl+')';if(ab)abiertas.add(k);else abiertas.delete(k);return}
   const o=e.target.closest('[data-v]');
   if(o){
     const row=o.closest('.row'),mv=o.closest('.mv');let v=o.dataset.v,err,prev,desc;

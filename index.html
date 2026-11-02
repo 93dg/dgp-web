@@ -181,7 +181,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[t
   <aside class="side">
     <div class="brand">DGP</div>
     <nav id="nav" aria-label="Secciones"></nav>
-    <div class="foot"><span class="m"><span id="version">V1.16</span></span><button id="out">Salir</button></div>
+    <div class="foot"><span class="m"><span id="version">V1.17</span></span><button id="out">Salir</button></div>
   </aside>
   <div>
   <div class="main">
@@ -444,13 +444,15 @@ const etqH=he=>he.length+' · '+f2(he.reduce((a,r)=>a+Number(r.datos.i),0));
 function detalleG(g){
   const pe=g.rs.filter(r=>r.datos.t==='pend'),he=g.rs.filter(r=>r.datos.t!=='pend');
   if(!g.pend)return he.slice(0,150).map(filaMov).join('');
+  if(pe.length===1)return `<div class="m" style="padding:4px 0">Revisados · ${etqH(he)}</div>`+he.slice(0,150).map(filaMov).join('');
   const k='rv:'+g.g,ab=abiertas.has(k);
   return pe.slice(0,150).map(filaMov).join('')+(he.length?`<button data-hech="${encodeURIComponent(g.g)}" data-lbl="${etqH(he)}" aria-expanded="${ab}" style="justify-self:start">${ab?'Ocultar revisados':'Ver revisados ('+etqH(he)+')'}</button><div ${ab?'':'hidden'}>${he.slice(0,150).map(filaMov).join('')}</div>`:'');
 }
 function filaG(g){
   const k='g:'+g.g,ab=abiertas.has(k),at='data-g="'+encodeURIComponent(g.g)+'"';
-  const uno=g.n===1;
-  return `<article class="row ${g.pend?'pd':'ok'}" data-k="${esc(k)}">${cab(k,av(g.g),esc(cap(g.g)),`${g.pend?'<b class="st warn">Por revisar</b> · ':(g.cur==='mixto'?'<b class="st">Reparto mixto</b> · ':'')}${esc(g.cat)} · ${uno?'1 movimiento · '+fesp(g.rs[0].datos.f)+(g.rs[0].datos.d?' · '+esc(g.rs[0].datos.d):''):(g.pend&&g.pr.length<g.n?g.pr.length+' de '+g.n+' por revisar':g.n+' movimientos')+' · '+rango({rs:g.pend?g.pr:g.rs})}`,f2(g.vis),sg(g.vis),ab&&!uno,!uno)}${seg(OPT_T,g.cur,at)}${uno?notaUI(g.rs[0]):`<div class="rdet" ${ab?'':'hidden'}>${ab?detalleG(g):''}</div>`}</article>`;
+  const uno=g.n===1,u1=uno?g.rs[0]:(g.pend&&g.pr.length===1?g.pr[0]:null);
+  const sub=u1?`${uno?'1 movimiento':'1 de '+g.n+' por revisar'} · ${fesp(u1.datos.f)}${u1.datos.d?' · '+esc(u1.datos.d):''}`:`${g.pend&&g.pr.length<g.n?g.pr.length+' de '+g.n+' por revisar':g.n+' movimientos'} · ${rango({rs:g.pend?g.pr:g.rs})}`;
+  return `<article class="row ${g.pend?'pd':'ok'}" data-k="${esc(k)}">${cab(k,av(g.g),esc(cap(g.g)),`${g.pend?'<b class="st warn">Por revisar</b> · ':(g.cur==='mixto'?'<b class="st">Reparto mixto</b> · ':'')}${esc(g.cat)} · ${sub}`,f2(g.vis),sg(g.vis),ab&&!uno,!uno)}${seg(OPT_T,g.cur,at)}${u1?notaUI(u1):''}${uno?'':`<div class="rdet" ${ab?'':'hidden'}>${ab?detalleG(g):''}</div>`}</article>`;
 }
 function filaM(r){
   const i=Number(r.datos.i),pd=r.datos.t==='pend',at='data-id="'+r.id+'"',k='m:'+r.id,ab=abiertas.has(k);

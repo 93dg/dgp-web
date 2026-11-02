@@ -181,7 +181,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[t
   <aside class="side">
     <div class="brand">DGP</div>
     <nav id="nav" aria-label="Secciones"></nav>
-    <div class="foot"><span class="m"><span id="version">V1.17</span></span><button id="out">Salir</button></div>
+    <div class="foot"><span class="m"><span id="version">V1.18</span></span><button id="out">Salir</button></div>
   </aside>
   <div>
   <div class="main">
@@ -353,6 +353,13 @@ function detalleComp(k){
   if(k==='s'){return dr.filter(r=>r.datos.t==='previo'&&r.datos.s).map(r=>l2(esc(cap(r.datos.c)),f2(Number(r.datos.i)))).join('')+ir('a')}
   return '';
 }
+function actualizado(){
+  const F=dr.filter(r=>!['previo','pago'].includes(r.datos.t)&&r.datos.f).map(r=>r.datos.f).sort();
+  if(!F.length)return 'Aún no hay movimientos del extracto.';
+  const u=F[F.length-1],d=new Date(u+'T12:00:00');d.setDate(d.getDate()+1);
+  const sig=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  return `Extracto cargado hasta el <b>${fesp(u)}</b>. Pásame los nuevos desde el <b>${fesp(sig)}</b>.`;
+}
 function pintarHero(){
   const R=resumenDeuda();
   const S=serie(),vs=S.map(x=>x[1]),mn=Math.min(...vs),mx=Math.max(...vs),rg=(mx-mn)||1;
@@ -365,6 +372,7 @@ function pintarHero(){
   const lgr=comp.map(x=>{const k='h:'+x[0],ab=abiertas.has(k);return `<div><button class="lgr" data-hk="${x[0]}" aria-expanded="${ab}"><span><i class="dot" style="background:${x[3]}"></i>${x[1]}</span><span><b class="num">${f0(x[2])}</b>${CHEV}</span></button><div class="lgd" ${ab?'':'hidden'}>${ab?detalleComp(x[0]):''}</div></div>`}).join('');
   $('hero').innerHTML=`<div>
     <div class="m">Debes a Diana</div><div class="big num" id="dbig">${f0(bigPrev)}</div>
+    <div class="m" id="dact">${actualizado()}</div>
     <div class="m">${R.np?`<button data-go="r" style="padding:0;text-align:left"><span class="warn">${R.np} movimientos por revisar</span></button>, ${f0(R.pendSum)} en gastos que aún no cuentan.`:'Todo revisado.'}</div>
     <div class="stk" role="img" aria-label="Composición de la deuda">${comp.slice(0,4).map(x=>`<i style="flex:${Math.max(0,x[2])/tot};background:${x[3]}"></i>`).join('')}</div>
     <div class="lg">${lgr}</div>

@@ -168,7 +168,8 @@ pre{white-space:pre-wrap;font-size:.75rem;color:var(--mut);max-height:160px;over
       </div>
     </div>
   </section>
-  <div class="m" style="margin-top:18px;text-align:center"><span id="version">V1.27</span></div>
+  <div class="m" id="diag" style="margin-top:18px;text-align:center;font-size:.75rem"></div>
+  <div class="m" style="margin-top:4px;text-align:center"><span id="version">V1.28</span></div>
   <pre id="log" hidden></pre>
 </div>
 
@@ -296,22 +297,27 @@ function desbloquear(){
    El sonido del propio reproductor pasa por un procesador en el hilo de audio (AudioWorklet).
    No se decodifica el archivo ni se sincroniza nada a mano: las pausas y saltos del reproductor valen tal cual. */
 function crearPrev(el,file,getP,avisar){
-  let st=null, montando=null, fallo=false;
+  let st=null, fuente=null, an=null, montando=null, fallo=false, mod=null;
+  let sinSenal=0, reparaciones=0, ultRep=0, an_buf=null;
   const ctx=()=>{ if(!ctxA) ctxA=new (window.AudioContext||window.webkitAudioContext)(); return ctxA; };
+  function conectarNodo(){
+    const c=ctx(), n=new mod.SoundTouchNode({context:c});
+    fuente.connect(n); n.connect(c.destination);
+    an=c.createAnalyser(); an.fftSize=1024; an_buf=new Float32Array(an.fftSize); n.connect(an);
+    st=n;
+  }
   async function montar(){
     if(st||fallo) return;
     if(montando) return montando;
     montando=(async()=>{
-      let fuente=null;
       try{
         avisar('Preparando la escucha con el tono aplicado.');
         const c=ctx(); try{ await c.resume(); }catch(e){}
-        const m=await import('./lib/soundtouch-node.js');
-        if(!c.__stReg){ await m.SoundTouchNode.register(c,new URL('lib/soundtouch-processor.js',location.href).href); c.__stReg=true; }
-        const n=new m.SoundTouchNode({context:c});
+        mod=await import('./lib/soundtouch-node.js');
+        if(!c.__stReg){ await mod.SoundTouchNode.register(c,new URL('lib/soundtouch-processor.js',location.href).href); c.__stReg=true; }
         fuente=c.createMediaElementSource(el);
-        fuente.connect(n); n.connect(c.destination);
-        st=n; avisar('');
+        conectarNodo();
+        avisar('');
       }catch(e){
         fallo=true; try{ if(fuente) fuente.connect(ctx().destination); }catch(e2){}
         avisar('No se puede escuchar el tono con este navegador ('+((e&&e.message)||'error')+'). Se aplicará igualmente al guardar.');
@@ -332,6 +338,25 @@ function crearPrev(el,file,getP,avisar){
     else{ el.preservesPitch=true; el.webkitPreservesPitch=true; el.playbackRate=p.vel; }
     if(st && ctxA && ctxA.state!=='running'){ try{ await ctxA.resume(); }catch(e){} }
   }
+  /* Vigilancia: si debería sonar y no sale señal, se repara sola (nuevo procesador, reanudar audio y reproductor) */
+  function reparar(motivo){
+    const ahora=Date.now(); if(ahora-ultRep<4000) return; ultRep=ahora; reparaciones++;
+    try{ if(ctxA&&ctxA.state!=='running') ctxA.resume(); }catch(e){}
+    try{ if(st){ st.disconnect(); } if(an){ an.disconnect(); } fuente.disconnect(); conectarNodo(); parametros(); }catch(e){}
+    try{ if(!el.paused&&el.readyState<3){ const t=el.currentTime; el.currentTime=t; } }catch(e){}
+    sinSenal=0;
+  }
+  setInterval(()=>{
+    const d=document.getElementById('diag'); if(!d||!st) return;
+    const sonando=!el.paused&&!el.ended;
+    let rms=0; try{ an.getFloatTimeDomainData(an_buf); for(let i=0;i<an_buf.length;i++) rms+=an_buf[i]*an_buf[i]; rms=Math.sqrt(rms/an_buf.length); }catch(e){}
+    if(sonando){
+      if(ctxA.state!=='running') reparar('contexto');
+      else if(rms<0.0005){ sinSenal++; if(sinSenal>=6) reparar('silencio'); }
+      else sinSenal=0;
+    } else sinSenal=0;
+    d.textContent='Audio: '+ctxA.state+' · reproductor: '+(sonando?'sonando':'parado')+' · señal: '+(rms>=0.0005?'sí':'no')+' · reparaciones: '+reparaciones;
+  },400);
   el.addEventListener('play',()=>{ if(ctxA&&ctxA.state!=='running') ctxA.resume(); aplicar(); });
   return {aplicar,parar(){},get st(){return st;}};
 }
@@ -675,7 +700,7 @@ window.__medios={BD,get bucle(){return bucle;},get ctx(){return ctxA;},get prevE
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.27', ROOT='../';
+  var BUILD='V1.28', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

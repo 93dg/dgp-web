@@ -1744,9 +1744,11 @@ document.getElementById("deleteSongBtn").addEventListener("click", ()=>{
 });
 
 let viewMode = "estilos";
+let vistaLista = false;
 
 function switchView(mode){
   viewMode = mode;
+  if(vistaLista){ try{ localStorage.setItem("musica-vista", mode); }catch(e){} }
   document.getElementById("genreControls").style.display = mode === "estilos" ? "" : "none";
   document.getElementById("grid").style.display = mode === "estilos" ? "" : "none";
   document.getElementById("promptSection").style.display = mode === "prompts" ? "" : "none";
@@ -3359,7 +3361,6 @@ document.getElementById("viewMediosBtn").addEventListener("click", ()=>switchVie
 document.querySelectorAll("#bnav [data-v]").forEach(b => b.addEventListener("click", ()=>{ switchView(b.dataset.v); window.scrollTo(0,0); }));
 switchView(viewMode);
 window.addEventListener("message", (e)=>{ if(e.origin===location.origin && e.data && e.data.medios){ document.getElementById("mediosFrame").style.height = Math.ceil(e.data.medios)+"px"; } });
-if(location.hash === "#medios") switchView("medios");
 document.getElementById("newLyricBtn").addEventListener("click", ()=>addLyricVersion(""));
 
 document.getElementById("styleGenGo").addEventListener("click", async ()=>{
@@ -3738,7 +3739,15 @@ document.getElementById("styleGenInput").addEventListener("keydown", (e)=>{
   if(e.key === "Enter") document.getElementById("styleGenGo").click();
 });
 
-loadDB();
+const VISTAS = ["estilos","prompts","compositor","letra","refs","anti","medios"];
+loadDB().then(()=>{
+  let v = "estilos";
+  try{ v = localStorage.getItem("musica-vista") || "estilos"; }catch(e){}
+  if(location.hash === "#medios") v = "medios";
+  if(!VISTAS.includes(v)) v = "estilos";
+  vistaLista = true;
+  if(v !== "estilos") switchView(v);
+});
 
 document.getElementById("exportBtn").addEventListener("click", ()=>{
   const blob = new Blob([JSON.stringify(db, null, 2)], {type:"application/json"});
@@ -3788,7 +3797,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.28', ROOT='../';
+  var BUILD='V1.29', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
@@ -3820,6 +3829,6 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
   setInterval(comprobar,300000);
 })();
 </script>
-<div style="text-align:center;color:var(--muted);font-size:12px;padding:6px 0 calc(90px + env(safe-area-inset-bottom))"><span id="version">V1.28</span></div>
+<div style="text-align:center;color:var(--muted);font-size:12px;padding:6px 0 calc(90px + env(safe-area-inset-bottom))"><span id="version">V1.29</span></div>
 </body>
 </html>

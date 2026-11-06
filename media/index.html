@@ -62,6 +62,13 @@ audio{background:transparent}
 .act button.pri{border-color:var(--ac);color:var(--ac)}
 .tg{border:1px solid var(--bd);background:var(--s2);color:var(--tx);border-radius:12px;padding:9px 14px;font-weight:600}
 .tg.on{border-color:var(--ac);color:var(--ac)}
+.lib{margin-top:12px}
+.lib .it{display:flex;align-items:center;gap:6px;border:1px solid var(--bd);border-radius:12px;background:var(--s2);margin-top:6px}
+.lib .it.on{border-color:var(--ac)}
+.lib .it button.us{flex:1;min-width:0;text-align:left;color:var(--tx);font-weight:600;padding:10px 12px}
+.lib .it button.us small{display:block;color:var(--mut);font-weight:400}
+.lib .it button.us b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lib .it button.qt{color:var(--mut);font-weight:600;padding:10px 12px}
 .opt{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
 .opt button{border:1px solid var(--bd);background:var(--s2);color:var(--tx);text-align:left;padding:12px;font-weight:600}
 .opt button.on{border-color:var(--ac)}
@@ -87,6 +94,7 @@ pre{white-space:pre-wrap;font-size:.75rem;color:var(--mut);max-height:160px;over
   <section id="pMp3">
     <div class="card">
       <label class="pick" id="pickMp3"><input type="file" id="fMp3" accept="video/*,audio/*,.mkv,.mov,.avi,.m4a,.webm"><b>Elegir un vídeo</b><span class="m">o arrastrarlo aquí</span></label>
+      <div class="lib" id="libMp3"></div>
       <div id="infoMp3" class="m" style="margin-top:10px" hidden></div>
       <div id="prevMp3" style="margin-top:10px"></div>
       <div class="row" id="rowBuc1" style="margin-top:8px" hidden><button class="tg" id="bBuc1" aria-pressed="false">Bucle</button></div>
@@ -107,6 +115,7 @@ pre{white-space:pre-wrap;font-size:.75rem;color:var(--mut);max-height:160px;over
   <section id="pEd" hidden>
     <div class="card" id="edPick">
       <label class="pick" id="pickEd"><input type="file" id="fEd" accept="video/*,audio/*,.mkv,.mov,.avi,.m4a,.webm"><b>Elegir un vídeo o un audio</b><span class="m">o arrastrarlo aquí</span></label>
+      <div class="lib" id="libEd"></div>
     </div>
     <div id="edBody" hidden>
       <div class="card">
@@ -154,7 +163,7 @@ pre{white-space:pre-wrap;font-size:.75rem;color:var(--mut);max-height:160px;over
       </div>
     </div>
   </section>
-  <div class="m" style="margin-top:18px;text-align:center"><span id="version">V1.25</span></div>
+  <div class="m" style="margin-top:18px;text-align:center"><span id="version">V1.26</span></div>
   <pre id="log" hidden></pre>
 </div>
 
@@ -234,7 +243,8 @@ function ajustesUI(caja,alCambiar){
   const act=()=>{ const t=+T.value; pt.textContent=(t>0?'+':'')+t+(Math.abs(t)===1?' semitono':' semitonos'); pv.textContent=V.value+' %'; if(alCambiar) alCambiar(); };
   T.oninput=act; V.oninput=act;
   caja.querySelector('[data-r0]').onclick=()=>{ T.value=0; V.value=100; act(); };
-  return {get semis(){return +T.value;}, get vel(){return +V.value/100;}, get activo(){return +T.value!==0||+V.value!==100;}};
+  const poner=(t,v,sin)=>{ T.value=t; V.value=Math.round(v*100); const c=alCambiar; if(sin){ alCambiar=null; } act(); alCambiar=c; };
+  return {poner,get semis(){return +T.value;}, get vel(){return +V.value/100;}, get activo(){return +T.value!==0||+V.value!==100;}};
 }
 /* cadena de filtros de audio: tono sin cambiar la velocidad, y velocidad sin cambiar el tono */
 function filtroAudio(semis,vel){
@@ -312,6 +322,65 @@ function crearPrev(el,file,getP,avisar){
   return {aplicar,parar};
 }
 
+
+/* ---------- archivos guardados en la app (IndexedDB) ---------- */
+const BD=(function(){
+  let db=null;
+  function abrir(){
+    if(db) return Promise.resolve(db);
+    return new Promise((ok,ko)=>{
+      const r=indexedDB.open('medios',1);
+      r.onupgradeneeded=()=>{ r.result.createObjectStore('archivos',{keyPath:'id'}); };
+      r.onsuccess=()=>{ db=r.result; ok(db); }; r.onerror=()=>ko(r.error);
+    });
+  }
+  async function tx(modo,fn){
+    const d=await abrir();
+    return new Promise((ok,ko)=>{ const t=d.transaction('archivos',modo); const st=t.objectStore('archivos'); const rq=fn(st); t.oncomplete=()=>ok(rq&&rq.result); t.onerror=()=>ko(t.error); t.onabort=()=>ko(t.error); });
+  }
+  return {
+    todos:()=>tx('readonly',s=>s.getAll()).then(a=>(a||[]).sort((x,y)=>y.fecha-x.fecha)),
+    get:id=>tx('readonly',s=>s.get(id)),
+    poner:rec=>tx('readwrite',s=>s.put(rec)),
+    quitar:id=>tx('readwrite',s=>s.delete(id))
+  };
+})();
+const MAXN=8, MAXB=900*1048576;
+const idDe=f=>f.name+'|'+f.size+'|'+(f.lastModified||0);
+async function guardarArchivo(f){
+  try{
+    const id=idDe(f); const prev=await BD.get(id);
+    await BD.poner({id,name:f.name,type:f.type,size:f.size,fecha:Date.now(),blob:f,ajustes:(prev&&prev.ajustes)||{}});
+    let l=await BD.todos(), tot=0;
+    for(let i=0;i<l.length;i++){ tot+=l[i].size; if(i>=MAXN||tot>MAXB){ if(l[i].id!==id) await BD.quitar(l[i].id); } }
+    try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist(); }catch(e){}
+    pintarLib(); return id;
+  }catch(e){ return null; }
+}
+const guardarAj={};
+function guardarAjustes(id,clave,valor){
+  if(!id) return; clearTimeout(guardarAj[id+clave]);
+  guardarAj[id+clave]=setTimeout(async()=>{ try{ const r=await BD.get(id); if(!r) return; r.ajustes=r.ajustes||{}; r.ajustes[clave]=valor; await BD.poner(r); }catch(e){} },500);
+}
+let usarMp3=null, usarEd=null, idMp3=null, idEd=null;
+function pintarLibEn(cont,usar,actual){
+  BD.todos().then(l=>{
+    cont.innerHTML='';
+    if(!l.length) return;
+    const h=document.createElement('div'); h.className='m'; h.textContent='Guardados en la app'; cont.appendChild(h);
+    l.forEach(r=>{
+      const it=document.createElement('div'); it.className='it'+(r.id===actual?' on':'');
+      const b=document.createElement('button'); b.className='us';
+      b.innerHTML='<b></b><small></small>'; b.firstChild.textContent=r.name; b.lastChild.textContent=mb(r.size)+' · '+new Date(r.fecha).toLocaleDateString('es-ES',{day:'numeric',month:'short'});
+      b.onclick=()=>usar(r);
+      const q=document.createElement('button'); q.className='qt'; q.textContent='Quitar'; q.onclick=async()=>{ await BD.quitar(r.id); pintarLib(); };
+      it.appendChild(b); it.appendChild(q); cont.appendChild(it);
+    });
+  }).catch(()=>{ cont.innerHTML=''; });
+}
+function pintarLib(){ pintarLibEn($('libMp3'),r=>usarMp3&&usarMp3(r),idMp3); pintarLibEn($('libEd'),r=>usarEd&&usarEd(r),idEd); }
+const aFile=r=>new File([r.blob],r.name,{type:r.type,lastModified:+(r.id.split('|')[2])||Date.now()});
+
 /* ---------- pestañas ---------- */
 function pestana(n){
   $('tabMp3').classList.toggle('on',n==='mp3'); $('tabEd').classList.toggle('on',n==='ed');
@@ -323,18 +392,24 @@ $('tabMp3').onclick=()=>pestana('mp3'); $('tabEd').onclick=()=>pestana('ed');
 let fileMp3=null;
 $('bBuc1').onclick=()=>{ const a=document.querySelector('#prevMp3 audio'); if(!a) return; a.loop=!a.loop; $('bBuc1').classList.toggle('on',a.loop); $('bBuc1').setAttribute('aria-pressed',a.loop); };
 let prev1=null, url1=null;
-const ajMp3=ajustesUI($('ajMp3'),()=>{ if(prev1) prev1.aplicar(); });
+const ajMp3=ajustesUI($('ajMp3'),()=>{ if(prev1) prev1.aplicar(); if(typeof guardaMp3==='function') guardaMp3(); });
 arrastrar($('pickMp3'),$('fMp3'));
-$('fMp3').addEventListener('change',()=>{
-  fileMp3=$('fMp3').files[0]||null;
+function setMp3(f,id,aj){
+  fileMp3=f||null; idMp3=id||null;
   if(prev1){ prev1.parar(); prev1=null; } $('prevMp3').innerHTML=''; $('avMp3').textContent='';
   if(url1){ URL.revokeObjectURL(url1); url1=null; }
   $('rowBuc1').hidden=!fileMp3; $('bBuc1').classList.remove('on'); $('bBuc1').setAttribute('aria-pressed','false');
   if(fileMp3){ url1=URL.createObjectURL(fileMp3); const a=document.createElement('audio'); a.controls=true; a.preload='metadata'; a.src=url1; $('prevMp3').appendChild(a); prev1=crearPrev(a,fileMp3,()=>ajMp3,t=>{ $('avMp3').textContent=t; }); }
+  if(aj&&aj.mp3){ ajMp3.poner(aj.mp3.semis||0,aj.mp3.vel||1,true); if(aj.mp3.kbps) $('kbps').value=aj.mp3.kbps; }
   $('outMp3').innerHTML=''; $('barMp3').hidden=true; $('stMp3').textContent='';
   if(fileMp3){ $('infoMp3').hidden=false; $('infoMp3').textContent=fileMp3.name+' · '+mb(fileMp3.size); $('goMp3').disabled=false; }
   else{ $('infoMp3').hidden=true; $('goMp3').disabled=true; }
-});
+  pintarLib();
+}
+usarMp3=r=>setMp3(aFile(r),r.id,r.ajustes);
+$('fMp3').addEventListener('change',async()=>{ const f=$('fMp3').files[0]||null; setMp3(f,null,null); if(f){ idMp3=await guardarArchivo(f); pintarLib(); } });
+const guardaMp3=()=>guardarAjustes(idMp3,'mp3',{semis:ajMp3.semis,vel:ajMp3.vel,kbps:$('kbps').value});
+$('kbps').addEventListener('change',guardaMp3);
 $('goMp3').onclick=async()=>{
   if(!fileMp3) return;
   const st=t=>{ $('stMp3').className='m'; $('stMp3').textContent=t; };
@@ -370,15 +445,17 @@ let prevEd=null;
 const ajEd=ajustesUI($('ajEd'),()=>{ if(prevEd) prevEd.aplicar(); refrescar(); });
 
 arrastrar($('pickEd'),$('fEd'));
-$('fEd').addEventListener('change',()=>{
-  const f=$('fEd').files[0]; if(!f) return;
-  fileEd=f; if(url) URL.revokeObjectURL(url); url=URL.createObjectURL(f);
+function setEd(f,id,aj){
+  if(!f) return;
+  fileEd=f; idEd=id||null; if(url) URL.revokeObjectURL(url); url=URL.createObjectURL(f);
   $('media').innerHTML='';
   esVideo=f.type.startsWith('video/') || /\.(mkv|mov|avi|mp4|webm|m4v)$/i.test(f.name);
   el=document.createElement(esVideo?'video':'audio'); el.controls=true; el.playsInline=true; el.preload='metadata'; el.src=url;
   $('media').appendChild(el);
   el.addEventListener('loadedmetadata',()=>{
     dur=el.duration; segs=[[0,dur]]; undo=[]; redo=[]; sel=null;
+    if(aj&&aj.ed){ const sv=aj.ed.segs; if(Array.isArray(sv)&&sv.length&&sv.every(x=>x[0]>=0&&x[1]<=dur+0.1&&x[1]>x[0])) segs=sv; ajEd.poner(aj.ed.semis||0,aj.ed.vel||1,true); if(prevEd) prevEd.aplicar(); }
+    pintarLib();
     $('edPick').hidden=true; $('edBody').hidden=false;
     $('edName').textContent=f.name+' · '+mb(f.size);
     $('outEd').innerHTML=''; $('barEd').hidden=true; $('stEd').textContent=''; $('saveBox').hidden=true;
@@ -392,7 +469,10 @@ $('fEd').addEventListener('change',()=>{
   el.addEventListener('play',ciclo); el.addEventListener('pause',()=>{ $('bPlay').textContent='Reproducir'; });
   el.addEventListener('play',()=>{ $('bPlay').textContent='Pausa'; });
   el.addEventListener('seeked',saltarCortes);
-});
+}
+usarEd=r=>setEd(aFile(r),r.id,r.ajustes);
+$('fEd').addEventListener('change',async()=>{ const f=$('fEd').files[0]; if(!f) return; setEd(f,null,null); idEd=await guardarArchivo(f); pintarLib(); });
+
 function alertaPick(t){ const p=$('pickEd').querySelector('span'); p.textContent=t; p.classList.add('err'); }
 
 function total(){ return segs.reduce((s,x)=>s+(x[1]-x[0]),0); }
@@ -416,6 +496,7 @@ function refrescar(){
   $('iA').value=selValida()?fmt(sel[0]):''; $('iB').value=selValida()?fmt(sel[1]):'';
   $('resDur').textContent='Duración: '+fmt(total()/ajEd.vel);
   $('bSave').disabled=segs.length===0;
+  guardarAjustes(idEd,'ed',{segs:segs,semis:ajEd.semis,vel:ajEd.vel});
 }
 function moverPh(){ if(!el) return; const ph=$('ph'); if(ph&&el) ph.style.left=(el.currentTime/dur*100)+'%'; $('tPos').textContent=fmt(el.currentTime); }
 
@@ -569,14 +650,15 @@ $('bSave2').onclick=async()=>{
   }finally{ curBar=null; $('bSave2').disabled=false; $('bSave').disabled=false; }
 };
 
-window.__medios={get bucle(){return bucle;},get ctx(){return ctxA;},get prevEd(){return prevEd;},filtroAudio,fmt,parseT,quitar,quedar,get segs(){return segs;}};
+pintarLib();
+window.__medios={BD,get bucle(){return bucle;},get ctx(){return ctxA;},get prevEd(){return prevEd;},filtroAudio,fmt,parseT,quitar,quedar,get segs(){return segs;}};
 })();
 </script>
 
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.25', ROOT='../';
+  var BUILD='V1.26', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

@@ -3788,7 +3788,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.25', ROOT='../';
+  var BUILD='V1.26', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
@@ -3820,6 +3820,6 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
   setInterval(comprobar,300000);
 })();
 </script>
-<div style="text-align:center;color:var(--muted);font-size:12px;padding:6px 0 calc(90px + env(safe-area-inset-bottom))"><span id="version">V1.25</span></div>
+<div style="text-align:center;color:var(--muted);font-size:12px;padding:6px 0 calc(90px + env(safe-area-inset-bottom))"><span id="version">V1.26</span></div>
 </body>
 </html>

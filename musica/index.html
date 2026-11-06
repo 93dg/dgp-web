@@ -1,0 +1,3747 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta name="robots" content="noindex">
+<script>
+/* Fuera de Claude no existe window.storage: se guarda en este navegador (localStorage). */
+if(!window.storage){
+  window.storage={
+    async get(k){try{var v=localStorage.getItem(k);return v===null?null:{key:k,value:v};}catch(e){return null;}},
+    async set(k,v){try{localStorage.setItem(k,v);return {key:k,value:v};}catch(e){throw e;}}
+  };
+}
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de estilos musicales</title>
+<style>
+  :root{
+    --bg:#12100e;
+    --panel:#1b1815;
+    --card:#211d19;
+    --card-hover:#2a251f;
+    --line:#332c25;
+    --text:#efe7db;
+    --muted:#9c9186;
+    --amber:#e8a33d;
+    --amber-dim:#5a4326;
+    --teal:#4f8a8b;
+    --teal-dim:#26403f;
+    --done-bg:#241f14;
+    --done-line:#7a6224;
+    --done-text:#f0cf6b;
+    --font-display:'DM Serif Display', Georgia, serif;
+    --font-mono:'JetBrains Mono', 'Courier New', monospace;
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font-body);
+    padding:16px 18px 60px;
+  }
+  .wrap{max-width:1100px;margin:0 auto;}
+  header{margin-bottom:12px;}
+  h1{
+    font-family:var(--font-display);
+    font-size:22px;
+    margin:0 0 4px;
+    font-weight:400;
+    letter-spacing:0.3px;
+  }
+  .sub{color:var(--muted);font-size:12.5px;margin:0 0 14px;line-height:1.5;}
+  .lyric-sub{color:var(--muted);font-size:12px;margin:0 0 12px;}
+
+  .song-bar{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin-bottom:14px;
+  }
+  .song-bar select{
+    flex:0 1 260px;
+    background:var(--panel);
+    border:1px solid var(--amber);
+    color:var(--amber);
+    font-family:var(--font-mono);
+    font-size:13px;
+    padding:7px 10px;
+    border-radius:8px;
+  }
+  .song-bar input{flex:1;max-width:260px;}
+  #deleteSongBtn{color:var(--muted);padding:7px 10px;}
+  .song-profile{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:8px 10px;
+    margin-bottom:14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .song-profile-label{display:none;}
+  .song-profile-row{display:contents;}
+  .current-song-badge{
+    order:-1;
+    font-family:var(--font-mono);
+    font-size:12px;
+    color:var(--amber);
+    white-space:nowrap;
+    padding-right:4px;
+  }
+
+  .controls{
+    display:flex;
+    gap:8px;
+    margin-bottom:14px;
+    flex-wrap:wrap;
+  }
+  input[type=text], textarea{
+    background:var(--bg);
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:7px 10px;
+    border-radius:7px;
+    font-size:13px;
+    font-family:var(--font-body);
+    outline:none;
+    min-width:0;
+  }
+  input[type=text]:focus, textarea:focus, select:focus{border-color:var(--amber);}
+  #songSelect{flex:0 1 160px;}
+  #newSongInput{flex:1 1 140px;}
+  #search{flex:1;min-width:160px;background:var(--panel);}
+  select, button.tool{
+    background:var(--panel);
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:7px 10px;
+    border-radius:7px;
+    font-size:12.5px;
+    cursor:pointer;
+  }
+  select:hover, button.tool:hover{border-color:var(--amber);}
+  button.primary{
+    background:var(--amber-dim);
+    border-color:var(--amber);
+  }
+  .families{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    margin-bottom:12px;
+  }
+  .fam-chip{
+    background:var(--panel);
+    border:1px solid var(--line);
+    color:var(--muted);
+    padding:4px 10px;
+    border-radius:999px;
+    font-size:11.5px;
+    cursor:pointer;
+  }
+  .fam-chip:hover{border-color:var(--amber);color:var(--text);}
+  .fam-chip.active{
+    background:var(--amber-dim);
+    border-color:var(--amber);
+    color:var(--text);
+  }
+  .tabs{
+    display:flex;
+    gap:4px;
+    margin-bottom:14px;
+    border-bottom:1px solid var(--line);
+  }
+  .tab-btn{
+    background:none;
+    border:none;
+    color:var(--muted);
+    padding:8px 12px;
+    font-size:12.5px;
+    cursor:pointer;
+    border-bottom:2px solid transparent;
+    margin-bottom:-1px;
+  }
+  .tab-btn:hover{color:var(--text);}
+  .tab-btn.active{
+    color:var(--text);
+    border-bottom-color:var(--amber);
+  }
+  .tab-btn .tab-count{
+    font-family:var(--font-mono);
+    color:var(--muted);
+    margin-left:4px;
+  }
+
+  /* ---- tarjetas de estilo: como estaban ---- */
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));
+    gap:10px;
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px 14px;
+    transition:background 0.15s, border-color 0.15s;
+    position:relative;
+  }
+  .card:hover{background:var(--card-hover);}
+  .card.copied-unrated{background:#16232e;border-color:#3d6c8a;}
+  .card.rated-low{background:#2e1a17;border-color:#a84a3a;}
+  .card.rated-mid{background:#2e2613;border-color:#c99a2e;}
+  .card.rated-high{background:#16281a;border-color:#3f9153;}
+  .auto-badge{
+    margin-left:auto;
+    align-self:center;
+    font-size:10.5px;
+    color:var(--amber);
+    font-family:var(--font-mono);
+  }
+  .custom-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:6px;
+  }
+  .suggested-mark{
+    font-size:9.5px;
+    letter-spacing:.5px;
+    color:var(--muted);
+    text-transform:lowercase;
+  }
+  .style-del{padding:1px 7px;}
+  .affinity-badge{
+    display:block;
+    width:fit-content;
+    margin:0 auto 8px;
+    background:transparent;
+    border:1px solid var(--amber);
+    color:var(--amber);
+    font-family:var(--font-mono);
+    font-weight:600;
+    font-size:10.5px;
+    padding:2px 9px;
+    border-radius:999px;
+    text-align:center;
+  }
+  .card-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom:8px;
+  }
+  .genre-btn{
+    white-space:pre-wrap;
+    word-break:break-word;
+    background:none;
+    border:none;
+    color:var(--text);
+    font-family:var(--font-mono);
+    font-size:14.5px;
+    text-align:left;
+    cursor:pointer;
+    padding:0;
+    flex:1;
+    line-height:1.35;
+  }
+  .card.done .genre-btn{color:var(--done-text);}
+  .card.copied-unrated .genre-btn{color:#8ec8e8;}
+  .card.rated-low .genre-btn{color:#e88a78;}
+  .card.rated-mid .genre-btn{color:#e8c56b;}
+  .card.rated-high .genre-btn{color:#7fd992;}
+  .check{
+    width:20px;height:20px;
+    border-radius:50%;
+    border:1.5px solid var(--line);
+    flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;color:transparent;cursor:pointer;
+  }
+  .card.done .check{
+    background:var(--done-line);
+    border-color:var(--done-line);
+    color:var(--done-bg);
+  }
+  .group-tag{
+    display:inline-block;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    color:var(--teal);
+    border:1px solid var(--teal-dim);
+    background:rgba(79,138,139,0.12);
+    padding:2px 8px;
+    border-radius:999px;
+    margin:2px 0 6px;
+  }
+  .desc{
+    font-size:11.5px;
+    color:var(--muted);
+    line-height:1.4;
+    margin:2px 0 9px;
+  }
+  .copied-flash{
+    color:var(--amber);
+    font-size:10px;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+    position:absolute;
+    top:14px;
+    right:44px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.2s;
+  }
+  .copied-flash.show{opacity:1;}
+  .rating-row{
+    display:flex;
+    gap:3px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+  .dot{
+    width:22px;height:22px;
+    border-radius:5px;
+    border:1px solid var(--line);
+    background:transparent;
+    cursor:pointer;
+    padding:0;
+    font-family:var(--font-mono);
+    font-size:11px;
+    font-weight:600;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .dot.n1,.dot.n2,.dot.n3,.dot.n4{ color:#e88a78; border-color:#a84a3a; }
+  .dot.n5,.dot.n6{ color:#e8c56b; border-color:#c99a2e; }
+  .dot.n7,.dot.n8,.dot.n9,.dot.n10{ color:#7fd992; border-color:#3f9153; }
+  .dot.filled.n1,.dot.filled.n2,.dot.filled.n3,.dot.filled.n4{ background:#3a231f; color:#f7c6ba; border-color:#e88a78; }
+  .dot.filled.n5,.dot.filled.n6{ background:#3a3117; color:#f5e2a3; border-color:#e8c56b; }
+  .dot.filled.n7,.dot.filled.n8,.dot.filled.n9,.dot.filled.n10{ background:#1c3524; color:#bdf0c8; border-color:#7fd992; }
+  .rating-val{
+    margin-left:8px;
+    font-family:var(--font-mono);
+    font-size:12px;
+    color:var(--muted);
+    min-width:32px;
+  }
+  .rating-val.has-value{color:var(--amber);}
+  .note-input{
+    width:100%;
+    margin-top:9px;
+    background:var(--bg);
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:6px 9px;
+    border-radius:7px;
+    font-size:12px;
+    outline:none;
+    font-family:var(--font-body);
+  }
+  .note-input::placeholder{color:var(--muted);}
+  .note-input:focus{border-color:var(--amber);}
+
+  /* ---- vistas ---- */
+  .view-switch{
+    display:flex;
+    gap:2px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:9px;
+    padding:3px;
+    margin-bottom:16px;
+    width:fit-content;
+  }
+  .view-btn{
+    background:none;
+    border:none;
+    color:var(--muted);
+    padding:6px 14px;
+    border-radius:6px;
+    font-size:12.5px;
+    cursor:pointer;
+  }
+  .view-btn:hover{color:var(--text);}
+  .view-btn.active{background:var(--amber-dim);color:var(--amber);}
+
+  /* ---- prompts ---- */
+  .prompt-add{
+    display:flex;
+    gap:8px;
+    margin-bottom:8px;
+    align-items:flex-start;
+    flex-wrap:wrap;
+  }
+  .prompt-add textarea{
+    flex:1;
+    min-width:240px;
+    background:var(--panel);
+    line-height:1.5;
+    resize:vertical;
+  }
+  .prompt-grid{
+    display:flex;
+    flex-direction:column;
+    margin-top:6px;
+  }
+  .scope-block{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(270px, 1fr));
+    gap:10px;
+    align-items:start;
+    padding:4px;
+    border-radius:10px;
+    border:1px dashed transparent;
+  }
+  .scope-block.drop{border-color:var(--amber);background:rgba(232,163,61,0.05);}
+  .section-col.drop{border:1px dashed var(--amber);border-radius:10px;}
+  .prompt-card.dragging{opacity:.4;}
+  .move-menu{
+    position:absolute;
+    top:30px;
+    right:8px;
+    z-index:20;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:4px;
+    min-width:170px;
+    box-shadow:0 8px 24px rgba(0,0,0,.5);
+  }
+  .move-menu button{
+    display:block;
+    width:100%;
+    text-align:left;
+    background:none;
+    border:none;
+    color:var(--text);
+    font-size:12px;
+    font-family:var(--font-body);
+    padding:6px 8px;
+    border-radius:5px;
+    cursor:pointer;
+  }
+  .move-menu button:hover{background:var(--amber-dim);}
+  .move-menu .mm-label{
+    color:var(--muted);
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.5px;
+    padding:6px 8px 2px;
+  }
+  .song-results{display:flex;flex-direction:column;gap:8px;}
+  .song-hit{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:9px;
+    padding:9px 11px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .song-hit-title:focus, .song-hit-desc:focus{outline:none;box-shadow:0 1px 0 var(--amber);}
+  .song-hit-title{
+    white-space:pre-wrap;
+    word-break:break-word;
+    color:var(--amber);
+    font-family:var(--font-mono);
+    font-size:13px;
+  }
+  .song-hit.clickable{cursor:pointer;}
+  .song-hit.clickable:hover{border-color:var(--amber);}
+  .song-hit-desc{color:var(--muted);font-size:12px;line-height:1.45;}
+  .song-hit-link{
+    color:var(--teal);
+    font-size:11.5px;
+    text-decoration:none;
+    width:fit-content;
+  }
+  .song-hit-link:hover{color:var(--amber);}
+  .add-bar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center;}
+  .add-btn{
+    background:none;
+    border:1px solid var(--line);
+    color:var(--muted);
+    padding:7px 14px;
+    border-radius:8px;
+    font-size:13px;
+    cursor:pointer;
+    font-family:var(--font-body);
+  }
+  .add-btn:hover{border-color:var(--amber);color:var(--text);}
+  .add-btn.open{background:var(--amber-dim);border-color:var(--amber);color:var(--amber);}
+  button.tool.open{background:var(--amber-dim);border-color:var(--amber);color:var(--amber);}
+  .add-form{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:10px;
+    margin-bottom:12px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .add-form textarea{width:100%;min-height:80px;resize:vertical;line-height:1.5;}
+  .add-form-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .add-form-row.end{justify-content:flex-end;}
+  .sec-select{
+    flex:1;
+    min-width:160px;
+    background:var(--bg);
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:7px 10px;
+    border-radius:7px;
+    font-size:13px;
+  }
+  .group-heading{
+    grid-column:1 / -1;
+    background:none;
+    border:none;
+    color:var(--amber);
+    font-family:var(--font-mono);
+    font-size:12.5px;
+    padding:10px 0 4px;
+    margin:0;
+    outline:none;
+    width:100%;
+  }
+  .group-heading:focus{border-bottom:1px solid var(--amber);}
+  .prompt-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:10px 12px 12px;
+    position:relative;
+  }
+  .prompt-card.rated-low{background:#2e1a17;border-color:#a84a3a;}
+  .prompt-card.rated-mid{background:#2e2613;border-color:#c99a2e;}
+  .prompt-card.rated-high{background:#16281a;border-color:#3f9153;}
+  .prompt-card.copied-unrated{background:#16232e;border-color:#3d6c8a;}
+  .prompt-name-row{
+    display:flex;
+    justify-content:flex-start;
+    align-items:center;
+    gap:8px;
+    cursor:pointer;
+    padding:0 0 6px;
+  }
+  .prompt-name{
+    flex:0 0 auto;
+    cursor:text;
+    color:var(--amber);
+    font-family:var(--font-mono);
+    font-size:13px;
+    user-select:none;
+  }
+
+  .prompt-card textarea.note-input{
+    margin-top:0;
+    line-height:1.5;
+    resize:none;
+    overflow:hidden;
+  }
+
+  .prompt-top-row{
+    display:flex;
+    justify-content:flex-end;
+    align-items:center;
+    gap:8px;
+    margin-bottom:7px;
+  }
+  .best-badge{
+    margin-right:auto;
+    font-size:10.5px;
+    color:var(--amber);
+    border:1px solid var(--amber);
+    padding:2px 8px;
+    border-radius:999px;
+    font-family:var(--font-mono);
+  }
+  .prompt-actions{display:flex;gap:5px;}
+  .icon-btn{
+    background:none;
+    border:1px solid var(--line);
+    color:var(--muted);
+    padding:3px 8px;
+    border-radius:6px;
+    font-size:11px;
+    cursor:pointer;
+  }
+  .icon-btn:hover{border-color:var(--amber);color:var(--text);}
+
+  .scope-switch{
+    display:flex;
+    gap:2px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:3px;
+  }
+  .scope-btn{
+    background:none;
+    border:none;
+    color:var(--muted);
+    padding:5px 11px;
+    border-radius:5px;
+    font-size:12px;
+    cursor:pointer;
+    font-family:var(--font-body);
+    white-space:nowrap;
+  }
+  .scope-btn.active{background:var(--amber-dim);color:var(--amber);}
+  .scope-head{
+    grid-column:1 / -1;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin:16px 0 2px;
+    color:var(--muted);
+    font-size:12px;
+  }
+  .scope-head:first-child{margin-top:2px;}
+  .scope-head::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background:var(--line);
+  }
+  .scope-head b{color:var(--text);font-weight:500;}
+  .scope-empty{
+    grid-column:1 / -1;
+    color:var(--muted);
+    font-size:12px;
+    margin:2px 0 4px;
+  }
+  .section-col{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:8px;
+  }
+  .group-heading{
+    display:flex;
+    padding:2px 2px 8px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:2px;
+    align-items:center;
+    gap:6px;
+    color:var(--amber);
+    font-family:var(--font-mono);
+    font-size:12.5px;
+    padding:8px 0 2px;
+  }
+  .pin-btn{
+    background:none;
+    border:1px solid var(--line);
+    color:var(--muted);
+    cursor:pointer;
+    font-size:10.5px;
+    font-family:var(--font-body);
+    padding:2px 8px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+  .pin-btn:hover{border-color:var(--amber);color:var(--text);}
+  .pin-btn.on{background:var(--amber-dim);border-color:var(--amber);color:var(--amber);}
+  .section-col.dragging-sec{opacity:.4;}
+  .group-heading{cursor:pointer;}
+  .group-heading:active{cursor:grabbing;}
+  .sec-caret{
+    color:var(--muted);
+    font-size:11px;
+    padding:0 6px 0 0;
+    user-select:none;
+  }
+  .sec-name{
+    flex:0 0 auto;
+    cursor:text;
+    color:var(--amber);
+    font-family:var(--font-mono);
+    font-size:12.5px;
+    user-select:none;
+  }
+  .sec-name:focus, .prompt-name:focus, .lyric-title:focus{
+    outline:none;
+    box-shadow:0 1px 0 var(--amber);
+  }
+  .section-col.collapsed{padding-bottom:8px;}
+  .section-col.collapsed .group-heading{border-bottom:none;padding-bottom:2px;margin-bottom:0;}
+  .sec-count{
+    margin-left:auto;
+    font-family:var(--font-mono);
+    font-size:10.5px;
+    color:var(--muted);
+    min-width:14px;
+    text-align:right;
+  }
+  .group-heading{gap:6px;align-items:center;}
+
+  /* ---- letra ---- */
+  .lyric-version{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:8px 12px;
+    margin-bottom:8px;
+  }
+  .lyric-version.open{border-color:var(--amber);}
+  .lyric-version-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    cursor:pointer;
+  }
+  .lyric-caret{
+    color:var(--muted);
+    font-size:11px;
+    width:12px;
+    flex-shrink:0;
+  }
+  .lyric-title{
+    flex:0 0 auto;
+    cursor:text;
+    color:var(--amber);
+    font-family:var(--font-mono);
+    font-size:13.5px;
+    user-select:none;
+  }
+
+  .lyric-preview{
+    flex:1;
+    color:var(--muted);
+    font-size:11.5px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .lyric-body{
+    display:flex;
+    gap:12px;
+    margin-top:9px;
+    align-items:flex-start;
+  }
+  .lyric-editor{flex:1;min-width:0;}
+  .lyric-bar{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
+  .mic-btn{padding:3px 8px;}
+  .mic-warn{
+    color:#e88a78;
+    font-size:11px;
+    margin-left:6px;
+    align-self:center;
+  }
+  .mic-btn.rec{
+    background:#3a1a1a;
+    border-color:#c8624f;
+    color:#f7c6ba;
+    animation:pulse 1s infinite;
+  }
+  @keyframes pulse{50%{opacity:.55;}}
+  .icon-btn:disabled{opacity:.35;cursor:default;}
+  .line-list{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:8px;
+  }
+  .line-row{
+    padding:4px 8px;
+    border-radius:5px;
+    font-size:13px;
+    line-height:1.5;
+    cursor:grab;
+    border:1px solid transparent;
+  }
+  .line-row:hover{background:var(--card-hover);}
+  .line-row.blank{color:var(--muted);}
+  .line-row.dragging{opacity:.4;}
+  .line-row.over{border-color:var(--amber);}
+  .lyric-chat{
+    flex:0 0 300px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:8px;
+    max-height:520px;
+  }
+  .chat-log{
+    flex:1;
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    min-height:160px;
+  }
+  .chat-msg{
+    font-size:12.5px;
+    line-height:1.5;
+    padding:7px 9px;
+    border-radius:8px;
+    white-space:pre-wrap;
+  }
+  .chat-msg.user{background:var(--amber-dim);color:var(--text);align-self:flex-end;max-width:90%;}
+  .chat-msg.assistant{background:var(--card);color:var(--text);border:1px solid var(--line);}
+  .chat-input-row{display:flex;gap:6px;align-items:flex-end;}
+  .chat-input{flex:1;resize:vertical;font-size:12.5px;}
+  @media (max-width:820px){
+    .lyric-body{flex-direction:column;}
+    .lyric-chat{flex:1 1 auto;width:100%;}
+  }
+  .lyric-version textarea{
+    width:100%;
+    margin-top:9px;
+    overflow:hidden;
+    resize:none;
+    background:var(--bg);
+    font-size:13.5px;
+    line-height:1.6;
+    padding:11px 13px;
+    border-radius:8px;
+  }
+  footer{
+    text-align:center;
+    color:var(--muted);
+    font-size:11.5px;
+    margin-top:26px;
+  }
+  @media (max-width:480px){
+    .dot{width:18px;height:18px;font-size:10px;}
+    h1{font-size:20px;}
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="song-bar">
+      <select id="songSelect" title="Canción"></select>
+      <input type="text" id="newSongInput" placeholder="Nombre de la canción..." style="display:none;">
+      <button class="tool" id="newSongBtn" style="display:none;">Crear</button>
+      <button class="tool" id="deleteSongBtn" title="Eliminar esta canción">✕</button>
+      <span id="currentSongBadge" style="display:none;"></span>
+    </div>
+
+    <div class="view-switch">
+      <button class="view-btn active" id="viewGenresBtn">Estilos</button>
+      <button class="view-btn" id="viewPromptsBtn">Prompts</button>
+      <button class="view-btn" id="viewComposeBtn">Prompts compositor</button>
+      <button class="view-btn" id="viewLyricsBtn">Letra</button>
+      <button class="view-btn" id="viewRefsBtn">Referencias</button>
+      <button class="view-btn" id="viewAntiBtn">Antiprompts</button>
+    </div>
+
+    <div id="genreControls">
+    <div class="controls">
+      <input type="text" id="search" placeholder="Buscar estilo...">
+      <select id="sortSel">
+        <option value="orig">Orden original</option>
+        <option value="alpha">A - Z</option>
+        <option value="rating">Mejor puntuados</option>
+        <option value="pending">Pendientes primero</option>
+      </select>
+      <select id="ratingSel">
+        <option value="0">Cualquier nota</option>
+        <option value="unrated">Sin puntuar</option>
+        <option value="1">Nota 1 o más</option>
+        <option value="2">Nota 2 o más</option>
+        <option value="3">Nota 3 o más</option>
+        <option value="4">Nota 4 o más</option>
+        <option value="5">Nota 5 o más</option>
+        <option value="6">Nota 6 o más</option>
+        <option value="7">Nota 7 o más</option>
+        <option value="8">Nota 8 o más</option>
+        <option value="9">Nota 9 o más</option>
+        <option value="10">Nota 10</option>
+      </select>
+      <button class="tool" id="resetBtn">Reiniciar</button>
+      <button class="tool" id="exportBtn">Exportar</button>
+      <button class="tool" id="importBtn">Importar</button>
+      <input type="file" id="importFile" accept=".json" style="display:none;">
+    </div>
+    <div class="add-form" id="styleGenForm">
+      <div class="add-form-row">
+        <input type="text" id="styleGenInput" placeholder="Describe el rollo que quieres: oscuro, callejero, con guitarra flamenca..." style="flex:1;min-width:220px;">
+        <button class="tool primary" id="styleGenGo">Sugerir</button>
+        <button class="tool" id="styleAllGo" title="Analiza notas, prompts, referencias y letras de esta canción">Crear</button>
+      </div>
+      <div class="add-form-row">
+        <input type="text" id="styleOwnInput" placeholder="O pega aquí un prompt de estilo que hayas probado tú..." style="flex:1;min-width:220px;">
+        <button class="tool" id="styleOwnGo">Añadir mío</button>
+      </div>
+      <div class="add-form-row">
+        <button class="tool" id="styleRulesBtn">Reglas de creación</button>
+      </div>
+      <div id="styleRulesBox" style="display:none;">
+        <textarea id="styleRules" rows="5" style="width:100%;resize:vertical;line-height:1.5;"></textarea>
+        <p class="scope-empty" style="margin:4px 0 0;">Se aplican a Sugerir, a Crear y a los estilos que se generan solos.</p>
+      </div>
+      <div id="styleGenResults" class="song-results"></div>
+    </div>
+    <div class="families" id="familyRow"></div>
+    <div class="tabs" id="tabRow"></div>
+    </div>
+  </header>
+  <div class="grid" id="grid"></div>
+
+  <div id="promptSection" style="display:none;">
+    <div class="add-bar">
+      <button class="add-btn" id="promptAddBtn" title="Nuevo prompt">＋ Prompt</button>
+      <button class="add-btn" id="promptSectionBtn" title="Nueva sección">＋ Sección</button>
+    </div>
+    <div class="add-form" id="promptForm" style="display:none;">
+      <div class="add-form-row">
+        <select id="promptSecSel" class="sec-select"></select>
+      </div>
+      <input type="text" id="promptName" placeholder="Nombre del prompt (opcional)">
+      <textarea id="promptInput" placeholder="Escribe o pega el prompt..." rows="3"></textarea>
+      <div class="add-form-row end">
+        <button class="tool" id="promptCancelBtn">Cancelar</button>
+        <button class="tool primary" id="promptSaveBtn">Guardar</button>
+      </div>
+    </div>
+    <div class="prompt-grid" id="promptGrid"></div>
+  </div>
+
+  <div id="composeSection" style="display:none;">
+    <p class="lyric-sub">Prompts para escribir o mejorar la letra.</p>
+    <div class="add-bar">
+      <button class="add-btn" id="composeAddBtn" title="Nuevo prompt">＋ Prompt</button>
+      <button class="add-btn" id="composeSectionBtn" title="Nueva sección">＋ Sección</button>
+    </div>
+    <div class="add-form" id="composeForm" style="display:none;">
+      <div class="add-form-row">
+        <select id="composePromptSecSel" class="sec-select"></select>
+      </div>
+      <input type="text" id="composePromptName" placeholder="Nombre del prompt (opcional)">
+      <textarea id="composePromptInput" placeholder="Escribe o pega el prompt..." rows="3"></textarea>
+      <div class="add-form-row end">
+        <button class="tool" id="composeCancelBtn">Cancelar</button>
+        <button class="tool primary" id="composeSaveBtn">Guardar</button>
+      </div>
+    </div>
+    <div class="prompt-grid" id="composePromptGrid"></div>
+  </div>
+
+  <div id="antiSection" style="display:none;">
+    <p class="lyric-sub">Estilos y rasgos que no quieres. Se envían en todas las creaciones de estilo.</p>
+    <div class="add-form" id="antiGenForm">
+      <div class="add-form-row">
+        <input type="text" id="antiGenInput" placeholder="Describe lo que no quieres: voces gritadas, producción comercial..." style="flex:1;min-width:220px;">
+        <button class="tool primary" id="antiGenGo">Sugerir</button>
+        <button class="tool" id="antiAllGo" title="Analiza tus notas bajas y todo el panel">Crear</button>
+      </div>
+      <div class="add-form-row">
+        <input type="text" id="antiOwnInput" placeholder="O pega aquí un antiprompt tuyo..." style="flex:1;min-width:220px;">
+        <button class="tool" id="antiOwnGo">Añadir mío</button>
+        <button class="tool" id="antiFromStyles" title="Trae los estilos que has puntuado del 1 al 3">Traer de Estilos</button>
+      </div>
+      <div id="antiGenResults" class="song-results"></div>
+    </div>
+    <div class="controls">
+      <input type="text" id="antiSearch" placeholder="Buscar antiprompt...">
+    </div>
+    <div class="tabs" id="antiTabs"></div>
+    <div class="grid" id="antiGrid"></div>
+  </div>
+
+  <div id="refsSection" style="display:none;">
+    <p class="lyric-sub">Letras de referencia. Las ancladas sirven de inspiración para todas las canciones; las demás, solo para esta.</p>
+    <div class="add-bar">
+      <button class="add-btn" id="refAddBtn" title="Nueva referencia">＋ Referencia</button>
+      <button class="add-btn" id="refSectionBtn" title="Nueva sección">＋ Sección</button>
+      <button class="add-btn" id="songFinderBtn" title="Buscar canciones">Buscar canción</button>
+      <input type="text" id="refFilter" placeholder="Filtrar mis referencias..." style="flex:1;min-width:150px;background:var(--panel);">
+    </div>
+    <div class="add-form" id="songFinder" style="display:none;">
+      <div class="add-form-row">
+        <div class="scope-switch" id="finderMode">
+          <button class="scope-btn active" data-mode="artist">Por artista</button>
+          <button class="scope-btn" data-mode="song">Por canción</button>
+        </div>
+        <input type="text" id="songQuery" placeholder="Escribe un artista: Melendi, Rosalía..." style="flex:1;min-width:180px;">
+        <button class="tool" id="songBackBtn" style="display:none;">← Volver</button>
+      </div>
+      <div id="songResults" class="song-results"></div>
+    </div>
+    <div class="add-form" id="refForm" style="display:none;">
+      <div class="add-form-row">
+        <select id="refSecSel" class="sec-select"></select>
+      </div>
+      <input type="text" id="refName" placeholder="Título de la letra / artista (opcional)">
+      <textarea id="refInput" placeholder="Pega aquí la letra de referencia..." rows="4"></textarea>
+      <div class="add-form-row end">
+        <button class="tool" id="refCancelBtn">Cancelar</button>
+        <button class="tool primary" id="refSaveBtn">Guardar</button>
+      </div>
+    </div>
+    <div class="prompt-grid" id="refGrid"></div>
+  </div>
+
+  <div id="lyricsSection" style="display:none;">
+    <p class="lyric-sub">Toca Expandir para editar. Duplicar crea una versión nueva.</p>
+    <button class="tool primary" id="newLyricBtn">Nueva letra</button>
+    <div id="lyricVersions"></div>
+  </div>
+
+  <footer>Se guarda solo, por canción.</footer>
+</div>
+
+<script>
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+let activeRec = null;
+const GENRES = ["Cumbia arrastrada","Dancehall","Rap","Reggae","Rumba","Flamenco","Funk","Disco","House","Jersey club","Drum and bass","Afrobeat","Reggaetón","Bachata","Salsa","Bolero","Corrido","Trap","Rock","Soul","Gospel","Bossa nova","Samba","Merengue","UK garage","Breakbeat","Synthpop","Trip hop","Ska","Zouk","Dembow","Kuduro","Amapiano","Gqom","Baile funk","Moombahton","Soca","Calypso","Kompa","Kizomba","Mambo","Cha-cha-chá","Son cubano","Guaracha","Vallenato","Champeta","Forró","Sertanejo","Tango","Milonga","Pasodoble","Fado","Blues","Jazz","Swing","Boogie","Funk carioca","Neo-soul","R&B","Drill","Grime","Boom bap","Lo-fi hip hop","Electro","Techno","Trance","Dub","Dubstep","Garage","Jungle","Breakcore","Hyperpop","New wave","Post-punk","Punk","Metal","Indie pop","Indie rock","Shoegaze","Dream pop","Psychedelic rock","Folk","Country","Bluegrass","Motown","Doo-wop","Rockabilly","Surf rock","Reggae fusion","Latin jazz","Afro-Cuban","Highlife","Afro-house","Deep house","French house","Italo disco","Eurodance","Synthwave","Vaporwave","Ambient","Electroclash","Baltimore club","Footwork"];
+
+const DESCRIPTIONS = {
+  "Cumbia arrastrada": "Cumbia mexicana lenta y pesada, con bajo arrastrado y aire callejero.",
+  "Dancehall": "Derivado del reggae jamaicano, ritmo digital rápido y voz agresiva.",
+  "Rap": "Voz hablada rítmica sobre base de percusión, raíz del hip hop.",
+  "Reggae": "Origen jamaicano, contratiempo marcado y bajo profundo, raíz del ska y el dub.",
+  "Rumba": "Raíz afrocubana, percusión y clave, base de la salsa y el son.",
+  "Flamenco": "Tradición andaluza: cante, guitarra y compás, raíz de fusiones latinas.",
+  "Funk": "Groove sincopado de bajo y batería nacido del soul, base del disco y el hip hop.",
+  "Disco": "Derivado del funk y el soul, cuatro por cuatro bailable de los 70.",
+  "House": "Nacido del disco en Chicago, cuatro por cuatro electrónico y repetitivo.",
+  "Jersey club": "Derivado del house de Baltimore, patrones sincopados y samples cortados.",
+  "Drum and bass": "Breakbeats acelerados y bajo pesado, salido de la jungle británica.",
+  "Afrobeat": "Fusión nigeriana de jazz, funk y ritmos yoruba, creada por Fela Kuti.",
+  "Reggaetón": "Mezcla de dembow, reggae en español y hip hop, nacido en Puerto Rico/Panamá.",
+  "Bachata": "Origen dominicano, guitarra romántica derivada del bolero y el son.",
+  "Salsa": "Fusión cubana-neoyorquina de son, mambo y jazz latino.",
+  "Bolero": "Balada romántica latina, raíz de la bachata y la salsa lenta.",
+  "Corrido": "Narrativa mexicana tradicional, ahora fusionada con trap (corridos tumbados).",
+  "Trap": "Derivado del hip hop sureño de EE.UU., hi-hats rápidos y 808 pesado.",
+  "Rock": "Guitarra, bajo y batería nacidos del blues y el rock and roll.",
+  "Soul": "Voz emotiva sobre góspel y R&B, raíz del funk y el neo-soul.",
+  "Gospel": "Música religiosa afroamericana, raíz del soul y el R&B.",
+  "Bossa nova": "Fusión brasileña de samba y jazz, suave y armónicamente sofisticada.",
+  "Samba": "Ritmo brasileño de raíz africana, base del carnaval y la bossa nova.",
+  "Merengue": "Origen dominicano, ritmo rápido en 2/4, primo de la bachata.",
+  "UK garage": "Derivado del house y el R&B en Reino Unido, ritmos sincopados y voces pitchadas.",
+  "Breakbeat": "Batería quebrada no lineal, base de la jungle y el big beat.",
+  "Synthpop": "Pop electrónico ochentero basado en sintetizadores.",
+  "Trip hop": "Fusión de hip hop lento y ambient, nacida en Bristol (Massive Attack).",
+  "Ska": "Precursor jamaicano del reggae, contratiempo rápido con vientos.",
+  "Zouk": "Origen antillano francés (Guadalupe/Martinica), ritmo sensual derivado del kompa.",
+  "Dembow": "Ritmo dominicano-panameño, base rítmica del reggaetón.",
+  "Kuduro": "Electrónica angoleña rápida, mezcla de house y ritmos tradicionales.",
+  "Amapiano": "Sudafricano, mezcla de deep house, jazz y kwaito con bajo profundo.",
+  "Gqom": "Electrónica de Durban (Sudáfrica), oscura, minimalista y percusiva.",
+  "Baile funk": "Funk carioca de las favelas de Río, base electrónica repetitiva.",
+  "Moombahton": "Fusión de house holandés y reggaetón, tempo medio y bajo dembow.",
+  "Soca": "Evolución del calypso en Trinidad, más rápida y bailable.",
+  "Calypso": "Origen trinitense, narrativa social sobre ritmo caribeño, raíz del soca.",
+  "Kompa": "Origen haitiano, ritmo bailable derivado del merengue, raíz del zouk.",
+  "Kizomba": "Origen angoleño, sensual y lenta, evolución del semba.",
+  "Mambo": "Origen cubano, precursor de la salsa, con metales potentes.",
+  "Cha-cha-chá": "Derivado del mambo cubano, ritmo más lento y marcado.",
+  "Son cubano": "Raíz de la salsa, fusión de guitarra española y percusión africana.",
+  "Guaracha": "Género cubano festivo, hoy también nombre de la electrónica latina rápida.",
+  "Vallenato": "Origen colombiano, acordeón y caja, narrativa costeña.",
+  "Champeta": "Origen colombiano (Cartagena), fusión de ritmos africanos y caribeños.",
+  "Forró": "Música tradicional del noreste de Brasil, acordeón y baile en pareja.",
+  "Sertanejo": "Country brasileño, romántico y masivo, primo del forró.",
+  "Tango": "Origen rioplatense (Argentina/Uruguay), dramático y bailable, bandoneón.",
+  "Milonga": "Precursor del tango, más rápido y alegre.",
+  "Pasodoble": "Marcha española de origen taurino, ritmo firme y marcial.",
+  "Fado": "Canción melancólica portuguesa, voz y guitarra portuguesa.",
+  "Blues": "Raíz afroamericana del rock, el soul y el jazz, escala pentatónica y sentimiento.",
+  "Jazz": "Improvisación afroamericana nacida del blues y el ragtime.",
+  "Swing": "Jazz bailable de big band de los años 30-40.",
+  "Boogie": "Funk/soul de finales de los 70-80, precursor del house.",
+  "Funk carioca": "Ritmo electrónico de Río de Janeiro, base del baile funk.",
+  "Neo-soul": "Evolución moderna del soul con influencias de hip hop y jazz.",
+  "R&B": "Rhythm and blues, raíz del soul, el funk y el hip hop moderno.",
+  "Drill": "Derivado del trap y el grime, oscuro y agresivo (Chicago/Londres).",
+  "Grime": "Electrónica urbana británica, mezcla de UK garage, dancehall y hip hop.",
+  "Boom bap": "Hip hop clásico de los 90, batería contundente y samples de jazz/soul.",
+  "Lo-fi hip hop": "Hip hop instrumental relajado con textura vintage y samples de jazz.",
+  "Electro": "Electrónica pionera de los 80, base robótica del hip hop y el house.",
+  "Techno": "Electrónica repetitiva nacida en Detroit, evolución del funk y el electro.",
+  "Trance": "Electrónica melódica y ascendente, derivada del techno y el house.",
+  "Dub": "Versión instrumental y con efectos del reggae, raíz del dubstep y el trip hop.",
+  "Dubstep": "Bajo pesado y ritmo sincopado, evolución del UK garage y el dub.",
+  "Garage": "Precursor del UK garage y el house, ritmo soulful de los 80-90.",
+  "Jungle": "Breakbeats rápidos con bajo reggae/dub, raíz del drum and bass.",
+  "Breakcore": "Breakbeat extremo y caótico, mezcla de jungle, gabber e industrial.",
+  "Hyperpop": "Pop electrónico distorsionado y exagerado, evolución del PC music.",
+  "New wave": "Pop-rock electrónico post-punk de finales de los 70-80.",
+  "Post-punk": "Evolución experimental del punk, oscuro y atmosférico.",
+  "Punk": "Rock crudo y rápido de los 70, raíz del post-punk y el rock alternativo.",
+  "Metal": "Rock pesado y distorsionado derivado del blues rock y el hard rock.",
+  "Indie pop": "Pop guitarrero independiente, ligero y melódico.",
+  "Indie rock": "Rock alternativo independiente, raíz del shoegaze y el dream pop.",
+  "Shoegaze": "Rock con guitarras saturadas y efectos, atmosférico e introspectivo.",
+  "Dream pop": "Pop etéreo con reverb y atmósferas, primo del shoegaze.",
+  "Psychedelic rock": "Rock experimental de los 60-70, influenciado por estados alterados.",
+  "Folk": "Música tradicional acústica, raíz del country y el indie folk.",
+  "Country": "Música tradicional estadounidense, raíz del folk y el bluegrass.",
+  "Bluegrass": "Derivado del folk y el country, cuerdas rápidas y virtuosismo.",
+  "Motown": "Soul-pop de Detroit de los 60, precursor del R&B moderno.",
+  "Doo-wop": "Vocal armónico de los 50, precursor del soul y el R&B.",
+  "Rockabilly": "Fusión de rock and roll y country de los 50.",
+  "Surf rock": "Rock instrumental de guitarra reverberante de los 60 (California).",
+  "Reggae fusion": "Reggae mezclado con dancehall, hip hop o R&B moderno.",
+  "Latin jazz": "Fusión de jazz con ritmos afrocubanos (son, mambo, rumba).",
+  "Afro-Cuban": "Raíz africana y cubana, base de la salsa, el mambo y el jazz latino.",
+  "Highlife": "Origen ghanés, fusión de ritmos africanos con jazz y guitarra occidental.",
+  "Afro-house": "House con percusión e influencias africanas.",
+  "Deep house": "House más lento, suave y con acordes de jazz/soul.",
+  "French house": "House filtrado y con samples disco, escena francesa de los 90-2000.",
+  "Italo disco": "Disco electrónico italiano de los 80, sintetizadores brillantes.",
+  "Eurodance": "Pop electrónico bailable europeo de los 90.",
+  "Synthwave": "Electrónica nostálgica inspirada en los sintetizadores de los 80.",
+  "Vaporwave": "Electrónica lenta y nostálgica, collage de sonidos de los 80-90.",
+  "Ambient": "Electrónica atmosférica sin ritmo marcado, para ambientar.",
+  "Electroclash": "Fusión de electro, punk y synthpop de los 2000.",
+  "Baltimore club": "Electrónica de Baltimore, breakbeats rápidos y samples repetidos.",
+  "Footwork": "Electrónica de Chicago derivada del juke, muy rápida y percusiva."
+};
+
+const FAMILY_ORDER = ["Blues","Jazz","Gospel","Folk","Country","Rock","Metal","R&B","Soul","Funk","Pop","Hip-hop / Rap","Reggae","Reguetón","Música electrónica","Música latina","Música clásica","Flamenco"];
+
+const GENRE_GROUP = {
+  "Cumbia arrastrada":"Música latina","Dancehall":"Reggae","Rap":"Hip-hop / Rap","Reggae":"Reggae",
+  "Rumba":"Música latina","Flamenco":"Flamenco","Funk":"Funk","Disco":"Pop","House":"Música electrónica",
+  "Jersey club":"Música electrónica","Drum and bass":"Música electrónica","Afrobeat":"Funk","Reggaetón":"Reguetón",
+  "Bachata":"Música latina","Salsa":"Música latina","Bolero":"Música latina","Corrido":"Música latina","Trap":"Hip-hop / Rap",
+  "Rock":"Rock","Soul":"Soul","Gospel":"Gospel","Bossa nova":"Música latina","Samba":"Música latina","Merengue":"Música latina",
+  "UK garage":"Música electrónica","Breakbeat":"Música electrónica","Synthpop":"Pop","Trip hop":"Música electrónica","Ska":"Reggae",
+  "Zouk":"Música latina","Dembow":"Música latina","Kuduro":"Música electrónica","Amapiano":"Música electrónica","Gqom":"Música electrónica",
+  "Baile funk":"Funk","Moombahton":"Música electrónica","Soca":"Música latina","Calypso":"Música latina","Kompa":"Música latina",
+  "Kizomba":"Música latina","Mambo":"Música latina","Cha-cha-chá":"Música latina","Son cubano":"Música latina","Guaracha":"Música latina",
+  "Vallenato":"Música latina","Champeta":"Música latina","Forró":"Música latina","Sertanejo":"Música latina","Tango":"Música latina",
+  "Milonga":"Música latina","Pasodoble":"Música clásica","Fado":"Folk","Blues":"Blues","Jazz":"Jazz","Swing":"Jazz","Boogie":"Funk",
+  "Funk carioca":"Funk","Neo-soul":"Soul","R&B":"R&B","Drill":"Hip-hop / Rap","Grime":"Hip-hop / Rap","Boom bap":"Hip-hop / Rap",
+  "Lo-fi hip hop":"Hip-hop / Rap","Electro":"Música electrónica","Techno":"Música electrónica","Trance":"Música electrónica",
+  "Dub":"Reggae","Dubstep":"Música electrónica","Garage":"Música electrónica","Jungle":"Música electrónica","Breakcore":"Música electrónica",
+  "Hyperpop":"Pop","New wave":"Rock","Post-punk":"Rock","Punk":"Rock","Metal":"Metal","Indie pop":"Pop","Indie rock":"Rock",
+  "Shoegaze":"Rock","Dream pop":"Pop","Psychedelic rock":"Rock","Folk":"Folk","Country":"Country","Bluegrass":"Country",
+  "Motown":"Soul","Doo-wop":"Soul","Rockabilly":"Rock","Surf rock":"Rock","Reggae fusion":"Reggae","Latin jazz":"Jazz",
+  "Afro-Cuban":"Música latina","Highlife":"Funk","Afro-house":"Música electrónica","Deep house":"Música electrónica",
+  "French house":"Música electrónica","Italo disco":"Pop","Eurodance":"Pop","Synthwave":"Música electrónica",
+  "Vaporwave":"Música electrónica","Ambient":"Música electrónica","Electroclash":"Música electrónica",
+  "Baltimore club":"Música electrónica","Footwork":"Música electrónica"
+};
+const FAMILY_HINTS = {
+  "Flamenco":["flamenco","camarón","camaron","bulería","buleria","rumba flamenca","cante","tangos flamencos","frigia"],
+  "Música latina":["bachata","salsa","cumbia","bolero","merengue","latin","latino","caribe","son cubano","tango","vallenato","samba","bossa","corrido","mariachi","ranchera","reggaeton latino"],
+  "Reguetón":["reguetón","reggaeton","reggaetón","dembow","perreo"],
+  "Hip-hop / Rap":["rap","hip hop","hip-hop","trap","drill","boom bap","grime","freestyle"],
+  "Música electrónica":["house","techno","electrónic","electronic","edm","dubstep","garage","drum and bass","synth","ambient","club"],
+  "Rock":["rock","punk","indie rock","shoegaze","grunge","guitarra eléctrica distorsion"],
+  "Metal":["metal","hardcore","doom"],
+  "Pop":["pop","synthpop","disco","hyperpop"],
+  "Soul":["soul","neo-soul","motown"],
+  "R&B":["r&b","rnb","rhythm and blues"],
+  "Funk":["funk","afrobeat","groove","amapiano"],
+  "Jazz":["jazz","swing","bebop","latin jazz"],
+  "Blues":["blues"],
+  "Gospel":["gospel","coro espiritual"],
+  "Folk":["folk","fado","acústico tradicional","cantautor"],
+  "Country":["country","bluegrass","americana"],
+  "Música clásica":["clásic","clasic","orquest","cuerdas","piano de concierto","cinematic","cinemat"]
+};
+
+function guessFamily(text){
+  const t = (text || "").toLowerCase();
+  for(const g of GENRES){
+    if(t.includes(g.toLowerCase())) return GENRE_GROUP[g] || "Música latina";
+  }
+  let best = null, bestPos = Infinity;
+  Object.keys(FAMILY_HINTS).forEach(fam => {
+    FAMILY_HINTS[fam].forEach(h => {
+      const pos = t.indexOf(h);
+      if(pos >= 0 && pos < bestPos){ best = fam; bestPos = pos; }
+    });
+  });
+  return best || "Pop";
+}
+
+function familyOf(g){
+  if(GENRE_GROUP[g]) return GENRE_GROUP[g];
+  try{
+    const c = currentState().custom;
+    if(c && c[g]){
+      if(c[g].family && c[g].family !== "Otros") return c[g].family;
+      const fam = guessFamily(g + " " + (c[g].desc || ""));
+      c[g].family = fam;
+      return fam;
+    }
+  }catch(e){}
+  return "Otros";
+}
+
+const STORAGE_KEY = "estilos-musicales-db";
+let db = { currentSong: "General", songs: { "General": {} }, notes: {} };
+let sortMode = "orig";
+let searchTerm = "";
+let activeFamilies = new Set();
+let ratingFilter = "0";
+let activeTab = "pendientes";
+
+function ensureGenres(songName){
+  const songState = db.songs[songName];
+  GENRES.forEach(g => { if(!songState[g]) songState[g] = {done:false, rating:0}; });
+  if(!songState.fusions) songState.fusions = {};
+  if(!songState.prompts) songState.prompts = {};
+  if(!songState.composePrompts) songState.composePrompts = {};
+  if(!songState.lyricVersions) songState.lyricVersions = [];
+  if(!songState.refs) songState.refs = {};
+  if(!songState.anti) songState.anti = {};
+  if(!songState.antiList) songState.antiList = {};
+  if(songState.composePrompts["forbidden_auto"]) delete songState.composePrompts["forbidden_auto"];
+  Object.keys(songState.composePrompts).forEach(id => { if(songState.composePrompts[id].pinned) delete songState.composePrompts[id]; });
+}
+
+function customBag(){
+  const cs = currentState();
+  if(!cs.custom) cs.custom = {};
+  return cs.custom;
+}
+
+function isCustom(g){
+  return !GENRES.includes(g) && !!customBag()[g];
+}
+
+function isFusion(g){
+  return !GENRES.includes(g) && !customBag()[g];
+}
+
+function entryState(g){
+  const cs = currentState();
+  if(isCustom(g)) return cs.custom[g];
+  return isFusion(g) ? cs.fusions[g] : cs[g];
+}
+
+function detectFusions(){
+  const cs = currentState();
+
+  Object.keys(cs.fusions).forEach(name => {
+    const f = cs.fusions[name];
+    if(f.parents && cs[f.parents[0]] && cs[f.parents[1]]){
+      f.pct = Math.round(((cs[f.parents[0]].rating + cs[f.parents[1]].rating) / 2 / 10) * 100);
+    }
+  });
+
+  const topRated = GENRES.filter(g => cs[g].rating >= 6).sort((a,b)=>cs[b].rating - cs[a].rating).slice(0,4);
+  for(let i=0;i<topRated.length;i++){
+    for(let j=i+1;j<topRated.length;j++){
+      const a = topRated[i], b = topRated[j];
+      const wordA = a.split(" ")[0], wordB = b.split(" ")[0];
+      if(wordA.toLowerCase() === wordB.toLowerCase()) continue;
+      const name = wordA + " " + wordB;
+      const pct = Math.round(((cs[a].rating + cs[b].rating) / 2 / 10) * 100);
+      if(!cs.fusions[name]){
+        cs.fusions[name] = {done:false, rating:0, pct:pct, parents:[a,b]};
+      }
+    }
+  }
+  Object.keys(cs.fusions).forEach(name => {
+    const f = cs.fusions[name];
+    const p0 = f.parents && cs[f.parents[0]];
+    const p1 = f.parents && cs[f.parents[1]];
+    const stillQualifies = p0 && p1 && p0.rating >= 6 && p1.rating >= 6;
+    if(!stillQualifies && f.rating === 0 && !f.done){ delete cs.fusions[name]; }
+  });
+}
+
+function currentState(){
+  return db.songs[db.currentSong];
+}
+
+async function loadDB(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, false);
+    if(res && res.value){ db = JSON.parse(res.value); }
+  }catch(e){ /* usa valores por defecto */ }
+  if(!db.songs) db.songs = {};
+  if(!db.notes) db.notes = {};
+  if(!db.globalPrompts) db.globalPrompts = {prompts:{}, composePrompts:{}};
+  if(!db.sections) db.sections = {};
+  if(!db.currentSong || !db.songs[db.currentSong]){
+    if(Object.keys(db.songs).length === 0){ db.songs["General"] = {}; }
+    db.currentSong = Object.keys(db.songs)[0];
+  }
+  Object.keys(db.songs).forEach(ensureGenres);
+  renderSongSelect();
+  renderFamilyChips();
+  renderTabs();
+  render();
+}
+
+let saveTimer = null;
+let saving = false;
+let savePending = false;
+
+async function flushSave(retry){
+  if(saving){ savePending = true; return; }
+  saving = true;
+  try{
+    await window.storage.set(STORAGE_KEY, JSON.stringify(db), false);
+  }catch(e){
+    if((retry || 0) < 4){
+      saving = false;
+      setTimeout(()=>flushSave((retry || 0) + 1), 600 * Math.pow(2, retry || 0));
+      return;
+    }
+    console.error("No se pudo guardar", e);
+  }
+  saving = false;
+  if(savePending){
+    savePending = false;
+    flushSave(0);
+  }
+}
+
+function saveDB(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>flushSave(0), 500);
+}
+
+function renderSongSelect(){
+  const sel = document.getElementById("songSelect");
+  sel.innerHTML = "";
+  Object.keys(db.songs).forEach(name => {
+    const opt = document.createElement("option");
+    opt.value = name;
+    opt.textContent = name;
+    if(name === db.currentSong) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  const nuevo = document.createElement("option");
+  nuevo.value = "__new__";
+  nuevo.textContent = "＋ Nueva canción...";
+  sel.appendChild(nuevo);
+}
+
+function toggleDone(g){
+  entryState(g).done = !entryState(g).done;
+  saveDB();
+  render();
+}
+
+function copyText(text){
+  let ok = false;
+  try{
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.top = "-1000px";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+  }catch(e){ ok = false; }
+  if(!ok && navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).catch(()=>{});
+  }
+  return ok;
+}
+
+function copyGenre(g, cardEl){
+  const ok = copyText(g);
+  const flash = cardEl.querySelector(".copied-flash");
+  if(!ok){ flash.textContent = "Toca y mantén para copiar"; }
+  if(!entryState(g).done){
+    entryState(g).done = true;
+    saveDB();
+  }
+  flash.classList.add("show");
+  setTimeout(()=>flash.classList.remove("show"), 900);
+  render();
+}
+
+function setNote(g, val){
+  db.notes[g] = val;
+  saveDB();
+}
+
+function setRating(g, val){
+  const s = entryState(g);
+  s.rating = (s.rating === val) ? 0 : val;
+  detectFusions();
+  saveDB();
+  render();
+  if(s.rating > 0) queueAutoStyle();
+}
+
+function getOrdered(){
+  const cs = currentState();
+  const allKeys = GENRES.concat(Object.keys(cs.fusions || {})).concat(Object.keys(cs.custom || {}));
+  let list = allKeys.filter(g => g.toLowerCase().includes(searchTerm.toLowerCase()));
+  if(activeTab === "creados"){
+    list = list.filter(g => isCustom(g) && entryState(g).rating === 0);
+  } else if(activeTab === "suspensas"){
+    list = list.filter(g => entryState(g).rating >= 1 && entryState(g).rating <= 4);
+  } else if(activeTab === "aprobadas"){
+    list = list.filter(g => entryState(g).rating >= 5);
+  } else if(activeTab === "pendientes"){
+    list = list.filter(g => entryState(g).rating === 0);
+  }
+  if(activeFamilies.size > 0){
+    list = list.filter(g => !isFusion(g) && activeFamilies.has(familyOf(g)));
+  }
+  if(ratingFilter === "unrated"){
+    list = list.filter(g => entryState(g).rating === 0);
+  } else if(ratingFilter !== "0"){
+    const min = parseInt(ratingFilter, 10);
+    list = list.filter(g => entryState(g).rating >= min);
+  }
+  if(sortMode === "alpha"){
+    list = list.slice().sort((a,b)=>a.localeCompare(b,'es'));
+  } else if(sortMode === "rating"){
+    list = list.slice().sort((a,b)=> entryState(b).rating - entryState(a).rating);
+  } else if(sortMode === "pending"){
+    list = list.slice().sort((a,b)=> (entryState(a).done===entryState(b).done)?0:(entryState(a).done?1:-1));
+  } else {
+    const groupAvg = getAffinity();
+    list = list.slice().sort((a,b) => {
+      const sa = isFusion(a) ? (entryState(a).rating===0 ? (100 + entryState(a).pct) : -1)
+                              : ((entryState(a).rating===0 && groupAvg[familyOf(a)]!==undefined) ? groupAvg[familyOf(a)] : -1);
+      const sb = isFusion(b) ? (entryState(b).rating===0 ? (100 + entryState(b).pct) : -1)
+                              : ((entryState(b).rating===0 && groupAvg[familyOf(b)]!==undefined) ? groupAvg[familyOf(b)] : -1);
+      return sb - sa;
+    });
+  }
+  const mine = list.filter(isCustom).sort((a,b)=>(entryState(b).ord||0)-(entryState(a).ord||0));
+  const rest = list.filter(g => !isCustom(g));
+  return mine.concat(rest);
+}
+
+function updateStats(){
+  return;
+}
+
+function renderFamilyChips(){
+  const row = document.getElementById("familyRow");
+  row.innerHTML = "";
+  const allChip = document.createElement("button");
+  allChip.className = "fam-chip" + (activeFamilies.size === 0 ? " active" : "");
+  allChip.textContent = "Todas";
+  allChip.addEventListener("click", ()=>{
+    activeFamilies.clear();
+    renderFamilyChips();
+    render();
+  });
+  row.appendChild(allChip);
+
+  const names = FAMILY_ORDER;
+  names.forEach(f => {
+    const chip = document.createElement("button");
+    chip.className = "fam-chip" + (activeFamilies.has(f) ? " active" : "");
+    chip.textContent = f;
+    chip.addEventListener("click", ()=>{
+      if(activeFamilies.has(f)){ activeFamilies.delete(f); }
+      else{ activeFamilies.add(f); }
+      renderFamilyChips();
+      render();
+    });
+    row.appendChild(chip);
+  });
+}
+
+function renderTabs(){
+  const cs = currentState();
+  const allKeys = GENRES.concat(Object.keys(cs.fusions || {})).concat(Object.keys(cs.custom || {}));
+  const counts = {
+    todas: allKeys.length,
+    creados: allKeys.filter(g => isCustom(g) && entryState(g).rating === 0).length,
+    pendientes: allKeys.filter(g=>entryState(g).rating===0).length,
+    aprobadas: allKeys.filter(g=>entryState(g).rating>=5).length,
+    suspensas: allKeys.filter(g=>entryState(g).rating>=1 && entryState(g).rating<=4).length
+  };
+  const labels = {todas:"Todas", creados:"Creados", pendientes:"Pendientes", aprobadas:"Aprobadas", suspensas:"Suspensas"};
+  const row = document.getElementById("tabRow");
+  row.innerHTML = "";
+  Object.keys(labels).forEach(key => {
+    const btn = document.createElement("button");
+    btn.className = "tab-btn" + (activeTab === key ? " active" : "");
+    btn.innerHTML = labels[key] + '<span class="tab-count">' + counts[key] + '</span>';
+    btn.addEventListener("click", ()=>{
+      activeTab = key;
+      renderTabs();
+      render();
+    });
+    row.appendChild(btn);
+  });
+}
+
+function getAffinity(){
+  const cs = currentState();
+  const groupSums = {};
+  const groupCounts = {};
+  GENRES.forEach(g => {
+    if(cs[g].rating > 0){
+      const grp = familyOf(g);
+      groupSums[grp] = (groupSums[grp]||0) + cs[g].rating;
+      groupCounts[grp] = (groupCounts[grp]||0) + 1;
+    }
+  });
+  const groupAvg = {};
+  Object.keys(groupCounts).forEach(grp => { groupAvg[grp] = groupSums[grp] / groupCounts[grp]; });
+  return groupAvg;
+}
+
+
+function render(){
+  renderTabs();
+  detectFusions();
+  updateStats();
+  const cs = currentState();
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+  const list = getOrdered();
+  const groupAvg = getAffinity();
+  list.forEach(g => {
+    const s = entryState(g);
+    const fusion = isFusion(g);
+    const custom = isCustom(g);
+    const card = document.createElement("div");
+    let cardClass = "card";
+    if(s.rating >= 7){ cardClass += " done rated-high"; }
+    else if(s.rating >= 5){ cardClass += " done rated-mid"; }
+    else if(s.rating >= 1){ cardClass += " done rated-low"; }
+    else if(s.done){ cardClass += " done copied-unrated"; }
+    card.className = cardClass;
+
+    if(custom){
+      const crow = document.createElement("div");
+      crow.className = "custom-row";
+      const mark = document.createElement("span");
+      mark.className = "suggested-mark";
+      mark.textContent = s.mine ? "mío" : "sugerido";
+      crow.appendChild(mark);
+      const del = document.createElement("button");
+      del.className = "icon-btn style-del";
+      del.textContent = "✕";
+      del.title = "Quitar este estilo";
+      del.addEventListener("click", ()=>{ delete customBag()[g]; saveDB(); render(); });
+      crow.appendChild(del);
+      card.appendChild(crow);
+    } else if(fusion){
+      const badge = document.createElement("div");
+      badge.className = "affinity-badge";
+      badge.textContent = s.pct + "% afinidad";
+      card.appendChild(badge);
+    } else if(s.rating === 0 && groupAvg[familyOf(g)] !== undefined){
+      const pct = Math.round((groupAvg[familyOf(g)] / 10) * 100);
+      const badge = document.createElement("div");
+      badge.className = "affinity-badge";
+      badge.textContent = pct + "% afinidad";
+      card.appendChild(badge);
+    }
+
+    const top = document.createElement("div");
+    top.className = "card-top";
+
+    const btn = document.createElement("button");
+    btn.className = "genre-btn";
+    btn.textContent = g;
+    btn.title = "Toca para copiar";
+    btn.addEventListener("click", ()=>copyGenre(g, card));
+
+    const check = document.createElement("div");
+    check.className = "check";
+    check.textContent = "✓";
+    check.addEventListener("click", ()=>toggleDone(g));
+
+    top.appendChild(btn);
+    top.appendChild(check);
+
+    const desc = document.createElement("div");
+    desc.className = "desc";
+    desc.textContent = custom ? (s.desc || "") : (fusion ? ("Fusión automática de " + s.parents.join(" + ") + ".") : (DESCRIPTIONS[g] || ""));
+
+    const groupTag = document.createElement("div");
+    groupTag.className = "group-tag";
+    if(custom){
+      groupTag.textContent = familyOf(g);
+    } else if(fusion){
+      const g1 = familyOf(s.parents[0]);
+      const g2 = familyOf(s.parents[1]);
+      groupTag.textContent = (g1 === g2) ? (g1 + " · Fusión") : (g1 + " + " + g2 + " · Fusión");
+    } else {
+      groupTag.textContent = familyOf(g);
+    }
+
+    const flash = document.createElement("div");
+    flash.className = "copied-flash";
+    flash.textContent = "Copiado";
+
+    const ratingRow = document.createElement("div");
+    ratingRow.className = "rating-row";
+    for(let i=1;i<=10;i++){
+      const dot = document.createElement("button");
+      dot.className = "dot n" + i + (i === s.rating ? " filled" : "");
+      dot.textContent = i;
+      dot.title = "Puntuar " + i + "/10";
+      dot.addEventListener("click", ()=>setRating(g, i));
+      ratingRow.appendChild(dot);
+    }
+    const ratingVal = document.createElement("span");
+    ratingVal.className = "rating-val" + (s.rating>0 ? " has-value" : "");
+    ratingVal.textContent = s.rating>0 ? s.rating + "/10" : "sin nota";
+    ratingRow.appendChild(ratingVal);
+
+    card.appendChild(top);
+    card.appendChild(groupTag);
+    card.appendChild(desc);
+    card.appendChild(flash);
+    card.appendChild(ratingRow);
+
+    const noteInput = document.createElement("input");
+    noteInput.type = "text";
+    noteInput.className = "note-input";
+    noteInput.placeholder = "Tu nota personal sobre este estilo...";
+    noteInput.value = db.notes[g] || "";
+    noteInput.addEventListener("change", (e)=>setNote(g, e.target.value));
+    card.appendChild(noteInput);
+
+    grid.appendChild(card);
+  });
+}
+
+document.getElementById("search").parentNode.insertBefore(
+  micButton(()=>document.getElementById("search")),
+  document.getElementById("search").nextSibling);
+
+document.getElementById("search").addEventListener("input", (e)=>{
+  searchTerm = e.target.value;
+  render();
+});
+document.getElementById("sortSel").addEventListener("change", (e)=>{
+  sortMode = e.target.value;
+  render();
+});
+document.getElementById("ratingSel").addEventListener("change", (e)=>{
+  ratingFilter = e.target.value;
+  render();
+});
+document.getElementById("resetBtn").addEventListener("click", (e)=>{
+  const b = e.currentTarget;
+  if(b.dataset.armed === "1"){
+    db.songs[db.currentSong] = {};
+    ensureGenres(db.currentSong);
+    saveDB();
+    render();
+    b.dataset.armed = ""; b.textContent = "Reiniciar";
+    return;
+  }
+  b.dataset.armed = "1";
+  b.textContent = "¿Seguro?";
+  setTimeout(()=>{ b.dataset.armed=""; b.textContent="Reiniciar"; }, 3000);
+});
+document.getElementById("songSelect").addEventListener("change", (e)=>{
+  if(e.target.value === "__new__"){
+    document.getElementById("newSongInput").style.display = "";
+    document.getElementById("newSongBtn").style.display = "";
+    document.getElementById("newSongInput").focus();
+    e.target.value = db.currentSong;
+    return;
+  }
+  db.currentSong = e.target.value;
+  saveDB();
+  renderSongSelect();
+  render();
+  if(viewMode === "prompts") renderPrompts();
+  if(viewMode === "compositor") renderComposePrompts();
+  if(viewMode === "refs") renderRefs();
+  if(viewMode === "anti") renderAnti();
+  if(viewMode === "letra") renderLyrics();
+});
+document.getElementById("newSongBtn").addEventListener("click", ()=>{
+  const input = document.getElementById("newSongInput");
+  const name = input.value.trim();
+  if(!name) return;
+  if(!db.songs[name]){
+    db.songs[name] = {};
+    ensureGenres(name);
+  }
+  db.currentSong = name;
+  input.value = "";
+  input.style.display = "none";
+  document.getElementById("newSongBtn").style.display = "none";
+  saveDB();
+  renderSongSelect();
+  render();
+  if(viewMode === "prompts") renderPrompts();
+  if(viewMode === "compositor") renderComposePrompts();
+  if(viewMode === "refs") renderRefs();
+  if(viewMode === "anti") renderAnti();
+  if(viewMode === "letra") renderLyrics();
+});
+document.getElementById("deleteSongBtn").addEventListener("click", ()=>{
+  const names = Object.keys(db.songs);
+  if(names.length <= 1){
+    return;
+  }
+  const b = document.getElementById("deleteSongBtn");
+  if(b.dataset.armed === "1"){
+    delete db.songs[db.currentSong];
+    db.currentSong = Object.keys(db.songs)[0];
+    saveDB();
+    renderSongSelect();
+    render();
+    b.dataset.armed = ""; b.textContent = "✕";
+    return;
+  }
+  b.dataset.armed = "1";
+  b.textContent = "¿Seguro?";
+  setTimeout(()=>{ b.dataset.armed=""; b.textContent="✕"; }, 3000);
+});
+
+let viewMode = "estilos";
+
+function switchView(mode){
+  viewMode = mode;
+  document.getElementById("genreControls").style.display = mode === "estilos" ? "" : "none";
+  document.getElementById("grid").style.display = mode === "estilos" ? "" : "none";
+  document.getElementById("promptSection").style.display = mode === "prompts" ? "" : "none";
+  document.getElementById("lyricsSection").style.display = mode === "letra" ? "" : "none";
+  document.getElementById("composeSection").style.display = mode === "compositor" ? "" : "none";
+  document.getElementById("refsSection").style.display = mode === "refs" ? "" : "none";
+  document.getElementById("antiSection").style.display = mode === "anti" ? "" : "none";
+  document.getElementById("viewAntiBtn").classList.toggle("active", mode === "anti");
+  document.getElementById("viewRefsBtn").classList.toggle("active", mode === "refs");
+  document.getElementById("viewComposeBtn").classList.toggle("active", mode === "compositor");
+  document.getElementById("viewGenresBtn").classList.toggle("active", mode === "estilos");
+  document.getElementById("viewPromptsBtn").classList.toggle("active", mode === "prompts");
+  document.getElementById("viewLyricsBtn").classList.toggle("active", mode === "letra");
+  if(mode === "prompts") renderPrompts();
+  if(mode === "compositor") renderComposePrompts();
+  if(mode === "refs") renderRefs();
+  if(mode === "anti") renderAnti();
+  if(mode === "letra") renderLyrics();
+}
+
+let dragInfo = null;
+const collapsedPrompts = new Set();
+
+function growAll(){
+  requestAnimationFrame(()=>{
+    document.querySelectorAll(".prompt-card textarea").forEach(autoGrow);
+  });
+}
+
+function dropPrompt(kind, targetScope, targetSection, beforeId){
+  if(!dragInfo || dragInfo.kind !== kind) return;
+  const from = bagOf(kind, dragInfo.scope);
+  const p = from[dragInfo.id];
+  if(!p) return;
+  if(beforeId === dragInfo.id) { dragInfo = null; return; }
+  p.title = targetSection;
+  if(beforeId){
+    const target = bagOf(kind, targetScope)[beforeId];
+    if(target) p.ord = (target.ord || 0) - 0.0005;
+  } else {
+    const same = Object.values(bagOf(kind, targetScope)).filter(x => (x.title||"Sin sección") === targetSection);
+    p.ord = Math.max(0, ...same.map(x => x.ord || 0)) + 1;
+  }
+  if(targetScope !== dragInfo.scope){
+    bagOf(kind, targetScope)[dragInfo.id] = p;
+    delete from[dragInfo.id];
+  }
+  dragInfo = null;
+  saveDB();
+  renderPromptView(kind);
+}
+
+document.addEventListener("click", (e)=>{
+  if(!e.target.closest(".move-menu")) document.querySelectorAll(".move-menu").forEach(m => m.remove());
+});
+
+
+
+function micButton(getTarget, cls){
+  const btn = document.createElement("button");
+  btn.className = cls || "icon-btn mic-btn";
+  btn.type = "button";
+  btn.textContent = "🎤";
+  btn.title = SpeechRec ? "Dictar" : "Tu navegador no permite dictado";
+  if(!SpeechRec){ btn.disabled = true; return btn; }
+  btn.addEventListener("click", (e)=>{
+    e.preventDefault();
+    e.stopPropagation();
+    if(activeRec){ activeRec.stop(); activeRec = null; btn.classList.remove("rec"); return; }
+    const target = getTarget();
+    if(!target) return;
+    const rec = new SpeechRec();
+    rec.lang = "es-ES";
+    rec.continuous = true;
+    rec.interimResults = false;
+    const base = target.value;
+    let acc = "";
+    rec.onresult = (ev)=>{
+      for(let i = ev.resultIndex; i < ev.results.length; i++){
+        if(ev.results[i].isFinal) acc += ev.results[i][0].transcript + " ";
+      }
+      target.value = (base ? base + (base.endsWith("\n") ? "" : " ") : "") + acc.trim();
+      target.dispatchEvent(new Event("input", {bubbles:true}));
+    };
+    rec.onend = ()=>{
+      btn.classList.remove("rec");
+      activeRec = null;
+      target.dispatchEvent(new Event("change", {bubbles:true}));
+    };
+    rec.onerror = (ev)=>{
+      btn.classList.remove("rec");
+      activeRec = null;
+      const msg = ev && ev.error === "not-allowed"
+        ? "Sin permiso de micrófono: descarga el archivo y ábrelo en Chrome"
+        : ev && ev.error === "service-not-allowed"
+          ? "El navegador bloquea el dictado aquí: ábrelo fuera del panel"
+          : "Dictado no disponible (" + ((ev && ev.error) || "error") + ")";
+      btn.textContent = "🎤 ✕";
+      btn.title = msg;
+      const warn = document.createElement("span");
+      warn.className = "mic-warn";
+      warn.textContent = msg;
+      if(btn.parentNode && !btn.parentNode.querySelector(".mic-warn")){
+        btn.parentNode.appendChild(warn);
+        setTimeout(()=>{ warn.remove(); btn.textContent = "🎤"; }, 6000);
+      }
+    };
+    try{ rec.start(); }
+    catch(err){ btn.classList.remove("rec"); activeRec = null; return; }
+    activeRec = rec;
+    btn.classList.add("rec");
+  });
+  return btn;
+}
+
+function attachMicTo(el, container){
+  if(!el) return;
+  const b = micButton(()=>el);
+  (container || el.parentNode).appendChild(b);
+}
+
+function autoGrow(ta){
+  ta.style.height = "auto";
+  ta.style.height = (ta.scrollHeight + 4) + "px";
+}
+
+function globalBag(kind){
+  if(!db.globalPrompts) db.globalPrompts = {};
+  if(!db.globalPrompts[kind]) db.globalPrompts[kind] = {};
+  return db.globalPrompts[kind];
+}
+
+function migratePrompts(bag){
+  if(!bag) return {};
+  Object.keys(bag).forEach(id => {
+    const p = bag[id];
+    if(p.ord === undefined) p.ord = Date.now() + Math.random();
+    if(p.name === undefined){
+      p.name = (p.title && p.title !== "Sin título" && p.title !== "Sin sección") ? p.title : "";
+      p.title = "Sin sección";
+    }
+  });
+  return bag;
+}
+
+function bagOf(kind, scope){
+  if(scope !== "global"){
+    const cs = currentState();
+    if(!cs[kind]) cs[kind] = {};
+    return migratePrompts(cs[kind]);
+  }
+  return migratePrompts(globalBag(kind));
+}
+
+function sectionsOf(kind){
+  if(!db.sections[kind]) db.sections[kind] = ["Sin sección"];
+  return db.sections[kind];
+}
+
+function pinnedSections(kind){
+  if(!db.pinnedSections) db.pinnedSections = {};
+  if(!db.pinnedSections[kind]) db.pinnedSections[kind] = [];
+  return db.pinnedSections[kind];
+}
+
+function isPinned(kind, name){
+  return pinnedSections(kind).includes(name);
+}
+
+function togglePinSection(kind, name){
+  const pins = pinnedSections(kind);
+  const idx = pins.indexOf(name);
+  const pinning = idx < 0;
+  if(pinning) pins.push(name); else pins.splice(idx, 1);
+  const from = bagOf(kind, pinning ? "song" : "global");
+  const to = bagOf(kind, pinning ? "global" : "song");
+  Object.keys(from).forEach(id => {
+    if((from[id].title || "Sin sección") === name){
+      to[id] = from[id];
+      delete from[id];
+    }
+  });
+  saveDB();
+  renderPromptView(kind);
+}
+
+function allSections(kind){
+  const list = sectionsOf(kind).slice();
+  ["global","song"].forEach(sc => {
+    const bag = bagOf(kind, sc);
+    Object.keys(bag).forEach(id => {
+      const t = bag[id].title || "Sin sección";
+      if(!list.includes(t)) list.push(t);
+    });
+  });
+  return list;
+}
+
+const scopeChoice = { prompts:"global", composePrompts:"global", refs:"global", anti:"global" };
+
+function renderPromptView(kind){
+  if(kind === "prompts") renderPrompts();
+  else if(kind === "refs") renderRefs();
+  else if(kind === "anti") renderAnti();
+  else renderComposePrompts();
+}
+
+function fillSectionSelect(kind, selectId){
+  const sel = document.getElementById(selectId);
+  const prev = sel.value;
+  sel.innerHTML = "";
+  allSections(kind).forEach(name => {
+    const o = document.createElement("option");
+    o.value = name; o.textContent = "Sección: " + name;
+    sel.appendChild(o);
+  });
+  if(prev && allSections(kind).includes(prev)) sel.value = prev;
+}
+
+function renameGroup(kind, scope, oldTitle, newTitle){
+  const clean = newTitle.trim() || "Sin sección";
+  const bag = bagOf(kind, scope);
+  Object.keys(bag).forEach(id => {
+    if((bag[id].title || "Sin sección") === oldTitle) bag[id].title = clean;
+  });
+  const secs = sectionsOf(kind);
+  const idx = secs.indexOf(oldTitle);
+  if(idx >= 0) secs[idx] = clean;
+  if(db.sectionOrder && db.sectionOrder[kind]){
+    const oi = db.sectionOrder[kind].indexOf("sec:" + oldTitle);
+    if(oi >= 0) db.sectionOrder[kind][oi] = "sec:" + clean;
+  }
+  saveDB();
+  renderPromptView(kind);
+}
+
+function buildPromptCard(id, p, kind, scope, bestId){
+  const bag = bagOf(kind, scope);
+  const card = document.createElement("div");
+  let cardClass = "prompt-card";
+  if(p.rating >= 7){ cardClass += " rated-high"; }
+  else if(p.rating >= 5){ cardClass += " rated-mid"; }
+  else if(p.rating >= 1){ cardClass += " rated-low"; }
+  else if(p.done){ cardClass += " copied-unrated"; }
+  card.className = cardClass;
+
+  const topRow = document.createElement("div");
+  topRow.className = "prompt-top-row";
+  if(id === bestId){
+    const badge = document.createElement("span");
+    badge.className = "best-badge";
+    badge.textContent = "★ Mejor";
+    topRow.appendChild(badge);
+  }
+  const actions = document.createElement("div");
+  actions.className = "prompt-actions";
+
+  const copyBtn = document.createElement("button");
+  copyBtn.className = "icon-btn";
+  copyBtn.textContent = "Copiar";
+  copyBtn.addEventListener("click", ()=>{
+    const ok = copyText(p.text);
+    const flash = card.querySelector(".copied-flash");
+    if(flash){
+      if(!ok){ flash.textContent = "Mantén pulsado para copiar"; }
+      flash.classList.add("show");
+      setTimeout(()=>flash.classList.remove("show"), 900);
+    }
+    if(!p.done){ p.done = true; saveDB(); }
+  });
+
+  const dupBtn = document.createElement("button");
+  dupBtn.className = "icon-btn";
+  dupBtn.textContent = "Duplicar";
+  dupBtn.addEventListener("click", ()=>{
+    const nid = "p_" + Date.now() + "_" + Math.random().toString(36).slice(2,7);
+    bag[nid] = {title:p.title, name:(p.name ? p.name + " (copia)" : ""), text:p.text, rating:0, done:false, note:p.note || "", ord:(p.ord || 0) + 0.001};
+    saveDB();
+    renderPromptView(kind);
+  });
+
+  const moveBtn = document.createElement("button");
+  moveBtn.className = "icon-btn";
+  moveBtn.textContent = "Mover";
+  moveBtn.addEventListener("click", (ev)=>{
+    ev.stopPropagation();
+    const old = card.querySelector(".move-menu");
+    if(old){ old.remove(); return; }
+    document.querySelectorAll(".move-menu").forEach(m => m.remove());
+    const menu = document.createElement("div");
+    menu.className = "move-menu";
+
+    const l1 = document.createElement("div");
+    l1.className = "mm-label";
+    l1.textContent = "Mover a la sección";
+    menu.appendChild(l1);
+    ["Sin sección"].concat(allSections(kind).filter(x => x !== "Sin sección")).forEach(name => {
+      const b = document.createElement("button");
+      b.textContent = ((p.title || "Sin sección") === name ? "• " : "") + name;
+      b.addEventListener("click", ()=>{
+        const target = scopeOfSection(kind, name);
+        p.title = name;
+        if(target !== scope){ bagOf(kind, target)[id] = p; delete bag[id]; }
+        saveDB();
+        renderPromptView(kind);
+      });
+      menu.appendChild(b);
+    });
+
+    card.appendChild(menu);
+  });
+
+  const delBtn = document.createElement("button");
+  delBtn.className = "icon-btn";
+  delBtn.textContent = "Borrar";
+  delBtn.addEventListener("click", ()=>{
+    if(delBtn.dataset.armed === "1"){
+      delete bag[id];
+      saveDB();
+      renderPromptView(kind);
+      return;
+    }
+    delBtn.dataset.armed = "1";
+    delBtn.textContent = "¿Seguro?";
+    setTimeout(()=>{ delBtn.dataset.armed=""; delBtn.textContent="Borrar"; }, 3000);
+  });
+
+  actions.appendChild(copyBtn);
+  actions.appendChild(dupBtn);
+  actions.appendChild(moveBtn);
+  actions.appendChild(delBtn);
+  topRow.appendChild(actions);
+
+  const openCard = !collapsedPrompts.has(id);
+  const nameRow = document.createElement("div");
+  nameRow.className = "prompt-name-row";
+  const nameSpan = document.createElement("span");
+  nameSpan.className = "prompt-name";
+  nameSpan.textContent = p.name || "Sin nombre";
+  nameSpan.title = "Clic para renombrar";
+  nameSpan.contentEditable = "true";
+  nameSpan.spellcheck = false;
+  nameSpan.addEventListener("click", (e)=>e.stopPropagation());
+  nameSpan.addEventListener("keydown", (e)=>{ if(e.key === "Enter"){ e.preventDefault(); nameSpan.blur(); } });
+  nameSpan.addEventListener("blur", ()=>{
+    const val = nameSpan.textContent.trim();
+    p.name = (val === "Sin nombre") ? "" : val;
+    saveDB();
+  });
+
+  nameRow.addEventListener("click", (e)=>{
+    if(e.target === nameSpan) return;
+    if(collapsedPrompts.has(id)) collapsedPrompts.delete(id);
+    else collapsedPrompts.add(id);
+    renderPromptView(kind);
+  });
+  const textArea = document.createElement("textarea");
+  textArea.className = "note-input";
+  textArea.value = p.text;
+  textArea.addEventListener("input", ()=>autoGrow(textArea));
+  textArea.addEventListener("change", (e)=>{ p.text = e.target.value; saveDB(); });
+
+  const flash = document.createElement("div");
+  flash.className = "copied-flash";
+  flash.textContent = "Copiado";
+
+  const ratingRow = document.createElement("div");
+  ratingRow.className = "rating-row";
+  ratingRow.style.marginTop = "8px";
+  for(let i=1;i<=10;i++){
+    const dot = document.createElement("button");
+    dot.className = "dot n" + i + (i === p.rating ? " filled" : "");
+    dot.textContent = i;
+    dot.addEventListener("click", ()=>{
+      p.rating = (p.rating === i) ? 0 : i;
+      saveDB();
+      renderPromptView(kind);
+    });
+    ratingRow.appendChild(dot);
+  }
+
+  const noteInput = document.createElement("input");
+  noteInput.type = "text";
+  noteInput.className = "note-input";
+  noteInput.placeholder = "Nota sobre este prompt...";
+  noteInput.value = p.note || "";
+  noteInput.addEventListener("change", (e)=>{ p.note = e.target.value; saveDB(); });
+
+  card.draggable = true;
+  card.dataset.pid = id;
+  card.dataset.scope = scope;
+  card.dataset.section = p.title || "Sin sección";
+  card.addEventListener("dragstart", (e)=>{
+    dragInfo = {kind:kind, scope:scope, id:id};
+    card.classList.add("dragging");
+    e.dataTransfer.effectAllowed = "move";
+    try{ e.dataTransfer.setData("text/plain", id); }catch(err){}
+  });
+  card.addEventListener("dragend", ()=>{
+    card.classList.remove("dragging");
+    dragInfo = null;
+  });
+
+  card.appendChild(topRow);
+  card.appendChild(nameRow);
+  card.appendChild(flash);
+  if(openCard){
+    card.appendChild(textArea);
+    card.appendChild(ratingRow);
+    card.appendChild(noteInput);
+  }
+  return card;
+}
+
+function scopeOfSection(kind, name){
+  return isPinned(kind, name) ? "global" : "song";
+}
+
+const collapsedSections = new Set();
+let dragSection = null;
+
+function sectionOrder(kind){
+  if(!db.sectionOrder) db.sectionOrder = {};
+  if(!db.sectionOrder[kind]) db.sectionOrder[kind] = ["loose:global", "loose:song"];
+  const order = db.sectionOrder[kind];
+  ["loose:global","loose:song"].forEach(k => { if(!order.includes(k)) order.push(k); });
+  allSections(kind).filter(t => t !== "Sin sección").forEach(t => {
+    if(!order.includes("sec:" + t)) order.push("sec:" + t);
+  });
+  const valid = new Set(["loose:global","loose:song"].concat(
+    allSections(kind).filter(t => t !== "Sin sección").map(t => "sec:" + t)));
+  db.sectionOrder[kind] = order.filter(k => valid.has(k));
+  return db.sectionOrder[kind];
+}
+
+function moveSectionBefore(kind, fromKey, beforeKey){
+  const order = sectionOrder(kind);
+  const i = order.indexOf(fromKey);
+  if(i < 0) return;
+  order.splice(i, 1);
+  const j = beforeKey ? order.indexOf(beforeKey) : -1;
+  if(j < 0) order.push(fromKey); else order.splice(j, 0, fromKey);
+  saveDB();
+  renderPromptView(kind);
+}
+
+
+function looseLabel(kind, scope){
+  if(!db.looseLabels) db.looseLabels = {};
+  const k = kind + "|" + scope;
+  if(db.looseLabels[k]) return db.looseLabels[k];
+  return scope === "global" ? "Generales" : "Solo " + db.currentSong;
+}
+
+function setLooseLabel(kind, scope, val){
+  if(!db.looseLabels) db.looseLabels = {};
+  const name = val.trim();
+  const k = kind + "|" + scope;
+  if(name) db.looseLabels[k] = name; else delete db.looseLabels[k];
+  saveDB();
+}
+
+const promptSearch = {};
+
+function matchesSearch(kind, p){
+  const q = (promptSearch[kind] || "").trim().toLowerCase();
+  if(!q) return true;
+  return ((p.name || "") + " " + (p.text || "") + " " + (p.note || "")).toLowerCase().includes(q);
+}
+
+function renderSection(grid, kind, t, forcedScope){
+  const scope = forcedScope || scopeOfSection(kind, t);
+  const loose = (t === "Sin sección");
+  const bag = bagOf(kind, scope);
+  const ids = Object.keys(bag)
+    .filter(id => (bag[id].title || "Sin sección") === t && matchesSearch(kind, bag[id]))
+    .sort((a,b)=>(bag[a].ord||0)-(bag[b].ord||0));
+  const bestId = ids.slice().sort((a,b)=>bag[b].rating-bag[a].rating).find(id => bag[id].rating >= 8);
+  const pinned = loose ? (scope === "global") : isPinned(kind, t);
+
+  if((promptSearch[kind] || "").trim() && ids.length === 0) return;
+
+  const col = document.createElement("div");
+  col.className = "section-col";
+  col.dataset.section = t;
+  col.addEventListener("dragover", (e)=>{ if(dragInfo || dragSection){ e.preventDefault(); col.classList.add("drop"); } });
+  col.addEventListener("dragleave", ()=>col.classList.remove("drop"));
+  col.addEventListener("drop", (e)=>{
+    e.preventDefault();
+    e.stopPropagation();
+    col.classList.remove("drop");
+    const overCard = e.target.closest(".prompt-card");
+    dropPrompt(kind, scope, t, overCard ? overCard.dataset.pid : null);
+  });
+
+  const key = kind + "|" + (loose ? "loose:" + scope : t);
+  const open = !collapsedSections.has(key);
+  if(!open) col.classList.add("collapsed");
+
+  const secKey = loose ? "loose:" + scope : "sec:" + t;
+  col.dataset.seckey = secKey;
+  col.addEventListener("drop", (e)=>{
+    if(dragSection){
+      e.preventDefault();
+      e.stopPropagation();
+      col.classList.remove("drop");
+      if(dragSection !== secKey) moveSectionBefore(kind, dragSection, secKey);
+      dragSection = null;
+    }
+  }, true);
+
+  const heading = document.createElement("div");
+  heading.className = "group-heading";
+  heading.draggable = false;
+  heading.addEventListener("mousedown", (e)=>{
+    heading.draggable = !(e.target.closest("button") || e.target === name);
+  });
+  heading.addEventListener("mouseup", ()=>{ heading.draggable = false; });
+  heading.addEventListener("dragstart", (e)=>{
+    dragSection = secKey;
+    col.classList.add("dragging-sec");
+    e.dataTransfer.effectAllowed = "move";
+    try{ e.dataTransfer.setData("text/plain", secKey); }catch(err){}
+  });
+  heading.addEventListener("dragend", ()=>{
+    col.classList.remove("dragging-sec");
+    dragSection = null;
+  });
+  heading.addEventListener("click", (e)=>{
+    if(e.target.closest("button") || e.target.closest("input")) return;
+    if(collapsedSections.has(key)) collapsedSections.delete(key);
+    else collapsedSections.add(key);
+    renderPromptView(kind);
+  });
+
+  const name = document.createElement("span");
+  name.className = "sec-name";
+  name.textContent = loose ? looseLabel(kind, scope) : t;
+  name.title = "Clic para renombrar";
+  name.contentEditable = "true";
+  name.spellcheck = false;
+  name.addEventListener("click", (e)=>e.stopPropagation());
+  name.addEventListener("keydown", (e)=>{ if(e.key === "Enter"){ e.preventDefault(); name.blur(); } });
+  name.addEventListener("blur", ()=>{
+    const val = name.textContent.trim();
+    if(loose){ setLooseLabel(kind, scope, val); renderPromptView(kind); }
+    else if(val && val !== t) renameGroup(kind, scope, t, val);
+    else renderPromptView(kind);
+  });
+  heading.appendChild(name);
+
+  const pin = document.createElement("button");
+  pin.className = "pin-btn" + (pinned ? " on" : "");
+  pin.textContent = pinned ? "Anclado" : "Anclar";
+  pin.title = pinned ? "Anclado: aparece en todas las canciones" : "Anclar a todas las canciones";
+  pin.draggable = false;
+  pin.addEventListener("mousedown", (e)=>e.stopPropagation());
+  pin.addEventListener("click", (e)=>{
+    e.stopPropagation();
+    e.preventDefault();
+    if(loose){
+      const to = bagOf(kind, scope === "global" ? "song" : "global");
+      ids.forEach(id => { to[id] = bag[id]; delete bag[id]; });
+      saveDB();
+      renderPromptView(kind);
+    } else {
+      togglePinSection(kind, t);
+    }
+  });
+  heading.appendChild(pin);
+
+  const count = document.createElement("span");
+  count.className = "sec-count";
+  count.textContent = ids.length;
+  heading.appendChild(count);
+
+  col.appendChild(heading);
+  if(open) ids.forEach(id => col.appendChild(buildPromptCard(id, bag[id], kind, scope, bestId)));
+  grid.appendChild(col);
+}
+
+function renderPromptStore(kind, gridId){
+  const wrap = document.getElementById(gridId);
+  wrap.innerHTML = "";
+  const grid = document.createElement("div");
+  grid.className = "scope-block";
+  wrap.appendChild(grid);
+
+  sectionOrder(kind).forEach(key => {
+    if(key === "loose:global"){
+      const gb = bagOf(kind, "global");
+      if(Object.keys(gb).some(id => (gb[id].title || "Sin sección") === "Sin sección"))
+        renderSection(grid, kind, "Sin sección", "global");
+    }
+    else if(key === "loose:song") renderSection(grid, kind, "Sin sección", "song");
+    else renderSection(grid, kind, key.slice(4));
+  });
+}
+
+function renderPrompts(){ renderPromptStore("prompts", "promptGrid"); growAll(); }
+function renderComposePrompts(){ renderPromptStore("composePrompts", "composePromptGrid"); growAll(); }
+function renderRefs(){ renderPromptStore("refs", "refGrid"); growAll(); }
+let antiTab = "todos";
+let antiSearchTerm = "";
+
+function antiBag(){
+  const cs = currentState();
+  if(!cs.antiList) cs.antiList = {};
+  return cs.antiList;
+}
+
+function addAnti(name, desc, mine){
+  const bag = antiBag();
+  if(!name || bag[name]) return false;
+  bag[name] = {rating:0, desc:desc || "", mine:!!mine, ord:Date.now()};
+  return true;
+}
+
+function derivedAnti(){
+  const cs = currentState();
+  const cust = cs.custom || {};
+  const fb = cs.styleFeedback || {};
+  if(!db.antiIgnored) db.antiIgnored = {};
+  const out = [];
+  GENRES.forEach(g => {
+    if(cs[g] && cs[g].rating > 0 && cs[g].rating <= 3)
+      out.push({name:g, rating:cs[g].rating, src:"estilo", ref:cs[g]});
+  });
+  Object.keys(cust).forEach(k => {
+    if(cust[k].rating > 0 && cust[k].rating <= 3)
+      out.push({name:k, rating:cust[k].rating, src:"estilo creado", ref:cust[k]});
+  });
+  Object.keys(fb).forEach(k => {
+    if(fb[k].rating <= 4 && !cust[k])
+      out.push({name:k, rating:fb[k].rating, src:"propuesta rechazada", ref:fb[k]});
+  });
+  const bag = antiBag();
+  return out.filter(x => !db.antiIgnored[x.name] && !bag[x.name]);
+}
+
+function renderAntiTabs(){
+  const bag = antiBag();
+  const keys = Object.keys(bag);
+  const der = derivedAnti();
+  const counts = {
+    todos: keys.length + der.length,
+    creados: keys.filter(k => bag[k].rating === 0).length,
+    puntuados: keys.filter(k => bag[k].rating > 0).length + der.length
+  };
+  const labels = {todos:"Todos", creados:"Creados", puntuados:"Puntuados"};
+  const row = document.getElementById("antiTabs");
+  row.innerHTML = "";
+  Object.keys(labels).forEach(k => {
+    const btn = document.createElement("button");
+    btn.className = "tab-btn" + (antiTab === k ? " active" : "");
+    btn.innerHTML = labels[k] + '<span class="tab-count">' + counts[k] + '</span>';
+    btn.addEventListener("click", ()=>{ antiTab = k; renderAnti(); });
+    row.appendChild(btn);
+  });
+}
+
+function renderAnti(){
+  renderAntiTabs();
+  const bag = antiBag();
+  const grid = document.getElementById("antiGrid");
+  grid.innerHTML = "";
+  let keys = Object.keys(bag).filter(k => k.toLowerCase().includes(antiSearchTerm.toLowerCase()));
+  if(antiTab === "creados") keys = keys.filter(k => bag[k].rating === 0);
+  if(antiTab === "puntuados") keys = keys.filter(k => bag[k].rating > 0);
+  keys.sort((a,b)=>(bag[b].ord||0)-(bag[a].ord||0));
+
+  const der = derivedAnti().filter(x => x.name.toLowerCase().includes(antiSearchTerm.toLowerCase()));
+  const showDer = antiTab !== "creados";
+
+  if(keys.length === 0 && (!showDer || der.length === 0)){
+    grid.innerHTML = '<p class="scope-empty">Todavía no hay antiprompts.</p>';
+    return;
+  }
+
+  if(showDer) der.forEach(x => {
+    const card = document.createElement("div");
+    card.className = "card rated-low";
+    const crow = document.createElement("div");
+    crow.className = "custom-row";
+    const mark = document.createElement("span");
+    mark.className = "suggested-mark";
+    mark.textContent = "de " + x.src + " · " + x.rating + "/10";
+    crow.appendChild(mark);
+    const del = document.createElement("button");
+    del.className = "icon-btn style-del";
+    del.textContent = "✕";
+    del.title = "No tenerlo en cuenta";
+    del.addEventListener("click", ()=>{ db.antiIgnored[x.name] = true; saveDB(); renderAnti(); });
+    crow.appendChild(del);
+    card.appendChild(crow);
+
+    const top = document.createElement("div");
+    top.className = "card-top";
+    const btn = document.createElement("button");
+    btn.className = "genre-btn";
+    btn.textContent = x.name;
+    btn.title = "Toca para copiar";
+    btn.addEventListener("click", ()=>{
+      copyText(x.name);
+      const f = card.querySelector(".copied-flash");
+      f.classList.add("show");
+      setTimeout(()=>f.classList.remove("show"), 900);
+    });
+    top.appendChild(btn);
+    card.appendChild(top);
+
+    const flash = document.createElement("div");
+    flash.className = "copied-flash";
+    flash.textContent = "Copiado";
+    card.appendChild(flash);
+
+    const rr = document.createElement("div");
+    rr.className = "rating-row";
+    for(let i=1;i<=10;i++){
+      const dot = document.createElement("button");
+      dot.className = "dot n" + i + (i === x.rating ? " filled" : "");
+      dot.textContent = i;
+      dot.title = "Cambia también su nota en Estilos";
+      dot.addEventListener("click", ()=>{
+        x.ref.rating = (x.ref.rating === i) ? 0 : i;
+        saveDB();
+        render();
+        renderAnti();
+      });
+      rr.appendChild(dot);
+    }
+    card.appendChild(rr);
+    grid.appendChild(card);
+  });
+
+  keys.forEach(k => {
+    const it = bag[k];
+    const card = document.createElement("div");
+    let cls = "card";
+    if(it.rating >= 7) cls += " done rated-high";
+    else if(it.rating >= 5) cls += " done rated-mid";
+    else if(it.rating >= 1) cls += " done rated-low";
+    card.className = cls;
+
+    const crow = document.createElement("div");
+    crow.className = "custom-row";
+    const mark = document.createElement("span");
+    mark.className = "suggested-mark";
+    mark.textContent = it.mine ? "mío" : "sugerido";
+    crow.appendChild(mark);
+    const del = document.createElement("button");
+    del.className = "icon-btn style-del";
+    del.textContent = "✕";
+    del.addEventListener("click", ()=>{ delete bag[k]; saveDB(); renderAnti(); });
+    crow.appendChild(del);
+    card.appendChild(crow);
+
+    const top = document.createElement("div");
+    top.className = "card-top";
+    const btn = document.createElement("button");
+    btn.className = "genre-btn";
+    btn.textContent = k;
+    btn.title = "Toca para copiar";
+    btn.addEventListener("click", ()=>{
+      copyText(k);
+      const f = card.querySelector(".copied-flash");
+      f.classList.add("show");
+      setTimeout(()=>f.classList.remove("show"), 900);
+    });
+    top.appendChild(btn);
+    card.appendChild(top);
+
+    if(it.desc){
+      const d = document.createElement("div");
+      d.className = "desc";
+      d.textContent = it.desc;
+      card.appendChild(d);
+    }
+
+    const flash = document.createElement("div");
+    flash.className = "copied-flash";
+    flash.textContent = "Copiado";
+    card.appendChild(flash);
+
+    const rr = document.createElement("div");
+    rr.className = "rating-row";
+    for(let i=1;i<=10;i++){
+      const dot = document.createElement("button");
+      dot.className = "dot n" + i + (i === it.rating ? " filled" : "");
+      dot.textContent = i;
+      dot.title = "Cuánto te molesta: " + i + "/10";
+      dot.addEventListener("click", ()=>{
+        it.rating = (it.rating === i) ? 0 : i;
+        saveDB();
+        renderAnti();
+      });
+      rr.appendChild(dot);
+    }
+    card.appendChild(rr);
+
+    const note = document.createElement("input");
+    note.type = "text";
+    note.className = "note-input";
+    note.placeholder = "Nota...";
+    note.value = it.note || "";
+    note.addEventListener("change", (e)=>{ it.note = e.target.value; saveDB(); });
+    card.appendChild(note);
+
+    grid.appendChild(card);
+  });
+}
+
+function paintAntiSuggestions(list, box){
+  box.innerHTML = "";
+  list.forEach(item => {
+    const row = document.createElement("div");
+    row.className = "song-hit";
+    const h = document.createElement("div");
+    h.className = "song-hit-title";
+    h.textContent = item.anti;
+    h.contentEditable = "true";
+    h.spellcheck = false;
+    h.addEventListener("keydown", (e)=>{ if(e.key === "Enter"){ e.preventDefault(); h.blur(); } });
+    h.addEventListener("blur", ()=>{ item.anti = h.textContent.trim() || item.anti; });
+    const d = document.createElement("div");
+    d.className = "song-hit-desc";
+    d.textContent = item.descripcion || "";
+    d.contentEditable = "true";
+    d.addEventListener("blur", ()=>{ item.descripcion = d.textContent.trim(); });
+
+    const bar = document.createElement("div");
+    bar.className = "add-form-row end";
+    const copyB = document.createElement("button");
+    copyB.className = "tool";
+    copyB.textContent = "Copiar";
+    copyB.addEventListener("click", ()=>{
+      copyText(item.anti);
+      copyB.textContent = "Copiado ✓";
+      setTimeout(()=>{ copyB.textContent = "Copiar"; }, 1200);
+    });
+    const add = document.createElement("button");
+    add.className = "tool primary";
+    add.textContent = "Añadir a mis antiprompts";
+    add.addEventListener("click", ()=>{
+      addAnti(item.anti, item.descripcion || "");
+      saveDB();
+      renderAnti();
+      row.remove();
+      if(!box.querySelector(".song-hit")) box.innerHTML = "";
+    });
+    bar.appendChild(copyB);
+    bar.appendChild(add);
+
+    row.appendChild(h);
+    row.appendChild(d);
+    row.appendChild(bar);
+    box.appendChild(row);
+  });
+}
+
+async function antiSuggest(useAll){
+  const box = document.getElementById("antiGenResults");
+  const q = document.getElementById("antiGenInput").value.trim();
+  const bag = antiBag();
+  const existing = Object.keys(bag).join(", ");
+  if(!useAll && !q) return;
+  box.innerHTML = '<p class="scope-empty">Pensando...</p>';
+  try{
+    const base = useAll
+      ? "Analiza mi panel de la canción \"" + db.currentSong + "\" y deduce qué NO quiero que aparezca:\n\n" +
+        activityBrief().slice(0, 4000) + "\n" + feedbackBrief()
+      : "Quiero definir lo que NO quiero en mi canción. Punto de partida: \"" + q + "\".";
+    const txt = await askClaude(
+      base + "\n\nAntiprompts que ya tengo (no los repitas): " + existing +
+      "\n\nPropón 5 antiprompts: rasgos concretos de sonido, producción o interpretación que debo evitar. " +
+      "Devuelve SOLO un array JSON: {\"anti\":\"el rasgo a evitar, descriptores separados por comas\"," +
+      "\"descripcion\":\"por qué lo evito, una frase\"}. Sin texto alrededor.", false);
+    paintAntiSuggestions(parseJSON(txt), box);
+  }catch(e){
+    box.innerHTML = '<p class="scope-empty">No se pudo sugerir ahora mismo.</p>';
+  }
+}
+
+function wirePromptUI(kind, pre, formPre){
+  const form = document.getElementById(pre + "Form");
+
+  const addBtn = document.getElementById(pre + "AddBtn");
+  const secBtn = document.getElementById(pre + "SectionBtn");
+
+  function closeForm(){
+    form.style.display = "none";
+    addBtn.classList.remove("open");
+  }
+  function closeSecRow(){
+    const row = document.getElementById(pre + "SecRow");
+    if(row) row.remove();
+    secBtn.classList.remove("open");
+  }
+
+  addBtn.addEventListener("click", ()=>{
+    if(form.style.display !== "none"){ closeForm(); return; }
+    closeSecRow();
+    form.style.display = "flex";
+    addBtn.classList.add("open");
+    fillSectionSelect(kind, formPre + "SecSel");
+    document.getElementById(formPre + "Input").focus();
+  });
+
+  const formTa = document.getElementById(formPre + "Input");
+  const endRow = form.querySelector(".add-form-row.end");
+  if(endRow) endRow.insertBefore(micButton(()=>formTa), endRow.firstChild);
+
+  document.getElementById(pre + "CancelBtn").addEventListener("click", ()=>{
+    closeForm();
+    document.getElementById(formPre + "Input").value = "";
+  });
+
+  document.getElementById(pre + "SaveBtn").addEventListener("click", ()=>{
+    const input = document.getElementById(formPre + "Input");
+    const text = input.value.trim();
+    if(!text) return;
+    const section = document.getElementById(formPre + "SecSel").value || "Sin sección";
+    const bag = bagOf(kind, scopeOfSection(kind, section));
+    const id = "p_" + Date.now() + "_" + Math.random().toString(36).slice(2,7);
+    const nameEl = document.getElementById(formPre + "Name");
+    bag[id] = {title:section, name:(nameEl.value.trim() || ""), text:text, rating:0, done:false, note:"", ord:Date.now()};
+    input.value = "";
+    nameEl.value = "";
+    closeForm();
+    saveDB();
+    renderPromptView(kind);
+  });
+
+  secBtn.addEventListener("click", ()=>{
+    if(document.getElementById(pre + "SecRow")){ closeSecRow(); return; }
+    closeForm();
+    secBtn.classList.add("open");
+    const row = document.createElement("div");
+    row.className = "add-form";
+    row.id = pre + "SecRow";
+    row.style.flexDirection = "row";
+    const inp = document.createElement("input");
+    inp.type = "text";
+    inp.placeholder = "Nombre de la sección...";
+    inp.style.flex = "1";
+    const ok = document.createElement("button");
+    ok.className = "tool primary";
+    ok.textContent = "Crear";
+    const cancel = document.createElement("button");
+    cancel.className = "tool";
+    cancel.textContent = "Cancelar";
+    cancel.addEventListener("click", closeSecRow);
+    ok.addEventListener("click", ()=>{
+      const name = inp.value.trim();
+      if(!name) return;
+      const secs = sectionsOf(kind);
+      if(!secs.includes(name)) secs.push(name);
+      saveDB();
+      closeSecRow();
+      renderPromptView(kind);
+    });
+    inp.addEventListener("keydown", (e)=>{ if(e.key === "Enter") ok.click(); });
+    row.appendChild(inp);
+    row.appendChild(ok);
+    row.appendChild(cancel);
+    secBtn.parentNode.after(row);
+    inp.focus();
+  });
+}
+wirePromptUI("prompts", "prompt", "prompt");
+wirePromptUI("composePrompts", "compose", "composePrompt");
+wirePromptUI("refs", "ref", "ref");
+document.getElementById("antiGenGo").addEventListener("click", ()=>antiSuggest(false));
+document.getElementById("antiAllGo").addEventListener("click", ()=>antiSuggest(true));
+document.getElementById("antiGenInput").addEventListener("keydown", (e)=>{
+  if(e.key === "Enter") antiSuggest(false);
+});
+document.getElementById("antiGenGo").parentNode.appendChild(micButton(()=>document.getElementById("antiGenInput")));
+
+function antiOwnAdd(){
+  const el = document.getElementById("antiOwnInput");
+  const t = el.value.trim();
+  if(!t) return;
+  addAnti(t, "Antiprompt añadido por ti.", true);
+  el.value = "";
+  saveDB();
+  renderAnti();
+}
+document.getElementById("antiOwnGo").addEventListener("click", antiOwnAdd);
+document.getElementById("antiOwnInput").addEventListener("keydown", (e)=>{
+  if(e.key === "Enter") antiOwnAdd();
+});
+document.getElementById("antiOwnGo").parentNode.appendChild(micButton(()=>document.getElementById("antiOwnInput")));
+
+document.getElementById("antiSearch").addEventListener("input", (e)=>{
+  antiSearchTerm = e.target.value;
+  renderAnti();
+});
+
+document.getElementById("antiFromStyles").addEventListener("click", ()=>{
+  const cs = currentState();
+  const cust = cs.custom || {};
+  let n = 0;
+  GENRES.forEach(g => { if(cs[g] && cs[g].rating > 0 && cs[g].rating <= 3 && addAnti(g, "Le pusiste " + cs[g].rating + "/10")) n++; });
+  Object.keys(cust).forEach(k => { if(cust[k].rating > 0 && cust[k].rating <= 3 && addAnti(k, "Le pusiste " + cust[k].rating + "/10")) n++; });
+  const fb = feedbackBag();
+  Object.keys(fb).forEach(k => { if(fb[k].rating <= 4 && addAnti(k, "Propuesta rechazada " + fb[k].rating + "/10")) n++; });
+  saveDB();
+  renderAnti();
+  const btn = document.getElementById("antiFromStyles");
+  btn.textContent = n ? "Añadidos " + n : "Nada nuevo";
+  setTimeout(()=>{ btn.textContent = "Traer de Estilos"; }, 1800);
+});
+
+document.getElementById("refFilter").addEventListener("input", (e)=>{
+  promptSearch["refs"] = e.target.value;
+  renderRefs();
+});
+
+const finder = document.getElementById("songFinder");
+const finderBtn = document.getElementById("songFinderBtn");
+finderBtn.addEventListener("click", ()=>{
+  const open = finder.style.display !== "none";
+  finder.style.display = open ? "none" : "flex";
+  finderBtn.classList.toggle("open", !open);
+  if(!open) document.getElementById("songQuery").focus();
+});
+
+async function askClaude(prompt, useSearch){
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({
+      model:"claude-sonnet-4-6",
+      max_tokens:1000,
+      messages:[{role:"user", content:prompt}],
+      tools: useSearch === false ? [] : [{type:"web_search_20250305", name:"web_search"}]
+    })
+  });
+  const data = await res.json();
+  return (data.content || []).filter(b => b.type === "text").map(b => b.text).join("\n");
+}
+
+function parseJSON(txt){
+  const clean = txt.replace(/```json|```/g, "").trim();
+  const a = clean.indexOf("["), b = clean.lastIndexOf("]");
+  return JSON.parse(a >= 0 ? clean.slice(a, b + 1) : clean);
+}
+
+const out = document.getElementById("songResults");
+const backBtn = document.getElementById("songBackBtn");
+let finderTimer = null;
+let finderStep = "artists";
+
+function finderLoading(msg){
+  out.innerHTML = '<p class="scope-empty">' + msg + '</p>';
+}
+
+function hitRow(title, sub, onClick){
+  const row = document.createElement("div");
+  row.className = "song-hit clickable";
+  const h = document.createElement("div");
+  h.className = "song-hit-title";
+  h.textContent = title;
+  row.appendChild(h);
+  if(sub){
+    const d = document.createElement("div");
+    d.className = "song-hit-desc";
+    d.textContent = sub;
+    row.appendChild(d);
+  }
+  row.addEventListener("click", onClick);
+  return row;
+}
+
+async function suggestArtists(q){
+  finderStep = "artists";
+  backBtn.style.display = "none";
+  finderLoading("Buscando artistas...");
+  try{
+    const txt = await askClaude(
+      "Nombres de artistas o grupos musicales reales cuyo nombre empiece o contenga \"" + q + "\". " +
+      "Prioriza artistas en español. Devuelve SOLO un array JSON de hasta 8 objetos: " +
+      "{\"artista\":\"\",\"genero\":\"género y país\"}. Sin texto alrededor.", false);
+    const list = parseJSON(txt);
+    out.innerHTML = "";
+    list.forEach(a => out.appendChild(hitRow(a.artista, a.genero || "", ()=>listSongs(a.artista))));
+    if(list.length === 0) finderLoading("Ningún artista encontrado.");
+  }catch(e){ finderLoading("No se pudo buscar. Prueba otra vez."); }
+}
+
+async function listSongs(artist){
+  finderStep = "songs";
+  backBtn.style.display = "";
+  backBtn.onclick = ()=>runFinder(document.getElementById("songQuery").value.trim());
+  finderLoading("Buscando canciones de " + artist + "...");
+  try{
+    const txt = await askClaude(
+      "Canciones conocidas de " + artist + ". Devuelve SOLO un array JSON de hasta 12 objetos: " +
+      "{\"titulo\":\"\",\"anio\":\"\",\"album\":\"\"}. Sin texto alrededor.", false);
+    const list = parseJSON(txt);
+    out.innerHTML = "";
+    list.forEach(so => out.appendChild(hitRow(
+      so.titulo,
+      [so.album, so.anio].filter(Boolean).join(" · "),
+      ()=>openSong(artist, so.titulo, so.anio))));
+  }catch(e){ finderLoading("No se pudo buscar. Prueba otra vez."); }
+}
+
+async function openSong(artist, titulo, anio){
+  finderStep = "song";
+  backBtn.style.display = "";
+  backBtn.onclick = ()=>{
+    if(finderMode === "artist") listSongs(artist);
+    else runFinder(document.getElementById("songQuery").value.trim());
+  };
+  finderLoading("Abriendo la letra de " + titulo + "...");
+  let item = {titulo:titulo, artista:artist, anio:anio || ""};
+  const q = encodeURIComponent(artist + " " + titulo + " letra");
+  item.url = "https://www.google.com/search?q=" + q;
+  try{ window.open(item.url, "_blank", "noopener"); }catch(e){}
+  renderSongPanel(item);
+  try{
+    const txt = await askClaude(
+      "Busca en musica.com, letras.com, letras.mus.br, coveralia.com o genius.com la página de la letra de \"" +
+      titulo + "\" de " + artist + ". Devuelve SOLO un objeto JSON: " +
+      "{\"url\":\"enlace directo a la letra\",\"resumen\":\"de qué trata, una frase\"," +
+      "\"tono\":\"tono y registro\",\"estructura\":\"métrica, rimas, estribillo, imágenes\"}. " +
+      "No copies versos literales.", true);
+    const clean = txt.replace(/```json|```/g, "").trim();
+    const i = clean.indexOf("{"), j = clean.lastIndexOf("}");
+    Object.assign(item, JSON.parse(clean.slice(i, j + 1)));
+  }catch(e){}
+  renderSongPanel(item);
+}
+
+function renderSongPanel(item){
+  out.innerHTML = "";
+  const row = document.createElement("div");
+  row.className = "song-hit";
+  const h = document.createElement("div");
+  h.className = "song-hit-title";
+  h.textContent = item.titulo + " · " + item.artista + (item.anio ? " (" + item.anio + ")" : "");
+  row.appendChild(h);
+  if(item.resumen || item.tono || item.estructura){
+    const d = document.createElement("div");
+    d.className = "song-hit-desc";
+    d.textContent = [item.resumen, item.tono, item.estructura].filter(Boolean).join(" · ");
+    row.appendChild(d);
+  }
+  if(item.url){
+    const link = document.createElement("a");
+    link.className = "song-hit-link";
+    link.href = item.url;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = "Abrir letra ↗";
+    row.appendChild(link);
+  }
+  const paste = document.createElement("textarea");
+  paste.className = "note-input";
+  paste.placeholder = "Pega aquí la letra...";
+  paste.rows = 6;
+  paste.style.display = "block";
+  paste.style.resize = "vertical";
+  row.appendChild(paste);
+
+  const bar = document.createElement("div");
+  bar.className = "add-form-row end";
+  const pasteBtn = document.createElement("button");
+  pasteBtn.className = "tool";
+  pasteBtn.textContent = "Pegar del portapapeles";
+  pasteBtn.addEventListener("click", async ()=>{
+    try{
+      const t = await navigator.clipboard.readText();
+      if(t) paste.value = t;
+    }catch(e){ paste.focus(); }
+  });
+  bar.appendChild(pasteBtn);
+  const sel = document.createElement("select");
+  sel.className = "sec-select";
+  allSections("refs").forEach(n => {
+    const o = document.createElement("option");
+    o.value = n; o.textContent = "Sección: " + n;
+    sel.appendChild(o);
+  });
+  const add = document.createElement("button");
+  add.className = "tool primary";
+  add.textContent = "Añadir como referencia";
+  add.addEventListener("click", ()=>{
+    const section = sel.value || "Sin sección";
+    const bag = bagOf("refs", scopeOfSection("refs", section));
+    const id = "p_" + Date.now() + "_" + Math.random().toString(36).slice(2,7);
+    bag[id] = {
+      title: section,
+      name: item.titulo + " — " + item.artista,
+      text: (paste.value.trim() ? paste.value.trim() + "\n\n---\n" : "") +
+            [item.resumen && ("Tema: " + item.resumen),
+             item.tono && ("Tono: " + item.tono),
+             item.estructura && ("Estructura: " + item.estructura),
+             item.url && ("Fuente: " + item.url)].filter(Boolean).join("\n"),
+      rating:0, done:false, note:"", ord:Date.now()
+    };
+    saveDB();
+    renderRefs();
+    add.textContent = "Añadida ✓";
+    add.disabled = true;
+  });
+  bar.appendChild(sel);
+  bar.appendChild(add);
+  row.appendChild(bar);
+  out.appendChild(row);
+}
+
+let finderMode = "artist";
+
+async function suggestSongs(q){
+  backBtn.style.display = "none";
+  finderLoading("Buscando canciones...");
+  try{
+    const txt = await askClaude(
+      "Canciones reales cuyo título contenga o empiece por \"" + q + "\". Prioriza canciones en español. " +
+      "Devuelve SOLO un array JSON de hasta 10 objetos: {\"titulo\":\"\",\"artista\":\"\",\"anio\":\"\"}. Sin texto alrededor.", false);
+    const list = parseJSON(txt);
+    out.innerHTML = "";
+    list.forEach(so => out.appendChild(hitRow(
+      so.titulo,
+      [so.artista, so.anio].filter(Boolean).join(" · "),
+      ()=>openSong(so.artista, so.titulo, so.anio))));
+    if(list.length === 0) finderLoading("Ninguna canción encontrada.");
+  }catch(e){ finderLoading("No se pudo buscar. Prueba otra vez."); }
+}
+
+document.querySelectorAll("#finderMode .scope-btn").forEach(btn => {
+  btn.addEventListener("click", ()=>{
+    finderMode = btn.dataset.mode;
+    document.querySelectorAll("#finderMode .scope-btn").forEach(b => b.classList.toggle("active", b === btn));
+    const inp = document.getElementById("songQuery");
+    inp.placeholder = finderMode === "artist"
+      ? "Escribe un artista: Melendi, Rosalía..."
+      : "Escribe un título: Por la boca vive el pez...";
+    out.innerHTML = "";
+    backBtn.style.display = "none";
+    inp.focus();
+    if(inp.value.trim().length >= 2) runFinder(inp.value.trim());
+  });
+});
+
+function runFinder(q){
+  if(finderMode === "artist") suggestArtists(q); else suggestSongs(q);
+}
+
+document.getElementById("songQuery").addEventListener("input", (e)=>{
+  const q = e.target.value.trim();
+  clearTimeout(finderTimer);
+  if(q.length < 2){ out.innerHTML = ""; return; }
+  finderTimer = setTimeout(()=>runFinder(q), 450);
+});
+
+
+
+function addLyricVersion(initialText){
+  const cs = currentState();
+  const id = "v_" + Date.now() + "_" + Math.random().toString(36).slice(2,7);
+  cs.lyricVersions.push({id:id, title:"Versión " + (cs.lyricVersions.length + 1), text: initialText || ""});
+  saveDB();
+  renderLyrics();
+}
+
+function duplicateLyricVersion(id){
+  const cs = currentState();
+  const v = cs.lyricVersions.find(x => x.id === id);
+  if(!v) return;
+  addLyricVersion(v.text);
+}
+
+function updateLyricText(id, text){
+  const cs = currentState();
+  const v = cs.lyricVersions.find(x => x.id === id);
+  if(v){ v.text = text; saveDB(); }
+}
+
+function deleteLyricVersion(id){
+  const cs = currentState();
+  cs.lyricVersions = cs.lyricVersions.filter(x => x.id !== id);
+  saveDB();
+  renderLyrics();
+}
+
+function setLyricTitle(id, val){
+  const v = currentState().lyricVersions.find(x => x.id === id);
+  if(v){ v.title = val.trim() || "Sin título"; saveDB(); }
+}
+
+const expandedLyrics = new Set();
+
+
+const lyricHistory = {};
+const lyricMode = {};
+
+function histOf(v){
+  if(!lyricHistory[v.id]) lyricHistory[v.id] = {stack:[v.text || ""], idx:0};
+  return lyricHistory[v.id];
+}
+
+function pushHistory(v, text){
+  const h = histOf(v);
+  if(h.stack[h.idx] === text) return;
+  h.stack = h.stack.slice(0, h.idx + 1);
+  h.stack.push(text);
+  if(h.stack.length > 100) h.stack.shift();
+  h.idx = h.stack.length - 1;
+}
+
+function applyHistory(v, delta){
+  const h = histOf(v);
+  const ni = h.idx + delta;
+  if(ni < 0 || ni >= h.stack.length) return;
+  h.idx = ni;
+  v.text = h.stack[ni];
+  saveDB();
+  renderLyrics();
+}
+
+function lyricContext(){
+  const parts = [];
+  const cs = currentState();
+  const top = GENRES.filter(g => cs[g] && cs[g].rating >= 7)
+    .sort((a,b)=>cs[b].rating - cs[a].rating).slice(0, 8)
+    .map(g => g + " (" + cs[g].rating + "/10)");
+  if(top.length) parts.push("Estilos mejor valorados para esta canción: " + top.join(", ") + ".");
+
+  ["prompts","composePrompts","refs"].forEach(kind => {
+    const label = kind === "prompts" ? "Prompts de estilo"
+      : kind === "composePrompts" ? "Prompts de composición" : "Letras de referencia";
+    const lines = [];
+    ["global","song"].forEach(sc => {
+      const bag = bagOf(kind, sc);
+      Object.keys(bag).forEach(id => {
+        const p = bag[id];
+        lines.push("- [" + (p.title || "Sin sección") + (sc === "global" ? " · general" : " · esta canción") + "] " +
+                   (p.name ? p.name + ": " : "") + (p.text || "").slice(0, 600));
+      });
+    });
+    if(lines.length) parts.push(label + ":\n" + lines.join("\n"));
+  });
+  const anti = antiBrief();
+  if(anti) parts.push(anti.trim());
+  return parts.join("\n\n");
+}
+
+function buildLyricBody(v){
+  const body = document.createElement("div");
+  body.className = "lyric-body";
+
+  const left = document.createElement("div");
+  left.className = "lyric-editor";
+
+  const bar = document.createElement("div");
+  bar.className = "lyric-bar";
+  const h = histOf(v);
+
+  const undo = document.createElement("button");
+  undo.className = "icon-btn";
+  undo.textContent = "← Deshacer";
+  undo.disabled = h.idx <= 0;
+  undo.addEventListener("click", ()=>applyHistory(v, -1));
+
+  const redo = document.createElement("button");
+  redo.className = "icon-btn";
+  redo.textContent = "Rehacer →";
+  redo.disabled = h.idx >= h.stack.length - 1;
+  redo.addEventListener("click", ()=>applyHistory(v, 1));
+
+  const mode = document.createElement("button");
+  mode.className = "icon-btn";
+  const inLines = lyricMode[v.id] === "lines";
+  mode.textContent = inLines ? "Editar texto" : "Ordenar líneas";
+  mode.addEventListener("click", ()=>{
+    lyricMode[v.id] = inLines ? "text" : "lines";
+    renderLyrics();
+  });
+
+  bar.appendChild(undo);
+  bar.appendChild(redo);
+  bar.appendChild(mode);
+  bar.appendChild(micButton(()=>left.querySelector("textarea")));
+  left.appendChild(bar);
+
+  if(inLines){
+    const list = document.createElement("div");
+    list.className = "line-list";
+    const lines = (v.text || "").split("\n");
+    lines.forEach((ln, i) => {
+      const row = document.createElement("div");
+      row.className = "line-row" + (ln.trim() === "" ? " blank" : "");
+      row.draggable = true;
+      row.dataset.i = i;
+      row.textContent = ln === "" ? "·" : ln;
+      row.addEventListener("dragstart", (e)=>{
+        dragLine = i;
+        row.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+        try{ e.dataTransfer.setData("text/plain", String(i)); }catch(err){}
+      });
+      row.addEventListener("dragend", ()=>{ row.classList.remove("dragging"); dragLine = null; });
+      row.addEventListener("dragover", (e)=>{ if(dragLine !== null){ e.preventDefault(); row.classList.add("over"); } });
+      row.addEventListener("dragleave", ()=>row.classList.remove("over"));
+      row.addEventListener("drop", (e)=>{
+        e.preventDefault();
+        row.classList.remove("over");
+        if(dragLine === null || dragLine === i) return;
+        const arr = (v.text || "").split("\n");
+        const [moved] = arr.splice(dragLine, 1);
+        arr.splice(i, 0, moved);
+        pushHistory(v, v.text);
+        v.text = arr.join("\n");
+        pushHistory(v, v.text);
+        dragLine = null;
+        saveDB();
+        renderLyrics();
+      });
+      list.appendChild(row);
+    });
+    left.appendChild(list);
+  } else {
+    const textarea = document.createElement("textarea");
+    textarea.value = v.text;
+    textarea.addEventListener("input", ()=>autoGrow(textarea));
+    textarea.addEventListener("change", (e)=>{
+      pushHistory(v, v.text);
+      updateLyricText(v.id, e.target.value);
+      pushHistory(v, e.target.value);
+      renderLyrics();
+    });
+    left.appendChild(textarea);
+    setTimeout(()=>autoGrow(textarea), 0);
+  }
+
+  const chat = document.createElement("div");
+  chat.className = "lyric-chat";
+  const log = document.createElement("div");
+  log.className = "chat-log";
+  if(!v.chat) v.chat = [];
+  const paint = ()=>{
+    log.innerHTML = "";
+    v.chat.forEach(m => {
+      const bub = document.createElement("div");
+      bub.className = "chat-msg " + m.role;
+      bub.textContent = m.content;
+      log.appendChild(bub);
+    });
+    log.scrollTop = log.scrollHeight;
+  };
+  paint();
+
+  const inputRow = document.createElement("div");
+  inputRow.className = "chat-input-row";
+  const inp = document.createElement("textarea");
+  inp.className = "chat-input";
+  inp.rows = 2;
+  inp.placeholder = "Pídeme algo sobre esta letra...";
+  const send = document.createElement("button");
+  send.className = "tool primary";
+  send.textContent = "Enviar";
+
+  async function sendMsg(){
+    const q = inp.value.trim();
+    if(!q) return;
+    v.chat.push({role:"user", content:q});
+    inp.value = "";
+    paint();
+    saveDB();
+    send.disabled = true;
+    send.textContent = "...";
+    try{
+      const history = v.chat.map(m => ({role:m.role === "user" ? "user" : "assistant", content:m.content}));
+      const sys = "Eres un compositor de letras en español ayudando con la canción \"" + db.currentSong + "\".\n\n" +
+        "CONTEXTO DEL PROYECTO:\n" + lyricContext() + "\n\n" +
+        "LETRA ACTUAL (versión \"" + (v.title || "") + "\"):\n" + (v.text || "(vacía)") +
+        "\n\nRespeta los prompts y el estilo indicados. Sé breve y concreto.";
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({model:"claude-sonnet-4-6", max_tokens:1000, system:sys, messages:history})
+      });
+      const data = await res.json();
+      const txt = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("\n");
+      v.chat.push({role:"assistant", content: txt || "(sin respuesta)"});
+    }catch(e){
+      v.chat.push({role:"assistant", content:"No he podido responder ahora mismo."});
+    }
+    send.disabled = false;
+    send.textContent = "Enviar";
+    saveDB();
+    paint();
+  }
+  send.addEventListener("click", sendMsg);
+  inp.addEventListener("keydown", (e)=>{
+    if(e.key === "Enter" && (e.ctrlKey || e.metaKey)) sendMsg();
+  });
+
+  inputRow.appendChild(inp);
+  inputRow.appendChild(micButton(()=>inp));
+  inputRow.appendChild(send);
+  chat.appendChild(log);
+  chat.appendChild(inputRow);
+
+  body.appendChild(left);
+  body.appendChild(chat);
+  return body;
+}
+
+let dragLine = null;
+
+function renderLyrics(){
+  const cs = currentState();
+  const wrap = document.getElementById("lyricVersions");
+  wrap.innerHTML = "";
+  if(cs.lyricVersions.length === 0){
+    wrap.innerHTML = '<p style="color:var(--muted);font-size:13px;">Todavía no hay ninguna versión de la letra para esta canción.</p>';
+    return;
+  }
+  cs.lyricVersions.forEach(v => {
+    const box = document.createElement("div");
+    box.className = "lyric-version";
+
+    const top = document.createElement("div");
+    top.className = "lyric-version-top";
+
+    const title = document.createElement("span");
+    title.className = "lyric-title";
+    title.textContent = v.title || "Sin título";
+    title.title = "Clic para renombrar";
+    title.contentEditable = "true";
+    title.spellcheck = false;
+    title.addEventListener("click", (e)=>e.stopPropagation());
+    title.addEventListener("keydown", (e)=>{ if(e.key === "Enter"){ e.preventDefault(); title.blur(); } });
+    title.addEventListener("blur", ()=>setLyricTitle(v.id, title.textContent));
+
+    const actions = document.createElement("div");
+    actions.className = "prompt-actions";
+
+    const isOpen = expandedLyrics.has(v.id);
+    if(isOpen) box.classList.add("open");
+
+    const preview = document.createElement("span");
+    preview.className = "lyric-preview";
+    if(!isOpen){
+      preview.textContent = (v.text || "").replace(/\s+/g, " ").trim().slice(0, 60);
+    }
+
+    top.addEventListener("click", (e)=>{
+      if(e.target.closest("button") || e.target === title) return;
+      if(expandedLyrics.has(v.id)) expandedLyrics.delete(v.id);
+      else expandedLyrics.add(v.id);
+      renderLyrics();
+    });
+
+    const copyLyricBtn = document.createElement("button");
+    copyLyricBtn.className = "icon-btn";
+    copyLyricBtn.textContent = "Copiar";
+    copyLyricBtn.addEventListener("click", ()=>{
+      copyText(v.text || "");
+      copyLyricBtn.textContent = "Copiada ✓";
+      setTimeout(()=>{ copyLyricBtn.textContent = "Copiar"; }, 1200);
+    });
+
+    const dupBtn = document.createElement("button");
+    dupBtn.className = "icon-btn";
+    dupBtn.textContent = "Duplicar";
+    dupBtn.addEventListener("click", ()=>duplicateLyricVersion(v.id));
+
+    const delLyricBtn = document.createElement("button");
+    delLyricBtn.className = "icon-btn";
+    delLyricBtn.textContent = "Borrar";
+    delLyricBtn.addEventListener("click", ()=>{
+      if(delLyricBtn.dataset.armed === "1"){ deleteLyricVersion(v.id); return; }
+      delLyricBtn.dataset.armed = "1";
+      delLyricBtn.textContent = "¿Seguro?";
+      setTimeout(()=>{ delLyricBtn.dataset.armed=""; delLyricBtn.textContent="Borrar"; }, 3000);
+    });
+
+    actions.appendChild(copyLyricBtn);
+    actions.appendChild(dupBtn);
+    actions.appendChild(delLyricBtn);
+    top.appendChild(title);
+    top.appendChild(preview);
+    top.appendChild(actions);
+    box.appendChild(top);
+
+    if(isOpen) box.appendChild(buildLyricBody(v));
+
+    wrap.appendChild(box);
+  });
+}
+
+document.getElementById("viewGenresBtn").addEventListener("click", ()=>switchView("estilos"));
+document.getElementById("viewPromptsBtn").addEventListener("click", ()=>switchView("prompts"));
+document.getElementById("viewLyricsBtn").addEventListener("click", ()=>switchView("letra"));
+document.getElementById("viewComposeBtn").addEventListener("click", ()=>switchView("compositor"));
+document.getElementById("viewRefsBtn").addEventListener("click", ()=>switchView("refs"));
+document.getElementById("viewAntiBtn").addEventListener("click", ()=>switchView("anti"));
+document.getElementById("newLyricBtn").addEventListener("click", ()=>addLyricVersion(""));
+
+document.getElementById("styleGenGo").addEventListener("click", async ()=>{
+  const q = document.getElementById("styleGenInput").value.trim();
+  const box = document.getElementById("styleGenResults");
+  if(!q) return;
+  box.innerHTML = '<p class="scope-empty">Pensando estilos...</p>';
+  try{
+    const cs = currentState();
+    const cust = cs.custom || {};
+    const scored = GENRES.filter(g => cs[g] && cs[g].rating >= 7).map(g => ({n:g, r:cs[g].rating}))
+      .concat(Object.keys(cust).filter(k => cust[k].rating >= 7).map(k => ({n:k, r:cust[k].rating})));
+    const disliked = GENRES.filter(g => cs[g] && cs[g].rating > 0 && cs[g].rating <= 3).map(g => g)
+      .concat(Object.keys(cust).filter(k => cust[k].rating > 0 && cust[k].rating <= 3))
+      .slice(0, 6).join(", ");
+    const liked = scored.sort((a,b)=>b.r - a.r).slice(0,8)
+      .map(x => x.n + " (" + x.r + "/10)").join(", ");
+    const txt = await askClaude(
+      "Quiero un estilo musical para una canción. Rollo buscado: \"" + q + "\"." +
+      (liked ? " Estilos que ya me gustan, con mi nota: " + liked + "." : "") +
+      (disliked ? " Estilos que NO me gustan: " + disliked + "." : "") +
+      (feedbackBrief() ? " " + feedbackBrief() : "") +
+      " Sugiere 5 prompts de estilo para un generador de música: descriptores separados por comas, " +
+      "concretos y tan largos como haga falta. Devuelve SOLO un array JSON: {\"estilo\":\"prompt de estilo completo, descriptores separados por comas\"," +
+      "\"descripcion\":\"qué suena, una o dos frases\"," +
+      "\"familia\":\"la categoría que mejor lo encuadre, elegida EXACTAMENTE de esta lista: " + FAMILY_ORDER.join(", ") + "\"}. " +
+      "Sin texto alrededor." + rulesBlock(), false);
+    paintStyleSuggestions(parseJSON(txt), box);
+  }catch(e){
+    box.innerHTML = '<p class="scope-empty">No se pudo sugerir ahora mismo. Inténtalo otra vez.</p>';
+  }
+});
+document.getElementById("styleGenGo").parentNode.appendChild(micButton(()=>document.getElementById("styleGenInput")));
+document.getElementById("songQuery").parentNode.appendChild(micButton(()=>document.getElementById("songQuery")));
+
+function feedbackBag(){
+  const cs = currentState();
+  if(!cs.styleFeedback) cs.styleFeedback = {};
+  return cs.styleFeedback;
+}
+
+function feedbackBrief(){
+  const fb = feedbackBag();
+  const keys = Object.keys(fb);
+  if(!keys.length) return "";
+  const bad = keys.filter(k => fb[k].rating <= 4);
+  const good = keys.filter(k => fb[k].rating >= 5);
+  return [
+    good.length ? "Propuestas tuyas que aprobé: " + good.map(k => k + " (" + fb[k].rating + "/10)").join(", ") + "." : "",
+    bad.length ? "Propuestas tuyas que RECHACÉ, no insistas por ahí: " +
+      bad.map(k => k + " (" + fb[k].rating + "/10)").join(", ") + "." : ""
+  ].filter(Boolean).join("\n");
+}
+
+const DEFAULT_RULES = [
+  "Nunca uses formulaciones negativas en la etiqueta ni en la descripción (nada de \"sin\", \"no\", \"menos\"): el generador de música ignora la negación y acaba haciendo justo lo contrario. Di siempre en positivo lo que sí debe sonar.",
+  "El estilo es un prompt: descriptores separados por comas, tan largo como haga falta. No lo recortes."
+].join("\n");
+
+function styleRules(){
+  if(db.styleRules === undefined) db.styleRules = DEFAULT_RULES;
+  return db.styleRules;
+}
+
+function antiBrief(){
+  const bag = (currentState().antiList) || {};
+  const keys = Object.keys(bag);
+  if(!keys.length) return "";
+  const lines = keys.sort((a,b)=>(bag[b].rating||0)-(bag[a].rating||0))
+    .map(k => "- " + k + (bag[k].rating ? " (me molesta " + bag[k].rating + "/10)" : ""));
+  return "\n\nANTIPROMPTS \u2014 esto NO lo quiero en ning\u00fan caso:\n" + lines.join("\n") +
+    "\nEv\u00edtalo por completo, pero no lo menciones en negativo en el resultado: escribe siempre en positivo lo que s\u00ed suena.\n";
+}
+
+function rulesBlock(){
+  const r = (styleRules() || "").trim();
+  return (r ? "\n\nREGLAS OBLIGATORIAS (por encima de todo lo demás):\n" + r + "\n" : "") + antiBrief();
+}
+
+function paintStyleSuggestions(list, box){
+  box.innerHTML = "";
+  list.forEach(item => {
+    const row = document.createElement("div");
+    row.className = "song-hit";
+    const h = document.createElement("div");
+    h.className = "song-hit-title";
+    h.textContent = item.estilo;
+    h.contentEditable = "true";
+    h.spellcheck = false;
+    h.title = "Edítalo aquí si quieres afinarlo";
+    h.addEventListener("keydown", (e)=>{ if(e.key === "Enter"){ e.preventDefault(); h.blur(); } });
+    h.addEventListener("blur", ()=>{ item.estilo = h.textContent.trim() || item.estilo; });
+
+    const d = document.createElement("div");
+    d.className = "song-hit-desc";
+    d.textContent = item.descripcion || "";
+    d.contentEditable = "true";
+    d.spellcheck = false;
+    d.addEventListener("blur", ()=>{ item.descripcion = d.textContent.trim(); });
+    const bar = document.createElement("div");
+    bar.className = "add-form-row end";
+    const copyB = document.createElement("button");
+    copyB.className = "tool";
+    copyB.textContent = "Copiar";
+    copyB.addEventListener("click", ()=>{
+      copyText(item.estilo);
+      copyB.textContent = "Copiado ✓";
+      setTimeout(()=>{ copyB.textContent = "Copiar"; }, 1200);
+    });
+
+    const add = document.createElement("button");
+    add.className = "tool primary";
+    add.textContent = "Añadir a mis estilos";
+    add.addEventListener("click", ()=>{
+      const fam = FAMILY_ORDER.includes(item.familia)
+        ? item.familia
+        : guessFamily(item.estilo + " " + (item.descripcion || ""));
+      customBag()[item.estilo] = {done:false, rating:0, desc:item.descripcion || "", family:fam, ord:Date.now()};
+      saveDB();
+      render();
+      add.textContent = "Añadido ✓";
+      add.disabled = true;
+    });
+    const fb = feedbackBag();
+    const rating = document.createElement("div");
+    rating.className = "rating-row";
+    rating.style.margin = "8px 0 4px";
+    for(let i=1;i<=10;i++){
+      const dot = document.createElement("button");
+      dot.className = "dot n" + i + ((fb[item.estilo] && fb[item.estilo].rating === i) ? " filled" : "");
+      dot.textContent = i;
+      dot.title = "Puntuar esta propuesta " + i + "/10";
+      dot.addEventListener("click", ()=>{
+        fb[item.estilo] = {rating:i, desc:item.descripcion || "", ts:Date.now()};
+        if(i >= 5){
+          const fam = FAMILY_ORDER.includes(item.familia)
+            ? item.familia
+            : guessFamily(item.estilo + " " + (item.descripcion || ""));
+          customBag()[item.estilo] = {done:false, rating:i, desc:item.descripcion || "", family:fam, ord:Date.now()};
+          add.textContent = "Añadido ✓";
+          add.disabled = true;
+        }
+        saveDB();
+        render();
+        row.remove();
+        if(!box.querySelector(".song-hit")){
+          box.innerHTML = '<p class="scope-empty">Ya has valorado todas las propuestas.</p>';
+        }
+      });
+      rating.appendChild(dot);
+    }
+
+    bar.appendChild(copyB);
+    bar.appendChild(add);
+
+    row.appendChild(h);
+    row.appendChild(d);
+    row.appendChild(rating);
+    row.appendChild(bar);
+    box.appendChild(row);
+  });
+  if(list.length === 0) box.innerHTML = '<p class="scope-empty">No ha salido ninguna sugerencia.</p>';
+}
+
+function activityBrief(){
+  const cs = currentState();
+  const cust = cs.custom || {};
+  const rated = GENRES.filter(g => cs[g] && cs[g].rating > 0).map(g => g + " " + cs[g].rating + "/10")
+    .concat(Object.keys(cust).filter(k => cust[k].rating > 0).map(k => k + " " + cust[k].rating + "/10"));
+  const mine = Object.keys(cust).filter(k => cust[k].mine);
+  const prompts = [];
+  ["prompts","composePrompts"].forEach(kind => {
+    ["global","song"].forEach(sc => {
+      const bag = bagOf(kind, sc);
+      Object.keys(bag).forEach(id => {
+        const p = bag[id];
+        prompts.push((p.name ? p.name + ": " : "") + (p.text || "").slice(0, 300) +
+                     (p.rating ? " [nota " + p.rating + "/10]" : ""));
+      });
+    });
+  });
+  return [
+    rated.length ? "Notas que he puesto: " + rated.join(", ") + "." : "",
+    feedbackBrief(),
+    mine.length ? "Prompts de estilo que he pegado yo: " + mine.join(" | ") + "." : "",
+    prompts.length ? "Prompts guardados en el panel:\n" + prompts.slice(0, 25).join("\n") : ""
+  ].filter(Boolean).join("\n\n");
+}
+
+async function autoStyles(){
+  const box = document.getElementById("styleGenResults");
+  const brief = activityBrief();
+  if(!brief.trim()){
+    box.innerHTML = '<p class="scope-empty">Todavía no hay notas ni prompts que analizar.</p>';
+    return;
+  }
+  box.innerHTML = '<p class="scope-empty">Analizando lo que has hecho...</p>';
+  try{
+    const txt = await askClaude(
+      "Analiza mi actividad en un panel de estilos musicales para la canción \"" + db.currentSong + "\" y deduce " +
+      "hacia dónde va mi gusto según mis notas.\n\n" + brief +
+      "\n\nCon esa lectura propón 5 prompts de estilo nuevos, distintas de las que ya aparecen, para probar en un " +
+      "generador de música. Devuelve SOLO un array JSON: {\"estilo\":\"prompt de estilo completo, descriptores separados por comas\"," +
+      "\"descripcion\":\"qué suena y por qué encaja con lo que me está gustando, una o dos frases\"," +
+      "\"familia\":\"categoría exacta de esta lista: " + FAMILY_ORDER.join(", ") + "\"}. Sin texto alrededor." +
+      rulesBlock(), false);
+    paintStyleSuggestions(parseJSON(txt), box);
+  }catch(e){
+    box.innerHTML = '<p class="scope-empty">No se pudo analizar ahora mismo. Inténtalo otra vez.</p>';
+  }
+}
+
+let autoBusy = false;
+let autoTimer = null;
+
+function autoBadge(on){
+  let el = document.getElementById("autoStyleBadge");
+  if(!el){
+    el = document.createElement("span");
+    el.id = "autoStyleBadge";
+    el.className = "auto-badge";
+    const row = document.getElementById("tabRow");
+    if(row) row.appendChild(el);
+  }
+  el.textContent = on ? "creando estilo..." : "";
+}
+
+const STOPW = new Set(["de","del","la","el","con","y","a","en","para","estilo","music","musica","música","sin","por","al","un","una","mi","lo"]);
+
+function keyWords(txt){
+  return (txt || "").toLowerCase().replace(/[^a-záéíóúñü\s-]/g, " ").split(/[\s-]+/)
+    .filter(w => w.length > 3 && !STOPW.has(w));
+}
+
+function tooSimilar(name, existing){
+  const a = new Set(keyWords(name));
+  return existing.some(e => {
+    const b = keyWords(e);
+    let hits = 0;
+    b.forEach(w => { if(a.has(w)) hits++; });
+    return hits >= 2 || (hits >= 1 && b.length <= 2);
+  });
+}
+
+async function autoOneStyle(){
+  if(autoBusy) return;
+  const cs = currentState();
+  const cust = cs.custom || {};
+
+  const ratedCount = GENRES.filter(g => cs[g] && cs[g].rating > 0).length +
+                     Object.keys(cust).filter(k => cust[k].rating > 0).length;
+  if(ratedCount < 3) return;
+
+  const pending = Object.keys(cust).filter(k => cust[k].rating === 0).length;
+  if(pending >= 3) return;
+
+  const liked = GENRES.filter(g => cs[g] && cs[g].rating >= 7).map(g => g + " " + cs[g].rating + "/10")
+    .concat(Object.keys(cust).filter(k => cust[k].rating >= 7).map(k => k + " " + cust[k].rating + "/10"));
+  const meh = GENRES.filter(g => cs[g] && cs[g].rating >= 4 && cs[g].rating <= 6).map(g => g)
+    .concat(Object.keys(cust).filter(k => cust[k].rating >= 4 && cust[k].rating <= 6));
+  const bad = GENRES.filter(g => cs[g] && cs[g].rating > 0 && cs[g].rating <= 3).map(g => g)
+    .concat(Object.keys(cust).filter(k => cust[k].rating > 0 && cust[k].rating <= 3));
+  if(liked.length === 0 && bad.length === 0) return;
+
+  const existing = Object.keys(cust);
+  autoBusy = true;
+  autoBadge(true);
+  try{
+    const txt = await askClaude(
+      "Panel de estilos musicales para la canción \"" + db.currentSong + "\". Estas son MIS NOTAS, que son la única guía:\n" +
+      (liked.length ? "- Me gusta (7-10): " + liked.join(", ") + "\n" : "") +
+      (meh.length ? "- Regular (4-6): " + meh.join(", ") + "\n" : "") +
+      (bad.length ? "- No me gusta (1-3): " + bad.join(", ") + "\n" : "") +
+      "\nPrompts de estilo que he pegado o guardado yo:\n" + activityBrief().slice(0, 2000) +
+      "\n\n" + feedbackBrief() +
+      "\n\nEstilos que YA están en el panel (prohibido repetirlos o hacer variantes suyas): " +
+      existing.concat(Object.keys(feedbackBag())).join(", ") +
+      "\n\nReglas estrictas:\n" +
+      "1. Parte solo de lo que puntúo alto y evita por completo los rasgos de lo que puntúo bajo.\n" +
+      "2. No propongas una variante de algo que ya existe en el panel: que sea algo distinto de verdad.\n" +
+      "3. Si mis notas no dan una dirección clara y nueva, responde exactamente {\"estilo\":\"\"}.\n\n" +
+      "Devuelve SOLO un objeto JSON: {\"estilo\":\"prompt de estilo completo, descriptores separados por comas\"," +
+      "\"descripcion\":\"qué suena y qué nota mía lo justifica, una frase\"," +
+      "\"familia\":\"categoría exacta de esta lista: " + FAMILY_ORDER.join(", ") + "\"}. Sin texto alrededor." +
+      rulesBlock(), false);
+    const clean = txt.replace(/```json|```/g, "").trim();
+    const i = clean.indexOf("{"), j = clean.lastIndexOf("}");
+    const item = JSON.parse(clean.slice(i, j + 1));
+    const bag = customBag();
+    const known = existing.concat(Object.keys(feedbackBag()));
+    if(item.estilo && !bag[item.estilo] && !tooSimilar(item.estilo, known)){
+      bag[item.estilo] = {
+        done:false, rating:0,
+        desc:item.descripcion || "",
+        family: FAMILY_ORDER.includes(item.familia) ? item.familia : guessFamily(item.estilo + " " + (item.descripcion || "")),
+        ord:Date.now()
+      };
+      saveDB();
+      render();
+    }
+  }catch(e){}
+  autoBusy = false;
+  autoBadge(false);
+}
+
+function queueAutoStyle(){
+  clearTimeout(autoTimer);
+  autoTimer = setTimeout(autoOneStyle, 1200);
+}
+
+async function stylesFromEverything(){
+  const box = document.getElementById("styleGenResults");
+  const cs = currentState();
+  const letras = (cs.lyricVersions || []).map(v => (v.title || "") + ":\n" + (v.text || "").slice(0, 800)).join("\n\n");
+  const brief = [
+    activityBrief(),
+    feedbackBrief(),
+    lyricContext(),
+    letras ? "Letras escritas para esta canción:\n" + letras : ""
+  ].filter(Boolean).join("\n\n");
+
+  if(!brief.trim()){
+    box.innerHTML = '<p class="scope-empty">Todavía no hay nada en el panel que analizar.</p>';
+    return;
+  }
+  box.innerHTML = '<p class="scope-empty">Leyendo todo el panel...</p>';
+  try{
+    const existing = Object.keys(cs.custom || {}).concat(Object.keys(feedbackBag())).join(", ");
+    const txt = await askClaude(
+      "Analiza TODO mi panel para la canción \"" + db.currentSong + "\": mis notas a los estilos, mis prompts de estilo, " +
+      "mis prompts de composición, mis letras de referencia y la letra que llevo escrita.\n\n" + brief.slice(0, 12000) +
+      "\n\nNo repitas ni hagas variantes de: " + existing +
+      "\n\nPropón 5 prompts de estilo que encajen con el conjunto: que el sonido case con lo que dice la letra y con " +
+      "las referencias, y que respete mis notas altas y evite lo que puntúo bajo. " +
+      "Devuelve SOLO un array JSON: {\"estilo\":\"prompt de estilo completo, descriptores separados por comas\"," +
+      "\"descripcion\":\"qué suena y qué parte del panel lo justifica, una o dos frases\"," +
+      "\"familia\":\"categoría exacta de esta lista: " + FAMILY_ORDER.join(", ") + "\"}. Sin texto alrededor." +
+      rulesBlock(), false);
+    paintStyleSuggestions(parseJSON(txt), box);
+  }catch(e){
+    box.innerHTML = '<p class="scope-empty">No se pudo analizar ahora mismo. Inténtalo otra vez.</p>';
+  }
+}
+
+function addOwnStyle(){
+  const el = document.getElementById("styleOwnInput");
+  const name = el.value.trim();
+  if(!name) return;
+  const bag = customBag();
+  if(!bag[name]){
+    bag[name] = {done:false, rating:0, desc:"Estilo añadido por ti.", family:guessFamily(name), ord:Date.now(), mine:true};
+  }
+  el.value = "";
+  saveDB();
+  render();
+  queueAutoStyle();
+}
+const rulesBox = document.getElementById("styleRulesBox");
+const rulesTa = document.getElementById("styleRules");
+document.getElementById("styleRulesBtn").addEventListener("click", ()=>{
+  const open = rulesBox.style.display !== "none";
+  rulesBox.style.display = open ? "none" : "block";
+  document.getElementById("styleRulesBtn").classList.toggle("open", !open);
+  if(!open){ rulesTa.value = styleRules(); rulesTa.focus(); }
+});
+rulesTa.addEventListener("change", (e)=>{ db.styleRules = e.target.value; saveDB(); });
+
+document.getElementById("styleOwnGo").addEventListener("click", addOwnStyle);
+document.getElementById("styleAllGo").addEventListener("click", stylesFromEverything);
+document.getElementById("styleOwnInput").addEventListener("keydown", (e)=>{
+  if(e.key === "Enter") addOwnStyle();
+});
+document.getElementById("styleOwnGo").parentNode.appendChild(micButton(()=>document.getElementById("styleOwnInput")));
+
+document.getElementById("styleGenInput").addEventListener("keydown", (e)=>{
+  if(e.key === "Enter") document.getElementById("styleGenGo").click();
+});
+
+loadDB();
+
+document.getElementById("exportBtn").addEventListener("click", ()=>{
+  const blob = new Blob([JSON.stringify(db, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "estilos-musicales-backup.json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById("importBtn").addEventListener("click", ()=>{
+  document.getElementById("importFile").click();
+});
+
+document.getElementById("importFile").addEventListener("change", (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    try{
+      const parsed = JSON.parse(ev.target.result);
+      if(!parsed.songs) throw new Error("formato inválido");
+      db = parsed;
+      if(!db.notes) db.notes = {};
+          if(!db.currentSong || !db.songs[db.currentSong]){
+        db.currentSong = Object.keys(db.songs)[0];
+      }
+      Object.keys(db.songs).forEach(ensureGenres);
+      saveDB();
+      renderSongSelect();
+      renderFamilyChips();
+      renderTabs();
+      render();
+      alert("Copia importada correctamente.");
+    }catch(err){
+      alert("No se pudo leer el archivo. Asegúrate de que es una copia exportada desde aquí.");
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = "";
+});
+</script>
+</body>
+</html>

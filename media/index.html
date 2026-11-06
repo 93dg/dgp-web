@@ -154,7 +154,7 @@ pre{white-space:pre-wrap;font-size:.75rem;color:var(--mut);max-height:160px;over
       </div>
     </div>
   </section>
-  <div class="m" style="margin-top:18px;text-align:center"><span id="version">V1.24</span></div>
+  <div class="m" style="margin-top:18px;text-align:center"><span id="version">V1.25</span></div>
   <pre id="log" hidden></pre>
 </div>
 
@@ -265,7 +265,20 @@ function crearPrev(el,file,getP,avisar){
   async function buffer(){
     if(buf) return buf;
     avisar('Preparando la escucha con el tono aplicado.');
-    buf=await ctx().decodeAudioData(await file.arrayBuffer());
+    const datos=await file.arrayBuffer();
+    try{
+      buf=await new Promise((ok,ko)=>{ const r=ctx().decodeAudioData(datos.slice(0),ok,ko); if(r&&r.then) r.then(ok,ko); });
+    }catch(e1){
+      /* El navegador no abre el formato (p. ej. .mov en iPhone): se extrae el audio con el motor propio */
+      avisar('Preparando la escucha. La primera vez puede tardar un poco.');
+      const f=await motor(avisar);
+      await f.writeFile('prev_in.bin',new Uint8Array(datos));
+      const code=await f.exec(['-i','prev_in.bin','-vn','-ac','1','-ar','32000','-c:a','pcm_s16le','prev.wav']);
+      if(code!==0) throw new Error('No se pudo extraer el audio');
+      const wav=await f.readFile('prev.wav');
+      try{ await f.deleteFile('prev_in.bin'); await f.deleteFile('prev.wav'); }catch(e){}
+      buf=await new Promise((ok,ko)=>{ const d=wav.buffer.slice(wav.byteOffset,wav.byteOffset+wav.byteLength); const r=ctx().decodeAudioData(d,ok,ko); if(r&&r.then) r.then(ok,ko); });
+    }
     avisar('');
     return buf;
   }
@@ -282,7 +295,7 @@ function crearPrev(el,file,getP,avisar){
       sh.connect(ctx().destination);
       el.muted=true;
       avisar('Escuchando con el tono aplicado.');
-    }catch(e){ fallo=true; avisar('No se puede escuchar el tono con este archivo. Se aplicará igualmente al guardar.'); parar(); }
+    }catch(e){ fallo=true; parar(); avisar('No se puede escuchar el tono con este archivo ('+((e&&e.message)||'error')+'). Se aplicará igualmente al guardar.'); }
   }
   function aplicar(){
     const p=getP();
@@ -563,7 +576,7 @@ window.__medios={get bucle(){return bucle;},get ctx(){return ctxA;},get prevEd()
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.24', ROOT='../';
+  var BUILD='V1.25', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

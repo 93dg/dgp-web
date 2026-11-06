@@ -1756,7 +1756,7 @@ function switchView(mode){
   document.getElementById("antiSection").style.display = mode === "anti" ? "" : "none";
   document.getElementById("mediosSection").style.display = mode === "medios" ? "" : "none";
   document.getElementById("viewMediosBtn").classList.toggle("active", mode === "medios");
-  if(mode === "medios"){ const fr = document.getElementById("mediosFrame"); if(!fr.getAttribute("src")) fr.setAttribute("src","../media/?embed=1"); try{ history.replaceState(null,"","#medios"); }catch(e){} }
+  if(mode === "medios"){ const fr = document.getElementById("mediosFrame"); if(!fr.getAttribute("src")) fr.setAttribute("src","../media/?embed=1&v="+encodeURIComponent((document.getElementById("version")||{}).textContent||Date.now())); try{ history.replaceState(null,"","#medios"); }catch(e){} }
   else if(location.hash === "#medios"){ try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){} }
   document.querySelectorAll("#bnav [data-v]").forEach(b => b.classList.toggle("on", b.dataset.v === mode));
   document.getElementById("viewAntiBtn").classList.toggle("active", mode === "anti");
@@ -3788,7 +3788,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.24', ROOT='../';
+  var BUILD='V1.25', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
@@ -3820,6 +3820,6 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
   setInterval(comprobar,300000);
 })();
 </script>
-<div style="text-align:center;color:var(--muted);font-size:12px;padding:6px 0 calc(90px + env(safe-area-inset-bottom))"><span id="version">V1.24</span></div>
+<div style="text-align:center;color:var(--muted);font-size:12px;padding:6px 0 calc(90px + env(safe-area-inset-bottom))"><span id="version">V1.25</span></div>
 </body>
 </html>

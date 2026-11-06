@@ -184,7 +184,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[t
   <aside class="side">
     <div class="brand">DGP</div>
     <nav id="nav" aria-label="Secciones"></nav>
-    <div class="foot"><span class="m"><span id="version">V1.26</span></span><button id="out">Salir</button></div>
+    <div class="foot"><span class="m"><span id="version">V1.27</span></span><button id="out">Salir</button></div>
   </aside>
   <div>
   <div class="main">
@@ -848,7 +848,7 @@ iniciar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.26', ROOT='';
+  var BUILD='V1.27', ROOT='';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

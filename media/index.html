@@ -42,6 +42,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .go{border:1px solid var(--ac);border-radius:12px;padding:11px 16px;width:100%}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .row>*{flex:0 0 auto}
+.row>.m{flex:1 1 180px;min-width:0}
 .fld{margin-bottom:12px}
 .fld label{display:block;margin:0 0 4px}
 .bar{height:8px;border-radius:6px;background:var(--s2);border:1px solid var(--bd);overflow:hidden;margin:10px 0 4px}
@@ -62,6 +63,10 @@ audio{background:transparent}
 .act button.pri{border-color:var(--ac);color:var(--ac)}
 .tg{border:1px solid var(--bd);background:var(--s2);color:var(--tx);border-radius:12px;padding:9px 14px;font-weight:600}
 .tg.on{border-color:var(--ac);color:var(--ac)}
+.pl{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:center;margin-top:10px}
+.pl button{border:1px solid var(--ac);border-radius:12px;padding:9px 16px;min-width:112px}
+.pl input[type=range]{padding:0;height:28px;border:0;background:none;accent-color:var(--ac)}
+.pl .tm{grid-column:1/-1;display:flex;justify-content:space-between}
 .lib{margin-top:12px}
 .lib .it{display:flex;align-items:center;gap:6px;border:1px solid var(--bd);border-radius:12px;background:var(--s2);margin-top:6px}
 .lib .it.on{border-color:var(--ac)}
@@ -163,7 +168,7 @@ pre{white-space:pre-wrap;font-size:.75rem;color:var(--mut);max-height:160px;over
       </div>
     </div>
   </section>
-  <div class="m" style="margin-top:18px;text-align:center"><span id="version">V1.26</span></div>
+  <div class="m" style="margin-top:18px;text-align:center"><span id="version">V1.27</span></div>
   <pre id="log" hidden></pre>
 </div>
 
@@ -232,6 +237,25 @@ function arrastrar(zona,input){
 }
 
 
+
+/* ---------- reproductor propio ---------- */
+function reproductor(el,cont){
+  cont.innerHTML='';
+  const w=document.createElement('div'); w.className='pl';
+  const b=document.createElement('button'); b.textContent='Reproducir';
+  const r=document.createElement('input'); r.type='range'; r.min=0; r.max=1000; r.value=0; r.setAttribute('aria-label','Posición');
+  const t=document.createElement('div'); t.className='tm m num'; t.innerHTML='<span>0:00,0</span><span>0:00,0</span>';
+  w.appendChild(b); w.appendChild(r); w.appendChild(t); cont.appendChild(w);
+  let arrastra=false;
+  const pinta=()=>{ const d=el.duration||0; if(!arrastra&&d) r.value=Math.round(el.currentTime/d*1000); t.children[0].textContent=fmt(el.currentTime); t.children[1].textContent=fmt(d); };
+  b.onclick=()=>{ if(el.paused){ if(el.ended||el.currentTime>=(el.duration||0)-0.05) el.currentTime=0; el.play(); } else el.pause(); };
+  r.addEventListener('input',()=>{ arrastra=true; const d=el.duration||0; el.currentTime=r.value/1000*d; t.children[0].textContent=fmt(el.currentTime); });
+  r.addEventListener('change',()=>{ arrastra=false; });
+  ['timeupdate','loadedmetadata','durationchange','seeked'].forEach(e=>el.addEventListener(e,pinta));
+  el.addEventListener('play',()=>{ b.textContent='Pausa'; }); el.addEventListener('pause',()=>{ b.textContent='Reproducir'; }); el.addEventListener('ended',()=>{ b.textContent='Reproducir'; });
+  pinta();
+}
+
 /* ---------- tono y velocidad ---------- */
 function ajustesUI(caja,alCambiar){
   caja.className='ajus';
@@ -258,9 +282,9 @@ function filtroAudio(semis,vel){
 }
 
 
-/* ---------- escucha previa con tono y velocidad en directo ---------- */
-let STmod=null, ctxA=null;
+let ctxA=null;
 function desbloquear(){
+  try{ if(navigator.audioSession) navigator.audioSession.type='playback'; }catch(e){}
   try{
     if(!ctxA) ctxA=new (window.AudioContext||window.webkitAudioContext)();
     if(ctxA.state!=='running') ctxA.resume();
@@ -268,58 +292,48 @@ function desbloquear(){
   }catch(e){}
 }
 ['touchstart','touchend','pointerdown','click','keydown'].forEach(ev=>document.addEventListener(ev,desbloquear,{passive:true}));
-async function cargarST(){ if(!STmod) STmod=await import('./lib/soundtouch.js'); return STmod; }
+/* ---------- escucha previa con tono y velocidad en directo ----------
+   El sonido del propio reproductor pasa por un procesador en el hilo de audio (AudioWorklet).
+   No se decodifica el archivo ni se sincroniza nada a mano: las pausas y saltos del reproductor valen tal cual. */
 function crearPrev(el,file,getP,avisar){
-  let buf=null, sh=null, fallo=false;
+  let st=null, montando=null, fallo=false;
   const ctx=()=>{ if(!ctxA) ctxA=new (window.AudioContext||window.webkitAudioContext)(); return ctxA; };
-  async function buffer(){
-    if(buf) return buf;
-    avisar('Preparando la escucha con el tono aplicado.');
-    const datos=await file.arrayBuffer();
-    try{
-      buf=await new Promise((ok,ko)=>{ const r=ctx().decodeAudioData(datos.slice(0),ok,ko); if(r&&r.then) r.then(ok,ko); });
-    }catch(e1){
-      /* El navegador no abre el formato (p. ej. .mov en iPhone): se extrae el audio con el motor propio */
-      avisar('Preparando la escucha. La primera vez puede tardar un poco.');
-      const f=await motor(avisar);
-      await f.writeFile('prev_in.bin',new Uint8Array(datos));
-      const code=await f.exec(['-i','prev_in.bin','-vn','-ac','1','-ar','32000','-c:a','pcm_s16le','prev.wav']);
-      if(code!==0) throw new Error('No se pudo extraer el audio');
-      const wav=await f.readFile('prev.wav');
-      try{ await f.deleteFile('prev_in.bin'); await f.deleteFile('prev.wav'); }catch(e){}
-      buf=await new Promise((ok,ko)=>{ const d=wav.buffer.slice(wav.byteOffset,wav.byteOffset+wav.byteLength); const r=ctx().decodeAudioData(d,ok,ko); if(r&&r.then) r.then(ok,ko); });
-    }
-    avisar('');
-    return buf;
+  async function montar(){
+    if(st||fallo) return;
+    if(montando) return montando;
+    montando=(async()=>{
+      let fuente=null;
+      try{
+        avisar('Preparando la escucha con el tono aplicado.');
+        const c=ctx(); try{ await c.resume(); }catch(e){}
+        const m=await import('./lib/soundtouch-node.js');
+        if(!c.__stReg){ await m.SoundTouchNode.register(c,new URL('lib/soundtouch-processor.js',location.href).href); c.__stReg=true; }
+        const n=new m.SoundTouchNode({context:c});
+        fuente=c.createMediaElementSource(el);
+        fuente.connect(n); n.connect(c.destination);
+        st=n; avisar('');
+      }catch(e){
+        fallo=true; try{ if(fuente) fuente.connect(ctx().destination); }catch(e2){}
+        avisar('No se puede escuchar el tono con este navegador ('+((e&&e.message)||'error')+'). Se aplicará igualmente al guardar.');
+      }
+    })();
+    await montando; montando=null;
   }
-  function parar(){ if(sh){ try{ sh.disconnect(); }catch(e){} sh=null; avisar(''); } el.muted=false; }
-  async function arrancar(){
-    const p=getP(); if(sh||fallo) return;
-    try{
-      const [m,b]=await Promise.all([cargarST(),buffer()]);
-      if(el.paused || getP().semis===0 || sh) return;
-      await ctx().resume();
-      sh=new m.PitchShifter(ctx(),b,4096);
-      sh.tempo=p.vel; sh.pitchSemitones=p.semis;
-      sh.percentagePlayed=Math.min(1,el.currentTime/b.duration);
-      sh.connect(ctx().destination);
-      el.muted=true;
-      avisar('Escuchando con el tono aplicado.');
-    }catch(e){ fallo=true; parar(); avisar('No se puede escuchar el tono con este archivo ('+((e&&e.message)||'error')+'). Se aplicará igualmente al guardar.'); }
-  }
-  function aplicar(){
+  function parametros(){
     const p=getP();
-    el.preservesPitch=true; el.webkitPreservesPitch=true; el.playbackRate=p.vel;
-    if(sh){ sh.tempo=p.vel; sh.pitchSemitones=p.semis; }
-    if(p.semis===0){ parar(); }
-    else if(!el.paused) arrancar();
+    el.preservesPitch=false; el.webkitPreservesPitch=false; el.mozPreservesPitch=false;
+    el.playbackRate=p.vel;
+    if(st){ st.playbackRate.value=p.vel; st.pitch.value=Math.pow(2,p.semis/12); }
   }
-  el.addEventListener('play',aplicar);
-  el.addEventListener('pause',parar);
-  el.addEventListener('ended',parar);
-  el.addEventListener('seeked',()=>{ if(sh&&buf) sh.percentagePlayed=Math.min(1,el.currentTime/buf.duration); });
-  setInterval(()=>{ if(sh&&buf&&Math.abs(sh.timePlayed-el.currentTime)>0.35) sh.percentagePlayed=Math.min(1,el.currentTime/buf.duration); },700);
-  return {aplicar,parar};
+  async function aplicar(){
+    const p=getP();
+    if(!st && !fallo && p.semis!==0) await montar();
+    if(st) parametros();
+    else{ el.preservesPitch=true; el.webkitPreservesPitch=true; el.playbackRate=p.vel; }
+    if(st && ctxA && ctxA.state!=='running'){ try{ await ctxA.resume(); }catch(e){} }
+  }
+  el.addEventListener('play',()=>{ if(ctxA&&ctxA.state!=='running') ctxA.resume(); aplicar(); });
+  return {aplicar,parar(){},get st(){return st;}};
 }
 
 
@@ -399,7 +413,7 @@ function setMp3(f,id,aj){
   if(prev1){ prev1.parar(); prev1=null; } $('prevMp3').innerHTML=''; $('avMp3').textContent='';
   if(url1){ URL.revokeObjectURL(url1); url1=null; }
   $('rowBuc1').hidden=!fileMp3; $('bBuc1').classList.remove('on'); $('bBuc1').setAttribute('aria-pressed','false');
-  if(fileMp3){ url1=URL.createObjectURL(fileMp3); const a=document.createElement('audio'); a.controls=true; a.preload='metadata'; a.src=url1; $('prevMp3').appendChild(a); prev1=crearPrev(a,fileMp3,()=>ajMp3,t=>{ $('avMp3').textContent=t; }); }
+  if(fileMp3){ url1=URL.createObjectURL(fileMp3); const a=document.createElement('audio'); a.controls=false; a.preload='metadata'; a.setAttribute('playsinline',''); a.src=url1; a.style.display='none'; $('prevMp3').appendChild(a); const pc=document.createElement('div'); $('prevMp3').appendChild(pc); reproductor(a,pc); prev1=crearPrev(a,fileMp3,()=>ajMp3,t=>{ $('avMp3').textContent=t; }); }
   if(aj&&aj.mp3){ ajMp3.poner(aj.mp3.semis||0,aj.mp3.vel||1,true); if(aj.mp3.kbps) $('kbps').value=aj.mp3.kbps; }
   $('outMp3').innerHTML=''; $('barMp3').hidden=true; $('stMp3').textContent='';
   if(fileMp3){ $('infoMp3').hidden=false; $('infoMp3').textContent=fileMp3.name+' · '+mb(fileMp3.size); $('goMp3').disabled=false; }
@@ -450,8 +464,10 @@ function setEd(f,id,aj){
   fileEd=f; idEd=id||null; if(url) URL.revokeObjectURL(url); url=URL.createObjectURL(f);
   $('media').innerHTML='';
   esVideo=f.type.startsWith('video/') || /\.(mkv|mov|avi|mp4|webm|m4v)$/i.test(f.name);
-  el=document.createElement(esVideo?'video':'audio'); el.controls=true; el.playsInline=true; el.preload='metadata'; el.src=url;
+  el=document.createElement(esVideo?'video':'audio'); el.controls=false; el.playsInline=true; el.setAttribute('playsinline',''); el.preload='metadata'; el.src=url;
+  if(!esVideo) el.style.display='none';
   $('media').appendChild(el);
+  if(esVideo) el.addEventListener('click',()=>$('bPlay').click());
   el.addEventListener('loadedmetadata',()=>{
     dur=el.duration; segs=[[0,dur]]; undo=[]; redo=[]; sel=null;
     if(aj&&aj.ed){ const sv=aj.ed.segs; if(Array.isArray(sv)&&sv.length&&sv.every(x=>x[0]>=0&&x[1]<=dur+0.1&&x[1]>x[0])) segs=sv; ajEd.poner(aj.ed.semis||0,aj.ed.vel||1,true); if(prevEd) prevEd.aplicar(); }
@@ -469,6 +485,7 @@ function setEd(f,id,aj){
   el.addEventListener('play',ciclo); el.addEventListener('pause',()=>{ $('bPlay').textContent='Reproducir'; });
   el.addEventListener('play',()=>{ $('bPlay').textContent='Pausa'; });
   el.addEventListener('seeked',saltarCortes);
+  el.addEventListener('ended',()=>{ if(bucle&&segs.length){ el.currentTime=selValida()?sel[0]:segs[0][0]; el.play(); } });
 }
 usarEd=r=>setEd(aFile(r),r.id,r.ajustes);
 $('fEd').addEventListener('change',async()=>{ const f=$('fEd').files[0]; if(!f) return; setEd(f,null,null); idEd=await guardarArchivo(f); pintarLib(); });
@@ -658,7 +675,7 @@ window.__medios={BD,get bucle(){return bucle;},get ctx(){return ctxA;},get prevE
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.26', ROOT='../';
+  var BUILD='V1.27', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

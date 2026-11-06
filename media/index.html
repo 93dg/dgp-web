@@ -60,6 +60,8 @@ audio{background:transparent}
 .act{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
 .act button{border:1px solid var(--bd);background:var(--s2);color:var(--tx)}
 .act button.pri{border-color:var(--ac);color:var(--ac)}
+.tg{border:1px solid var(--bd);background:var(--s2);color:var(--tx);border-radius:12px;padding:9px 14px;font-weight:600}
+.tg.on{border-color:var(--ac);color:var(--ac)}
 .opt{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
 .opt button{border:1px solid var(--bd);background:var(--s2);color:var(--tx);text-align:left;padding:12px;font-weight:600}
 .opt button.on{border-color:var(--ac)}
@@ -87,6 +89,7 @@ pre{white-space:pre-wrap;font-size:.75rem;color:var(--mut);max-height:160px;over
       <label class="pick" id="pickMp3"><input type="file" id="fMp3" accept="video/*,audio/*,.mkv,.mov,.avi,.m4a,.webm"><b>Elegir un vídeo</b><span class="m">o arrastrarlo aquí</span></label>
       <div id="infoMp3" class="m" style="margin-top:10px" hidden></div>
       <div id="prevMp3" style="margin-top:10px"></div>
+      <div class="row" id="rowBuc1" style="margin-top:8px" hidden><button class="tg" id="bBuc1" aria-pressed="false">Bucle</button></div>
       <div id="avMp3" class="m"></div>
       <div class="fld" style="margin-top:12px">
         <label class="m" for="kbps">Calidad</label>
@@ -115,6 +118,7 @@ pre{white-space:pre-wrap;font-size:.75rem;color:var(--mut);max-height:160px;over
           <button id="bPlay">Reproducir</button>
           <button id="bUse">Elegir la posición actual</button>
         </div>
+        <div class="row" style="margin-top:8px"><button class="tg" id="bBuc" aria-pressed="false">Bucle</button><span class="m" id="bucHelp">Repite el trozo seleccionado, o todo si no hay selección.</span></div>
       </div>
       <div class="card">
         <h2>Trozo seleccionado</h2>
@@ -150,6 +154,7 @@ pre{white-space:pre-wrap;font-size:.75rem;color:var(--mut);max-height:160px;over
       </div>
     </div>
   </section>
+  <div class="m" style="margin-top:18px;text-align:center"><span id="version">V1.24</span></div>
   <pre id="log" hidden></pre>
 </div>
 
@@ -245,6 +250,14 @@ function filtroAudio(semis,vel){
 
 /* ---------- escucha previa con tono y velocidad en directo ---------- */
 let STmod=null, ctxA=null;
+function desbloquear(){
+  try{
+    if(!ctxA) ctxA=new (window.AudioContext||window.webkitAudioContext)();
+    if(ctxA.state!=='running') ctxA.resume();
+    const b=ctxA.createBuffer(1,1,22050), n=ctxA.createBufferSource(); n.buffer=b; n.connect(ctxA.destination); n.start(0);
+  }catch(e){}
+}
+['touchstart','touchend','pointerdown','click','keydown'].forEach(ev=>document.addEventListener(ev,desbloquear,{passive:true}));
 async function cargarST(){ if(!STmod) STmod=await import('./lib/soundtouch.js'); return STmod; }
 function crearPrev(el,file,getP,avisar){
   let buf=null, sh=null, fallo=false;
@@ -256,7 +269,7 @@ function crearPrev(el,file,getP,avisar){
     avisar('');
     return buf;
   }
-  function parar(){ if(sh){ try{ sh.disconnect(); }catch(e){} sh=null; } el.muted=false; }
+  function parar(){ if(sh){ try{ sh.disconnect(); }catch(e){} sh=null; avisar(''); } el.muted=false; }
   async function arrancar(){
     const p=getP(); if(sh||fallo) return;
     try{
@@ -268,13 +281,14 @@ function crearPrev(el,file,getP,avisar){
       sh.percentagePlayed=Math.min(1,el.currentTime/b.duration);
       sh.connect(ctx().destination);
       el.muted=true;
+      avisar('Escuchando con el tono aplicado.');
     }catch(e){ fallo=true; avisar('No se puede escuchar el tono con este archivo. Se aplicará igualmente al guardar.'); parar(); }
   }
   function aplicar(){
     const p=getP();
-    el.preservesPitch=true; el.playbackRate=p.vel;
+    el.preservesPitch=true; el.webkitPreservesPitch=true; el.playbackRate=p.vel;
     if(sh){ sh.tempo=p.vel; sh.pitchSemitones=p.semis; }
-    if(p.semis===0){ parar(); avisar(''); }
+    if(p.semis===0){ parar(); }
     else if(!el.paused) arrancar();
   }
   el.addEventListener('play',aplicar);
@@ -294,6 +308,7 @@ $('tabMp3').onclick=()=>pestana('mp3'); $('tabEd').onclick=()=>pestana('ed');
 
 /* ---------- Vídeo a MP3 ---------- */
 let fileMp3=null;
+$('bBuc1').onclick=()=>{ const a=document.querySelector('#prevMp3 audio'); if(!a) return; a.loop=!a.loop; $('bBuc1').classList.toggle('on',a.loop); $('bBuc1').setAttribute('aria-pressed',a.loop); };
 let prev1=null, url1=null;
 const ajMp3=ajustesUI($('ajMp3'),()=>{ if(prev1) prev1.aplicar(); });
 arrastrar($('pickMp3'),$('fMp3'));
@@ -301,6 +316,7 @@ $('fMp3').addEventListener('change',()=>{
   fileMp3=$('fMp3').files[0]||null;
   if(prev1){ prev1.parar(); prev1=null; } $('prevMp3').innerHTML=''; $('avMp3').textContent='';
   if(url1){ URL.revokeObjectURL(url1); url1=null; }
+  $('rowBuc1').hidden=!fileMp3; $('bBuc1').classList.remove('on'); $('bBuc1').setAttribute('aria-pressed','false');
   if(fileMp3){ url1=URL.createObjectURL(fileMp3); const a=document.createElement('audio'); a.controls=true; a.preload='metadata'; a.src=url1; $('prevMp3').appendChild(a); prev1=crearPrev(a,fileMp3,()=>ajMp3,t=>{ $('avMp3').textContent=t; }); }
   $('outMp3').innerHTML=''; $('barMp3').hidden=true; $('stMp3').textContent='';
   if(fileMp3){ $('infoMp3').hidden=false; $('infoMp3').textContent=fileMp3.name+' · '+mb(fileMp3.size); $('goMp3').disabled=false; }
@@ -335,7 +351,7 @@ $('goMp3').onclick=async()=>{
 /* ---------- Recortar ---------- */
 let fileEd=null, url=null, el=null, dur=0, esVideo=false;
 let segs=[], undo=[], redo=[];      // segs: trozos que se conservan [[ini,fin],...] en tiempo del original
-let sel=null;                        // trozo seleccionado [a,b]
+let sel=null, bucle=false;                        // trozo seleccionado [a,b]
 const EPS=0.05;
 let prevEd=null;
 const ajEd=ajustesUI($('ajEd'),()=>{ if(prevEd) prevEd.aplicar(); refrescar(); });
@@ -395,19 +411,22 @@ function saltarCortes(){
   const t=el.currentTime;
   if(segs.some(([s,e])=>t>=s-0.02&&t<e)) return;
   const sig=segs.find(([s])=>s>t);
-  if(sig){ el.currentTime=sig[0]; } else { el.pause(); el.currentTime=segs[segs.length-1][1]; }
+  if(sig){ el.currentTime=sig[0]; } else if(bucle){ el.currentTime=segs[0][0]; } else { el.pause(); el.currentTime=segs[segs.length-1][1]; }
 }
 function ciclo(){
   if(!el||el.paused) return;
+  if(bucle&&selValida()&&el.currentTime>=sel[1]-0.02) el.currentTime=sel[0];
   saltarCortes(); moverPh();
   requestAnimationFrame(ciclo);
 }
 el=null;
+$('bBuc').onclick=()=>{ bucle=!bucle; $('bBuc').classList.toggle('on',bucle); $('bBuc').setAttribute('aria-pressed',bucle); };
 $('bPlay').onclick=()=>{
   if(!el) return;
   if(el.paused){
     const t=el.currentTime;
-    if(!segs.some(([s,e])=>t>=s&&t<e-0.05)) el.currentTime=segs.length?segs[0][0]:0;
+    if(bucle&&selValida()&&(t<sel[0]||t>=sel[1]-0.05)) el.currentTime=sel[0];
+    else if(!segs.some(([s,e])=>t>=s&&t<e-0.05)) el.currentTime=segs.length?segs[0][0]:0;
     el.play();
   } else el.pause();
 };
@@ -537,14 +556,14 @@ $('bSave2').onclick=async()=>{
   }finally{ curBar=null; $('bSave2').disabled=false; $('bSave').disabled=false; }
 };
 
-window.__medios={get ctx(){return ctxA;},get prevEd(){return prevEd;},filtroAudio,fmt,parseT,quitar,quedar,get segs(){return segs;}};
+window.__medios={get bucle(){return bucle;},get ctx(){return ctxA;},get prevEd(){return prevEd;},filtroAudio,fmt,parseT,quitar,quedar,get segs(){return segs;}};
 })();
 </script>
 
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.23', ROOT='../';
+  var BUILD='V1.24', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

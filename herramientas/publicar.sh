@@ -34,7 +34,7 @@ fi
 python3 - "$VERSION" <<'PY'
 import re, sys, os
 v = sys.argv[1]
-for f in ['index.html']:
+for f in ['index.html', 'musica/index.html', 'media/index.html']:
     if not os.path.exists(f): continue
     s = open(f, encoding='utf-8').read()
     s = re.sub(r'(id="version"[^>]*>)V[\d.]+(<)', r'\g<1>' + v + r'\2', s)

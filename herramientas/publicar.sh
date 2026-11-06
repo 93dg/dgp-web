@@ -39,6 +39,13 @@ for f in ['index.html']:
     s = open(f, encoding='utf-8').read()
     s = re.sub(r'(id="version"[^>]*>)V[\d.]+(<)', r'\g<1>' + v + r'\2', s)
     open(f, 'w', encoding='utf-8').write(s)
+# Comprobador de versión de la app instalada: BUILD en cada página y version.json en la raíz
+for f in ['index.html', 'musica/index.html', 'media/index.html']:
+    if not os.path.exists(f): continue
+    s = open(f, encoding='utf-8').read()
+    s = re.sub(r"(var BUILD=')V[\d.]+(')", r'\g<1>' + v + r'\2', s)
+    open(f, 'w', encoding='utf-8').write(s)
+open('version.json', 'w', encoding='utf-8').write('{"v":"' + v + '"}\n')
 print('Versión puesta en la web:', v)
 PY
 

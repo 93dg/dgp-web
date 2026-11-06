@@ -13,7 +13,10 @@ if(!window.storage){
 </script>
 
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Música">
 <title>Panel de estilos musicales</title>
 <style>
   :root{
@@ -828,6 +831,16 @@ if(!window.storage){
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* Móvil (iPhone, app instalada) */
+body{padding-left:max(18px,env(safe-area-inset-left));padding-right:max(18px,env(safe-area-inset-right));padding-bottom:calc(60px + env(safe-area-inset-bottom))}
+.view-btn{white-space:nowrap}
+@media(max-width:700px){
+  input[type=text],input[type=search],textarea,select{font-size:16px!important}
+  .view-switch{flex-wrap:wrap;overflow:visible;border-radius:12px}
+  h1{font-size:20px}
+}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -840,6 +853,7 @@ if(!window.storage){
       <span id="currentSongBadge" style="display:none;"></span>
     </div>
 
+    <a href="../" style="display:inline-block;color:var(--muted);font-size:12px;text-decoration:none;margin:0 0 8px">Volver a DGP</a>
     <div class="view-switch">
       <button class="view-btn active" id="viewGenresBtn">Estilos</button>
       <button class="view-btn" id="viewPromptsBtn">Prompts</button>
@@ -847,6 +861,7 @@ if(!window.storage){
       <button class="view-btn" id="viewLyricsBtn">Letra</button>
       <button class="view-btn" id="viewRefsBtn">Referencias</button>
       <button class="view-btn" id="viewAntiBtn">Antiprompts</button>
+      <button class="view-btn" id="viewMediosBtn">Medios</button>
     </div>
 
     <div id="genreControls">
@@ -995,6 +1010,8 @@ if(!window.storage){
     </div>
     <div class="prompt-grid" id="refGrid"></div>
   </div>
+
+  <div id="mediosSection" style="display:none;"><iframe id="mediosFrame" title="Medios" style="width:100%;height:900px;border:0;display:block" allow="autoplay"></iframe></div>
 
   <div id="lyricsSection" style="display:none;">
     <p class="lyric-sub">Toca Expandir para editar. Duplicar crea una versión nueva.</p>
@@ -1723,6 +1740,10 @@ function switchView(mode){
   document.getElementById("composeSection").style.display = mode === "compositor" ? "" : "none";
   document.getElementById("refsSection").style.display = mode === "refs" ? "" : "none";
   document.getElementById("antiSection").style.display = mode === "anti" ? "" : "none";
+  document.getElementById("mediosSection").style.display = mode === "medios" ? "" : "none";
+  document.getElementById("viewMediosBtn").classList.toggle("active", mode === "medios");
+  if(mode === "medios"){ const fr = document.getElementById("mediosFrame"); if(!fr.getAttribute("src")) fr.setAttribute("src","../media/?embed=1"); try{ history.replaceState(null,"","#medios"); }catch(e){} }
+  else if(location.hash === "#medios"){ try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){} }
   document.getElementById("viewAntiBtn").classList.toggle("active", mode === "anti");
   document.getElementById("viewRefsBtn").classList.toggle("active", mode === "refs");
   document.getElementById("viewComposeBtn").classList.toggle("active", mode === "compositor");
@@ -3319,6 +3340,9 @@ document.getElementById("viewLyricsBtn").addEventListener("click", ()=>switchVie
 document.getElementById("viewComposeBtn").addEventListener("click", ()=>switchView("compositor"));
 document.getElementById("viewRefsBtn").addEventListener("click", ()=>switchView("refs"));
 document.getElementById("viewAntiBtn").addEventListener("click", ()=>switchView("anti"));
+document.getElementById("viewMediosBtn").addEventListener("click", ()=>switchView("medios"));
+window.addEventListener("message", (e)=>{ if(e.origin===location.origin && e.data && e.data.medios){ document.getElementById("mediosFrame").style.height = Math.ceil(e.data.medios)+"px"; } });
+if(location.hash === "#medios") switchView("medios");
 document.getElementById("newLyricBtn").addEventListener("click", ()=>addLyricVersion(""));
 
 document.getElementById("styleGenGo").addEventListener("click", async ()=>{
@@ -3742,6 +3766,42 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
   reader.readAsText(file);
   e.target.value = "";
 });
+</script>
+
+<script>
+/* Actualización automática: compara con version.json y recarga si hay versión nueva */
+(function(){
+  var BUILD='V1.21', ROOT='../';
+  if(/[?&]embed=1/.test(location.search)) return;
+  var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
+  function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
+  async function recargar(){
+    intentos(intentos()+1);
+    try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){}
+    location.reload();
+  }
+  function aviso(v){
+    if(document.getElementById('dgpUpd')) return;
+    var d=document.createElement('div'); d.id='dgpUpd'; d.setAttribute('role','status');
+    d.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom,0px));margin:0 auto;max-width:520px;z-index:99999;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-radius:12px;border:1px solid #e8a33d;background:#1b1815;color:#efe7db;font:600 15px/1.3 system-ui,-apple-system,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.4)';
+    d.innerHTML='<span>Hay una versión nueva ('+v+')</span><button style="background:none;border:0;color:#e8a33d;font:inherit;font-weight:700;padding:8px 4px;cursor:pointer">Actualizar</button>';
+    d.querySelector('button').onclick=function(){ intentos(0); recargar(); };
+    document.body.appendChild(d);
+  }
+  async function comprobar(){
+    if(busy) return; busy=true;
+    try{
+      var r=await fetch(VJ+'?t='+Date.now(),{cache:'no-store'}); var j=await r.json();
+      if(j&&j.v&&j.v!==BUILD){
+        if(Date.now()-t0<8000 && intentos()<2) recargar(); else aviso(j.v);
+      } else intentos(0);
+    }catch(e){}
+    busy=false;
+  }
+  comprobar();
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') comprobar(); });
+  setInterval(comprobar,300000);
+})();
 </script>
 </body>
 </html>

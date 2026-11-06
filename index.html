@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="dark light">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="DGP">
 <title>DGP</title>
 <style>
 :root{--bg:#0a0c11;--s1:#11141b;--s2:#181c26;--bd:rgba(255,255,255,.09);--tx:#eef0f5;--mut:#98a1b5;--ac:#ffb81c;--warn:#ffb81c;--pos:#35d39a;--neg:#ff7070;--r:14px;--glow:rgba(255,184,28,.08);--c1:#6c8cff;--c2:#35d39a;--c3:#ffb81c;--c4:#ff7070}
@@ -181,7 +184,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[t
   <aside class="side">
     <div class="brand">DGP</div>
     <nav id="nav" aria-label="Secciones"></nav>
-    <div class="foot"><span class="m"><span id="version">V1.20</span></span><button id="out">Salir</button></div>
+    <div class="foot"><span class="m"><span id="version">V1.21</span></span><button id="out">Salir</button></div>
   </aside>
   <div>
   <div class="main">
@@ -266,10 +269,12 @@ async function cargarSecciones(){
   if(error){$('ptitle').textContent='No se pudieron cargar las secciones';return}
   secs=r;
   const items=secs.map(s=>`<button data-s="${s.slug}" aria-pressed="false">${icoSec(s)}<span>${esc(s.nombre)}</span></button>`).join('');
-  $('nav').innerHTML=items;$('tabbar').innerHTML=items;
+  const MUS=ic('M9 18V5l11-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM20 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z');
+  const extra=`<button data-go="musica/">${MUS}<span>Música</span></button><button data-go="musica/#medios">${ic('M4 5h16v14H4zM9 9l6 3-6 3z')}<span>Medios</span></button>`;
+  $('nav').innerHTML=items+extra;$('tabbar').innerHTML=items+extra;
   abrir((secs.find(s=>s.slug===UI.seccion)||secs[0]||{}).slug);
 }
-document.addEventListener('click',e=>{const b=e.target.closest('[data-s]');if(b&&(b.closest('#nav')||b.closest('#tabbar')))abrir(b.dataset.s)});
+document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g){location.href=g.dataset.go;return}const b=e.target.closest('[data-s]');if(b&&(b.closest('#nav')||b.closest('#tabbar')))abrir(b.dataset.s)});
 async function abrir(slug){
   sec=secs.find(s=>s.slug===slug);if(!sec)return;
   if(UI.seccion!==slug)setUI('seccion',slug);
@@ -838,6 +843,42 @@ $('login').addEventListener('submit',async e=>{
 const salir=async()=>{await guardarUI();await sb.auth.signOut();iniciar()};
 $('out').addEventListener('click',salir);$('out2').addEventListener('click',salir);
 iniciar();
+</script>
+
+<script>
+/* Actualización automática: compara con version.json y recarga si hay versión nueva */
+(function(){
+  var BUILD='V1.21', ROOT='';
+  if(/[?&]embed=1/.test(location.search)) return;
+  var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
+  function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
+  async function recargar(){
+    intentos(intentos()+1);
+    try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){}
+    location.reload();
+  }
+  function aviso(v){
+    if(document.getElementById('dgpUpd')) return;
+    var d=document.createElement('div'); d.id='dgpUpd'; d.setAttribute('role','status');
+    d.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom,0px));margin:0 auto;max-width:520px;z-index:99999;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-radius:12px;border:1px solid #e8a33d;background:#1b1815;color:#efe7db;font:600 15px/1.3 system-ui,-apple-system,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.4)';
+    d.innerHTML='<span>Hay una versión nueva ('+v+')</span><button style="background:none;border:0;color:#e8a33d;font:inherit;font-weight:700;padding:8px 4px;cursor:pointer">Actualizar</button>';
+    d.querySelector('button').onclick=function(){ intentos(0); recargar(); };
+    document.body.appendChild(d);
+  }
+  async function comprobar(){
+    if(busy) return; busy=true;
+    try{
+      var r=await fetch(VJ+'?t='+Date.now(),{cache:'no-store'}); var j=await r.json();
+      if(j&&j.v&&j.v!==BUILD){
+        if(Date.now()-t0<8000 && intentos()<2) recargar(); else aviso(j.v);
+      } else intentos(0);
+    }catch(e){}
+    busy=false;
+  }
+  comprobar();
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') comprobar(); });
+  setInterval(comprobar,300000);
+})();
 </script>
 </body>
 </html>

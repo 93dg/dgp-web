@@ -86,6 +86,8 @@ pre{white-space:pre-wrap;font-size:.75rem;color:var(--mut);max-height:160px;over
     <div class="card">
       <label class="pick" id="pickMp3"><input type="file" id="fMp3" accept="video/*,audio/*,.mkv,.mov,.avi,.m4a,.webm"><b>Elegir un vídeo</b><span class="m">o arrastrarlo aquí</span></label>
       <div id="infoMp3" class="m" style="margin-top:10px" hidden></div>
+      <div id="prevMp3" style="margin-top:10px"></div>
+      <div id="avMp3" class="m"></div>
       <div class="fld" style="margin-top:12px">
         <label class="m" for="kbps">Calidad</label>
         <select id="kbps"><option value="128">128 kbps</option><option value="192" selected>192 kbps</option><option value="256">256 kbps</option><option value="320">320 kbps</option></select>
@@ -240,6 +242,49 @@ function filtroAudio(semis,vel){
   return out.join(',');
 }
 
+
+/* ---------- escucha previa con tono y velocidad en directo ---------- */
+let STmod=null, ctxA=null;
+async function cargarST(){ if(!STmod) STmod=await import('./lib/soundtouch.js'); return STmod; }
+function crearPrev(el,file,getP,avisar){
+  let buf=null, sh=null, fallo=false;
+  const ctx=()=>{ if(!ctxA) ctxA=new (window.AudioContext||window.webkitAudioContext)(); return ctxA; };
+  async function buffer(){
+    if(buf) return buf;
+    avisar('Preparando la escucha con el tono aplicado.');
+    buf=await ctx().decodeAudioData(await file.arrayBuffer());
+    avisar('');
+    return buf;
+  }
+  function parar(){ if(sh){ try{ sh.disconnect(); }catch(e){} sh=null; } el.muted=false; }
+  async function arrancar(){
+    const p=getP(); if(sh||fallo) return;
+    try{
+      const [m,b]=await Promise.all([cargarST(),buffer()]);
+      if(el.paused || getP().semis===0 || sh) return;
+      await ctx().resume();
+      sh=new m.PitchShifter(ctx(),b,4096);
+      sh.tempo=p.vel; sh.pitchSemitones=p.semis;
+      sh.percentagePlayed=Math.min(1,el.currentTime/b.duration);
+      sh.connect(ctx().destination);
+      el.muted=true;
+    }catch(e){ fallo=true; avisar('No se puede escuchar el tono con este archivo. Se aplicará igualmente al guardar.'); parar(); }
+  }
+  function aplicar(){
+    const p=getP();
+    el.preservesPitch=true; el.playbackRate=p.vel;
+    if(sh){ sh.tempo=p.vel; sh.pitchSemitones=p.semis; }
+    if(p.semis===0){ parar(); avisar(''); }
+    else if(!el.paused) arrancar();
+  }
+  el.addEventListener('play',aplicar);
+  el.addEventListener('pause',parar);
+  el.addEventListener('ended',parar);
+  el.addEventListener('seeked',()=>{ if(sh&&buf) sh.percentagePlayed=Math.min(1,el.currentTime/buf.duration); });
+  setInterval(()=>{ if(sh&&buf&&Math.abs(sh.timePlayed-el.currentTime)>0.35) sh.percentagePlayed=Math.min(1,el.currentTime/buf.duration); },700);
+  return {aplicar,parar};
+}
+
 /* ---------- pestañas ---------- */
 function pestana(n){
   $('tabMp3').classList.toggle('on',n==='mp3'); $('tabEd').classList.toggle('on',n==='ed');
@@ -249,10 +294,14 @@ $('tabMp3').onclick=()=>pestana('mp3'); $('tabEd').onclick=()=>pestana('ed');
 
 /* ---------- Vídeo a MP3 ---------- */
 let fileMp3=null;
-const ajMp3=ajustesUI($('ajMp3'));
+let prev1=null, url1=null;
+const ajMp3=ajustesUI($('ajMp3'),()=>{ if(prev1) prev1.aplicar(); });
 arrastrar($('pickMp3'),$('fMp3'));
 $('fMp3').addEventListener('change',()=>{
   fileMp3=$('fMp3').files[0]||null;
+  if(prev1){ prev1.parar(); prev1=null; } $('prevMp3').innerHTML=''; $('avMp3').textContent='';
+  if(url1){ URL.revokeObjectURL(url1); url1=null; }
+  if(fileMp3){ url1=URL.createObjectURL(fileMp3); const a=document.createElement('audio'); a.controls=true; a.preload='metadata'; a.src=url1; $('prevMp3').appendChild(a); prev1=crearPrev(a,fileMp3,()=>ajMp3,t=>{ $('avMp3').textContent=t; }); }
   $('outMp3').innerHTML=''; $('barMp3').hidden=true; $('stMp3').textContent='';
   if(fileMp3){ $('infoMp3').hidden=false; $('infoMp3').textContent=fileMp3.name+' · '+mb(fileMp3.size); $('goMp3').disabled=false; }
   else{ $('infoMp3').hidden=true; $('goMp3').disabled=true; }
@@ -288,7 +337,8 @@ let fileEd=null, url=null, el=null, dur=0, esVideo=false;
 let segs=[], undo=[], redo=[];      // segs: trozos que se conservan [[ini,fin],...] en tiempo del original
 let sel=null;                        // trozo seleccionado [a,b]
 const EPS=0.05;
-const ajEd=ajustesUI($('ajEd'),()=>{ if(el){ el.preservesPitch=true; el.playbackRate=ajEd.vel; } refrescar(); });
+let prevEd=null;
+const ajEd=ajustesUI($('ajEd'),()=>{ if(prevEd) prevEd.aplicar(); refrescar(); });
 
 arrastrar($('pickEd'),$('fEd'));
 $('fEd').addEventListener('change',()=>{
@@ -307,7 +357,9 @@ $('fEd').addEventListener('change',()=>{
     refrescar();
   });
   el.addEventListener('error',()=>{ $('edPick').hidden=false; $('edBody').hidden=true; $('stEd').textContent=''; alertaPick('Este navegador no puede abrir ese archivo.'); });
-  el.preservesPitch=true; el.playbackRate=ajEd.vel;
+  if(prevEd) prevEd.parar();
+  prevEd=crearPrev(el,f,()=>ajEd,t=>{ $('stEd').className='m'; $('stEd').textContent=t; });
+  prevEd.aplicar();
   el.addEventListener('play',ciclo); el.addEventListener('pause',()=>{ $('bPlay').textContent='Reproducir'; });
   el.addEventListener('play',()=>{ $('bPlay').textContent='Pausa'; });
   el.addEventListener('seeked',saltarCortes);
@@ -336,7 +388,7 @@ function refrescar(){
   $('resDur').textContent='Duración: '+fmt(total()/ajEd.vel);
   $('bSave').disabled=segs.length===0;
 }
-function moverPh(){ const ph=$('ph'); if(ph&&el) ph.style.left=(el.currentTime/dur*100)+'%'; $('tPos').textContent=fmt(el.currentTime); }
+function moverPh(){ if(!el) return; const ph=$('ph'); if(ph&&el) ph.style.left=(el.currentTime/dur*100)+'%'; $('tPos').textContent=fmt(el.currentTime); }
 
 function saltarCortes(){
   if(!el||!segs.length) return;
@@ -485,14 +537,14 @@ $('bSave2').onclick=async()=>{
   }finally{ curBar=null; $('bSave2').disabled=false; $('bSave').disabled=false; }
 };
 
-window.__medios={filtroAudio,fmt,parseT,quitar,quedar,get segs(){return segs;}};
+window.__medios={get ctx(){return ctxA;},get prevEd(){return prevEd;},filtroAudio,fmt,parseT,quitar,quedar,get segs(){return segs;}};
 })();
 </script>
 
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.22', ROOT='../';
+  var BUILD='V1.23', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

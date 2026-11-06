@@ -841,8 +841,22 @@ body{padding-left:max(18px,env(safe-area-inset-left));padding-right:max(18px,env
   h1{font-size:20px}
 }
 </style>
+<style>
+/* Menú inferior (móvil) */
+.bnav{display:none}
+@media(max-width:700px){
+  .view-switch{display:none}
+  .bnav{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;background:var(--panel);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+  .bnav button{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:0;border-top:2px solid transparent;border-radius:0;color:var(--muted);font:600 10px/1.2 var(--font-body);padding:6px 0 2px;cursor:pointer}
+  .bnav button span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bnav button.on{color:var(--text);border-top-color:var(--amber)}
+  .bnav button.on svg{color:var(--amber)}
+  body{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+}
+</style>
 </head>
 <body>
+<nav class="bnav" id="bnav" aria-label="Secciones"><button data-v="estilos"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg><span>Estilos</span></button><button data-v="prompts"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg><span>Prompts</span></button><button data-v="compositor"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11a2.1 2.1 0 0 0-3-3L5 16zM14 7l3 3"/></svg><span>Crear</span></button><button data-v="letra"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14M5 9h14M5 14h9M5 19h6"/></svg><span>Letra</span></button><button data-v="refs"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM20 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/></svg><span>Refs</span></button><button data-v="anti"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"/></svg><span>Anti</span></button><button data-v="medios"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4zM9 9l6 3-6 3z"/></svg><span>Medios</span></button></nav>
 <div class="wrap">
   <header>
     <div class="song-bar">
@@ -1744,6 +1758,7 @@ function switchView(mode){
   document.getElementById("viewMediosBtn").classList.toggle("active", mode === "medios");
   if(mode === "medios"){ const fr = document.getElementById("mediosFrame"); if(!fr.getAttribute("src")) fr.setAttribute("src","../media/?embed=1"); try{ history.replaceState(null,"","#medios"); }catch(e){} }
   else if(location.hash === "#medios"){ try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){} }
+  document.querySelectorAll("#bnav [data-v]").forEach(b => b.classList.toggle("on", b.dataset.v === mode));
   document.getElementById("viewAntiBtn").classList.toggle("active", mode === "anti");
   document.getElementById("viewRefsBtn").classList.toggle("active", mode === "refs");
   document.getElementById("viewComposeBtn").classList.toggle("active", mode === "compositor");
@@ -3341,6 +3356,8 @@ document.getElementById("viewComposeBtn").addEventListener("click", ()=>switchVi
 document.getElementById("viewRefsBtn").addEventListener("click", ()=>switchView("refs"));
 document.getElementById("viewAntiBtn").addEventListener("click", ()=>switchView("anti"));
 document.getElementById("viewMediosBtn").addEventListener("click", ()=>switchView("medios"));
+document.querySelectorAll("#bnav [data-v]").forEach(b => b.addEventListener("click", ()=>{ switchView(b.dataset.v); window.scrollTo(0,0); }));
+switchView(viewMode);
 window.addEventListener("message", (e)=>{ if(e.origin===location.origin && e.data && e.data.medios){ document.getElementById("mediosFrame").style.height = Math.ceil(e.data.medios)+"px"; } });
 if(location.hash === "#medios") switchView("medios");
 document.getElementById("newLyricBtn").addEventListener("click", ()=>addLyricVersion(""));
@@ -3771,7 +3788,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.21', ROOT='../';
+  var BUILD='V1.22', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

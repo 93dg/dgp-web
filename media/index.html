@@ -492,7 +492,7 @@ window.__medios={filtroAudio,fmt,parseT,quitar,quedar,get segs(){return segs;}};
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.21', ROOT='../';
+  var BUILD='V1.22', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

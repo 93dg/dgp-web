@@ -1320,6 +1320,14 @@ function saveDB(){
   saveTimer = setTimeout(()=>flushSave(0), 500);
 }
 
+function saveNow(){
+  clearTimeout(saveTimer);
+  flushSave(0);
+}
+document.addEventListener("visibilitychange", ()=>{ if(document.hidden) saveNow(); });
+window.addEventListener("pagehide", saveNow);
+window.addEventListener("beforeunload", saveNow);
+
 function renderSongSelect(){
   const sel = document.getElementById("songSelect");
   sel.innerHTML = "";

@@ -712,6 +712,13 @@ if(!window.storage){
     width:12px;
     flex-shrink:0;
   }
+  .lyric-pick{
+    width:15px;
+    height:15px;
+    accent-color:var(--amber);
+    cursor:pointer;
+    flex-shrink:0;
+  }
   .lyric-title{
     flex:0 0 auto;
     cursor:text;
@@ -3023,6 +3030,15 @@ function setLyricTitle(id, val){
 }
 
 const expandedLyrics = new Set();
+const selectedLyrics = new Set();
+
+function updateCopyAllBtn(){
+  const btn = document.getElementById("copyAllLyricsBtn");
+  if(!btn) return;
+  btn.textContent = selectedLyrics.size
+    ? "Copiar " + selectedLyrics.size + " seleccionadas"
+    : "Copiar todas";
+}
 
 
 const lyricHistory = {};
@@ -3247,6 +3263,7 @@ function renderLyrics(){
   const cs = currentState();
   const wrap = document.getElementById("lyricVersions");
   wrap.innerHTML = "";
+  updateCopyAllBtn();
   if(cs.lyricVersions.length === 0){
     wrap.innerHTML = '<p style="color:var(--muted);font-size:13px;">Todavía no hay ninguna versión de la letra para esta canción.</p>';
     return;
@@ -3314,6 +3331,18 @@ function renderLyrics(){
     actions.appendChild(copyLyricBtn);
     actions.appendChild(dupBtn);
     actions.appendChild(delLyricBtn);
+    const pick = document.createElement("input");
+    pick.type = "checkbox";
+    pick.className = "lyric-pick";
+    pick.checked = selectedLyrics.has(v.id);
+    pick.title = "Seleccionar esta versión";
+    pick.addEventListener("click", (e)=>e.stopPropagation());
+    pick.addEventListener("change", ()=>{
+      if(pick.checked) selectedLyrics.add(v.id); else selectedLyrics.delete(v.id);
+      updateCopyAllBtn();
+    });
+    top.appendChild(pick);
+
     top.appendChild(title);
     top.appendChild(preview);
     top.appendChild(actions);
@@ -3336,18 +3365,19 @@ document.getElementById("newLyricBtn").addEventListener("click", ()=>addLyricVer
 document.getElementById("copyAllLyricsBtn").addEventListener("click", ()=>{
   const btn = document.getElementById("copyAllLyricsBtn");
   const cs = currentState();
-  const vs = (cs.lyricVersions || []).filter(v => (v.text || "").trim());
+  let vs = (cs.lyricVersions || []).filter(v => (v.text || "").trim());
+  if(selectedLyrics.size) vs = vs.filter(v => selectedLyrics.has(v.id));
   if(!vs.length){
     btn.textContent = "No hay letras";
-    setTimeout(()=>{ btn.textContent = "Copiar todas"; }, 1500);
+    setTimeout(updateCopyAllBtn, 1500);
     return;
   }
   const txt = "Canción: " + db.currentSong + "\n" +
-    "Tengo " + vs.length + " versiones de la letra. Hazme una versión nueva cogiendo lo mejor de todas.\n\n" +
+    "Tengo " + vs.length + (vs.length === 1 ? " versión" : " versiones") + " de la letra. Hazme una versión nueva cogiendo lo mejor de todas.\n\n" +
     vs.map((v, i) => "=== " + (v.title || ("Versión " + (i + 1))) + " ===\n" + (v.text || "").trim()).join("\n\n");
   copyText(txt);
   btn.textContent = "Copiadas " + vs.length + " ✓";
-  setTimeout(()=>{ btn.textContent = "Copiar todas"; }, 1800);
+  setTimeout(updateCopyAllBtn, 1800);
 });
 
 document.getElementById("styleGenGo").addEventListener("click", async ()=>{

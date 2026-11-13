@@ -1002,6 +1002,7 @@ if(!window.storage){
   <div id="lyricsSection" style="display:none;">
     <p class="lyric-sub">Toca Expandir para editar. Duplicar crea una versión nueva.</p>
     <button class="tool primary" id="newLyricBtn">Nueva letra</button>
+    <button class="tool" id="copyAllLyricsBtn" title="Copia todas las versiones para pegarlas en un prompt">Copiar todas</button>
     <div id="lyricVersions"></div>
   </div>
 
@@ -3331,6 +3332,23 @@ document.getElementById("viewComposeBtn").addEventListener("click", ()=>switchVi
 document.getElementById("viewRefsBtn").addEventListener("click", ()=>switchView("refs"));
 document.getElementById("viewAntiBtn").addEventListener("click", ()=>switchView("anti"));
 document.getElementById("newLyricBtn").addEventListener("click", ()=>addLyricVersion(""));
+
+document.getElementById("copyAllLyricsBtn").addEventListener("click", ()=>{
+  const btn = document.getElementById("copyAllLyricsBtn");
+  const cs = currentState();
+  const vs = (cs.lyricVersions || []).filter(v => (v.text || "").trim());
+  if(!vs.length){
+    btn.textContent = "No hay letras";
+    setTimeout(()=>{ btn.textContent = "Copiar todas"; }, 1500);
+    return;
+  }
+  const txt = "Canción: " + db.currentSong + "\n" +
+    "Tengo " + vs.length + " versiones de la letra. Hazme una versión nueva cogiendo lo mejor de todas.\n\n" +
+    vs.map((v, i) => "=== " + (v.title || ("Versión " + (i + 1))) + " ===\n" + (v.text || "").trim()).join("\n\n");
+  copyText(txt);
+  btn.textContent = "Copiadas " + vs.length + " ✓";
+  setTimeout(()=>{ btn.textContent = "Copiar todas"; }, 1800);
+});
 
 document.getElementById("styleGenGo").addEventListener("click", async ()=>{
   const q = document.getElementById("styleGenInput").value.trim();

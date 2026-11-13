@@ -1297,6 +1297,7 @@ async function loadDB(){
   renderFamilyChips();
   renderTabs();
   render();
+  if(db.lastView && db.lastView !== "estilos") switchView(db.lastView);
 }
 
 let saveTimer = null;
@@ -1735,6 +1736,8 @@ let viewMode = "estilos";
 
 function switchView(mode){
   viewMode = mode;
+  db.lastView = mode;
+  saveDB();
   document.getElementById("genreControls").style.display = mode === "estilos" ? "" : "none";
   document.getElementById("grid").style.display = mode === "estilos" ? "" : "none";
   document.getElementById("promptSection").style.display = mode === "prompts" ? "" : "none";

@@ -85,7 +85,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <h2>Mis partidas</h2>
   <div class="lista" id="lista"></div>
 
-  <p class="pie"><span id="version">V1.41</span></p>
+  <p class="pie"><span id="version">V1.42</span></p>
 </main>
 
 <script>
@@ -224,9 +224,7 @@ function comprobarFin(){
 }
 function fijar(d){
   if(!P||P.sel<0||P.fin) return; const i=P.sel; if(esDado(i)) return;
-  const ch=[{i,cur:d,nota:0}], b=1<<(d-1);
-  for(let j=0;j<81;j++) if(pares(i,j)&&(P.notas[j]&b)) ch.push({i:j,cur:P.cur[j],nota:P.notas[j]&~b});
-  aplicar(ch);
+  aplicar([{i,cur:d,nota:0}]);
 }
 /* Un toque: número si la casilla está vacía; si ya hay otro número o candidatos, se convierten en candidatos. Tocar el mismo número lo quita. */
 function poner(d){
@@ -344,7 +342,7 @@ iniciar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.41', ROOT='../';
+  var BUILD='V1.42', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

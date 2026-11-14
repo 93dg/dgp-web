@@ -33,7 +33,8 @@ button.on{border-color:var(--ac)}
 .c.g{font-weight:700}
 .c.u{color:var(--usr);font-weight:500}
 .c.same{color:var(--ac)}
-.c.mk{background:color-mix(in srgb,var(--ac) 20%,var(--s1))}
+.c.mk{background:color-mix(in srgb,var(--ac) 9%,var(--s1))}
+.c.cab{outline:3px solid var(--ac);outline-offset:-3px;z-index:1}
 .c.cf{color:var(--neg)}
 .c.mal{color:var(--neg);text-decoration:underline}
 .c.sel{outline:3px solid var(--ac);outline-offset:-3px;z-index:1}
@@ -86,7 +87,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <h2>Mis partidas</h2>
   <div class="lista" id="lista"></div>
 
-  <p class="pie"><span id="version">V1.43</span></p>
+  <p class="pie"><span id="version">V1.44</span></p>
 </main>
 
 <script>
@@ -281,8 +282,9 @@ function pintar(){
     let k='c'+((c%3===2&&c<8)?' r2':'')+((r%3===2&&r<8)?' b2':'')+(c===8?' c8':'')+(r===8?' f8':'');
     if(esDado(i)) k+=' g'; else if(v) k+=' u';
     if(P.sel>=0&&pares(P.sel,i)) k+=' rel';
-    if(mk&&(mF.has(r)||mC.has(c)||mB.has(caja(i)))) k+=' mk';
+    if(mk&&(mF.has(r)||mC.has(c))) k+=' mk';
     if(mk&&v===mk) k+=' same';
+    if(mk&&!v&&!mF.has(r)&&!mC.has(c)&&!mB.has(caja(i))) k+=' cab';
     if(selv&&v===selv&&i!==P.sel) k+=' same';
     if(cf.has(i)) k+=' cf';
     if(P.mal.includes(i)) k+=' mal';
@@ -348,7 +350,7 @@ iniciar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.43', ROOT='../';
+  var BUILD='V1.44', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

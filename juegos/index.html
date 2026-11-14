@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Juegos">
+<title>Juegos</title>
+<style>
+:root{--bg:#0a0c11;--s1:#11141b;--s2:#181c26;--bd:rgba(255,255,255,.14);--bd2:rgba(255,255,255,.38);--tx:#eef0f5;--mut:#98a1b5;--ac:#ffb81c;--pos:#35d39a;--neg:#ff7070;--usr:#7f9bff;--r:12px}
+@media(prefers-color-scheme:light){:root{--bg:#f3f4f8;--s1:#fff;--s2:#eef0f6;--bd:rgba(15,20,35,.16);--bd2:rgba(15,20,35,.5);--tx:#10131a;--mut:#58627a;--ac:#946100;--pos:#0e7c57;--neg:#c42b2b;--usr:#2f4fd0}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{background:var(--bg);color:var(--tx);font:16px/1.45 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;padding:max(14px,env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom));-webkit-user-select:none;user-select:none;touch-action:manipulation}
+main{max-width:480px;margin:0 auto}
+a.back{display:inline-block;color:var(--mut);font-size:.8rem;text-decoration:none;padding:6px 0}
+h1{font-size:1.35rem;margin:2px 0 2px;font-weight:700}
+.sub{color:var(--mut);font-size:.85rem;margin:0 0 12px}
+button{font:inherit;color:var(--tx);background:var(--s1);border:1px solid var(--bd);border-radius:10px;min-height:44px;padding:0 12px;cursor:pointer}
+button:disabled{opacity:.4;cursor:default}
+button.on{border-color:var(--ac)}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 8px}
+.top b{font-weight:600}
+.top span{color:var(--mut);font-variant-numeric:tabular-nums}
+#tab{display:grid;grid-template-columns:repeat(9,1fr);width:100%;aspect-ratio:1;border:2px solid var(--bd2);border-radius:6px;overflow:hidden;background:var(--s1)}
+.c{position:relative;min-height:0;padding:0;border:0;border-radius:0;background:var(--s1);border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:clamp(20px,6.6vw,31px);font-variant-numeric:tabular-nums;line-height:1}
+.c.r2{border-right:2px solid var(--bd2)}
+.c.b2{border-bottom:2px solid var(--bd2)}
+.c.c8{border-right:0}.c.f8{border-bottom:0}
+.c.rel{background:var(--s2)}
+.c.g{font-weight:700}
+.c.u{color:var(--usr);font-weight:500}
+.c.same{color:var(--ac)}
+.c.cf{color:var(--neg)}
+.c.mal{color:var(--neg);text-decoration:underline}
+.c.sel{outline:3px solid var(--ac);outline-offset:-3px;z-index:1}
+.nt{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);width:100%;height:100%;padding:2px;color:var(--mut);font-size:clamp(8px,2.5vw,11px);font-weight:500}
+.nt i{font-style:normal;display:flex;align-items:center;justify-content:center}
+.nt i.h{color:var(--ac)}
+#msg{min-height:1.5em;margin:10px 0 2px;font-size:.9rem;color:var(--mut)}
+#msg.ok{color:var(--pos)}#msg.err{color:var(--neg)}
+.pad{display:grid;grid-template-columns:repeat(9,1fr);gap:5px;margin:8px 0}
+.pad button{padding:0;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.3rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.pad button small{font-size:.62rem;color:var(--mut)}
+.acc{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:6px 0}
+.acc button{padding:0 4px;font-size:.88rem}
+.sec{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0 4px}
+h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:20px 0 8px;font-weight:600}
+.niv{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.lista{display:grid;gap:6px}
+.it{display:flex;gap:6px}
+.it .us{flex:1;text-align:left;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:6px 12px;min-width:0}
+.it .us b{font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.it .us small{color:var(--mut)}
+.it .qt{color:var(--mut);font-size:.85rem}
+.pie{margin:24px 0 0;color:var(--mut);font-size:.75rem;text-align:center}
+@media(min-width:700px){.c{font-size:32px}}
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="../">Volver a DGP</a>
+  <h1>Juegos</h1>
+  <p class="sub">Sudoku</p>
+
+  <div class="top"><b id="nom"></b><span id="reloj">0:00</span></div>
+  <div id="tab" role="grid" aria-label="Tablero de sudoku"></div>
+  <div id="msg" role="status" aria-live="polite"></div>
+
+  <div class="pad" id="pad"></div>
+  <div class="acc">
+    <button id="bNotas" aria-pressed="false">Notas</button>
+    <button id="bBorrar">Borrar</button>
+    <button id="bUndo">Deshacer</button>
+    <button id="bPista">Pista</button>
+  </div>
+  <div class="sec">
+    <button id="bComp">Comprobar</button>
+    <button id="bAuto">Rellenar notas</button>
+  </div>
+
+  <h2>Nuevo sudoku</h2>
+  <div class="niv">
+    <button data-n="facil">Fácil</button>
+    <button data-n="medio">Medio</button>
+    <button data-n="dificil">Difícil</button>
+  </div>
+
+  <h2>Mis partidas</h2>
+  <div class="lista" id="lista"></div>
+
+  <p class="pie"><span id="version">V1.31</span></p>
+</main>
+
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const KEY='dgp-juegos';
+
+/* ---------- tu sudoku (negrita = dado, resto = lo que ya habías puesto) ---------- */
+const MIO_DADOS=['082053107','600800543','030000620','000008302','200935004','308200950','000000060','920010005','106480230'].join('');
+const MIO_TUYOS=[[0,0,4],[0,3,6],[0,7,9],[2,8,8],[3,4,6],[4,1,6],[5,8,6],[6,0,8],[6,2,3],[6,3,5],[7,3,3],[7,5,6],[8,1,5],[8,5,7],[8,8,9]];
+
+/* ---------- resolver y generar ---------- */
+const pop=m=>{let n=0;while(m){m&=m-1;n++;}return n;};
+function resolver(g0,lim,azar){
+  const a=g0.slice(), fil=new Array(9).fill(0), col=new Array(9).fill(0), caj=new Array(9).fill(0);
+  for(let i=0;i<81;i++) if(a[i]){ const b=1<<(a[i]-1); fil[(i/9)|0]|=b; col[i%9]|=b; caj[((i/27)|0)*3+(((i%9)/3)|0)]|=b; }
+  let n=0, sol=null;
+  function rec(){
+    let best=-1,bm=0,bc=10;
+    for(let i=0;i<81;i++) if(!a[i]){
+      const r=(i/9)|0,c=i%9,k=((r/3)|0)*3+((c/3)|0);
+      const m=511&~(fil[r]|col[c]|caj[k]), cn=pop(m);
+      if(cn<bc){bc=cn;best=i;bm=m;if(cn<=1)break;}
+    }
+    if(best<0){ n++; if(!sol) sol=a.slice(); return n>=lim; }
+    if(bc===0) return false;
+    const r=(best/9)|0,c=best%9,k=((r/3)|0)*3+((c/3)|0);
+    const ds=[]; for(let d=0;d<9;d++) if(bm&(1<<d)) ds.push(d);
+    if(azar) for(let i=ds.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [ds[i],ds[j]]=[ds[j],ds[i]]; }
+    for(const d of ds){
+      const b=1<<d; a[best]=d+1; fil[r]|=b; col[c]|=b; caj[k]|=b;
+      const fin=rec();
+      fil[r]&=~b; col[c]&=~b; caj[k]&=~b; a[best]=0;
+      if(fin) return true;
+    }
+    return false;
+  }
+  rec(); return {n,sol};
+}
+const OBJ={facil:40,medio:32,dificil:26};
+function generar(nivel){
+  const sol=resolver(new Array(81).fill(0),1,true).sol, g=sol.slice();
+  const orden=[...Array(81).keys()]; for(let i=80;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [orden[i],orden[j]]=[orden[j],orden[i]]; }
+  let dados=81;
+  for(const i of orden){
+    if(dados<=OBJ[nivel]) break;
+    const v=g[i]; g[i]=0;
+    if(resolver(g,2,false).n!==1) g[i]=v; else dados--;
+  }
+  return {given:g,sol};
+}
+
+/* ---------- estado y guardado ---------- */
+let S=null, P=null, notasModo=false, timer=null, ultSave=0, visibleDesde=Date.now();
+const NOMBRES={facil:'Fácil',medio:'Medio',dificil:'Difícil',mio:'El mío'};
+function cargar(){ try{ S=JSON.parse(localStorage.getItem(KEY)||'null'); }catch(e){ S=null; } }
+function guardar(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
+function nuevaPartida(id,nombre,nivel,given,sol,cur){
+  return {id,nombre,nivel,given,sol,cur:cur||given.slice(),notas:new Array(81).fill(0),t:0,fecha:Date.now(),fin:false,undo:[],sel:-1,mal:[]};
+}
+function crearMio(){
+  const given=MIO_DADOS.split('').map(Number), cur=given.slice();
+  for(const [r,c,d] of MIO_TUYOS) cur[r*9+c]=d;
+  const sol=resolver(cur,2,false).sol;
+  return nuevaPartida('mio','El mío','mio',given,sol,cur);
+}
+function iniciar(){
+  cargar();
+  if(!S||!S.partidas||!Object.keys(S.partidas).length){ const m=crearMio(); S={actual:m.id,notas:false,partidas:{[m.id]:m}}; guardar(); }
+  if(!S.partidas[S.actual]) S.actual=Object.keys(S.partidas)[0];
+  notasModo=!!S.notas;
+  abrir(S.actual,true);
+}
+function abrir(id,sinGuardar){
+  P=S.partidas[id]; S.actual=id; visibleDesde=Date.now();
+  P.mal=[]; msg('');
+  if(!sinGuardar) guardar();
+  pintar(); pintarLista(); arrancarReloj();
+}
+function nuevo(nivel){
+  msg('Preparando un sudoku '+NOMBRES[nivel].toLowerCase()+'.');
+  setTimeout(()=>{
+    const {given,sol}=generar(nivel);
+    const n=Object.values(S.partidas).filter(p=>p.nivel===nivel).length+1;
+    const id='p'+Date.now();
+    S.partidas[id]=nuevaPartida(id,NOMBRES[nivel]+' '+n,nivel,given,sol);
+    limpiarViejas(); abrir(id);
+  },30);
+}
+function limpiarViejas(){
+  const ids=Object.keys(S.partidas);
+  if(ids.length<=20) return;
+  const lista=ids.map(i=>S.partidas[i]).filter(p=>p.id!=='mio'&&p.id!==S.actual&&p.fin).sort((a,b)=>a.fecha-b.fecha);
+  while(Object.keys(S.partidas).length>20&&lista.length){ delete S.partidas[lista.shift().id]; }
+}
+
+/* ---------- tiempo ---------- */
+function tiempo(){ return P.t+(P.fin?0:Math.floor((Date.now()-visibleDesde)/1000)); }
+function fmtT(s){ const m=Math.floor(s/60); return m+':'+String(s%60).padStart(2,'0'); }
+function arrancarReloj(){
+  clearInterval(timer); $('reloj').textContent=fmtT(tiempo());
+  timer=setInterval(()=>{ if(document.hidden) return; $('reloj').textContent=fmtT(tiempo()); if(Date.now()-ultSave>5000){ cierraTiempo(); } },1000);
+}
+function cierraTiempo(){ if(!P||P.fin){ return; } P.t=tiempo(); visibleDesde=Date.now(); ultSave=Date.now(); guardar(); }
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) cierraTiempo(); else visibleDesde=Date.now(); });
+window.addEventListener('pagehide',cierraTiempo);
+
+/* ---------- lógica de casillas ---------- */
+const fila=i=>(i/9)|0, colu=i=>i%9, caja=i=>((fila(i)/3)|0)*3+((colu(i)/3)|0);
+const pares=(a,b)=>a!==b&&(fila(a)===fila(b)||colu(a)===colu(b)||caja(a)===caja(b));
+function conflictos(){
+  const s=new Set();
+  for(let i=0;i<81;i++){ const v=P.cur[i]; if(!v) continue; for(let j=i+1;j<81;j++) if(P.cur[j]===v&&pares(i,j)){ s.add(i); s.add(j); } }
+  return s;
+}
+function esDado(i){ return P.given[i]!==0; }
+function aplicar(cambios){
+  const deshacer=[];
+  for(const c of cambios){ deshacer.push([c.i,P.cur[c.i],P.notas[c.i]]); P.cur[c.i]=c.cur; P.notas[c.i]=c.nota; }
+  P.undo.push(deshacer); if(P.undo.length>300) P.undo.shift();
+  P.mal=[]; comprobarFin(); guardar(); pintar(); pintarLista();
+}
+function comprobarFin(){
+  if(P.fin) return;
+  if(P.cur.every((v,i)=>v===P.sol[i])){ P.t=tiempo(); P.fin=true; P.fecha=Date.now(); clearInterval(timer); $('reloj').textContent=fmtT(P.t); msg('Resuelto en '+fmtT(P.t)+'.','ok'); }
+}
+function poner(d){
+  if(!P||P.sel<0||P.fin) return; const i=P.sel; if(esDado(i)) return;
+  if(notasModo){
+    if(P.cur[i]) return;
+    aplicar([{i,cur:0,nota:P.notas[i]^(1<<(d-1))}]); return;
+  }
+  if(P.cur[i]===d){ aplicar([{i,cur:0,nota:0}]); return; }
+  const ch=[{i,cur:d,nota:0}], b=1<<(d-1);
+  for(let j=0;j<81;j++) if(pares(i,j)&&(P.notas[j]&b)) ch.push({i:j,cur:P.cur[j],nota:P.notas[j]&~b});
+  aplicar(ch);
+}
+function borrar(){ if(!P||P.sel<0||P.fin||esDado(P.sel)) return; const i=P.sel; if(!P.cur[i]&&!P.notas[i]) return; aplicar([{i,cur:0,nota:0}]); }
+function deshacer(){
+  if(!P||!P.undo.length||P.fin) return; const u=P.undo.pop();
+  for(const [i,c,n] of u){ P.cur[i]=c; P.notas[i]=n; }
+  P.mal=[]; guardar(); pintar(); pintarLista();
+}
+function pista(){
+  if(!P||P.fin) return;
+  let i=P.sel;
+  if(i<0||esDado(i)||P.cur[i]===P.sol[i]){ i=P.cur.findIndex((v,k)=>v!==P.sol[k]); }
+  if(i<0) return;
+  P.sel=i; aplicar([{i,cur:P.sol[i],nota:0}]); msg('Pista: casilla de la fila '+(fila(i)+1)+', columna '+(colu(i)+1)+'.');
+}
+function comprobar(){
+  if(!P||P.fin) return;
+  const mal=[]; P.cur.forEach((v,i)=>{ if(v&&v!==P.sol[i]) mal.push(i); });
+  P.mal=mal; pintar();
+  if(mal.length) msg(mal.length===1?'Hay 1 casilla mal, marcada en rojo.':'Hay '+mal.length+' casillas mal, marcadas en rojo.','err');
+  else{ const falta=P.cur.filter(v=>!v).length; msg('Todo lo puesto es correcto. Faltan '+falta+' casillas.','ok'); }
+}
+function autoNotas(){
+  if(!P||P.fin) return;
+  const ch=[];
+  for(let i=0;i<81;i++){
+    if(P.cur[i]) continue; let m=511;
+    for(let j=0;j<81;j++) if(P.cur[j]&&pares(i,j)) m&=~(1<<(P.cur[j]-1));
+    if(m!==P.notas[i]) ch.push({i,cur:0,nota:m});
+  }
+  if(ch.length) aplicar(ch);
+}
+function msg(t,c){ const m=$('msg'); m.textContent=t||''; m.className=c||''; }
+
+/* ---------- pintado ---------- */
+function pintar(){
+  const tab=$('tab'), cf=conflictos(), selv=P.sel>=0?P.cur[P.sel]:0;
+  let h='';
+  for(let i=0;i<81;i++){
+    const r=fila(i), c=colu(i), v=P.cur[i];
+    let k='c'+((c%3===2&&c<8)?' r2':'')+((r%3===2&&r<8)?' b2':'')+(c===8?' c8':'')+(r===8?' f8':'');
+    if(esDado(i)) k+=' g'; else if(v) k+=' u';
+    if(P.sel>=0&&pares(P.sel,i)) k+=' rel';
+    if(selv&&v===selv&&i!==P.sel) k+=' same';
+    if(cf.has(i)) k+=' cf';
+    if(P.mal.includes(i)) k+=' mal';
+    if(i===P.sel) k+=' sel';
+    let inner='';
+    if(v) inner=v;
+    else if(P.notas[i]){ inner='<div class="nt">'; for(let d=1;d<=9;d++) inner+='<i'+((selv===d)?' class="h"':'')+'>'+((P.notas[i]&(1<<(d-1)))?d:'')+'</i>'; inner+='</div>'; }
+    h+='<button class="'+k+'" data-i="'+i+'" role="gridcell" aria-label="Fila '+(r+1)+', columna '+(c+1)+(v?', '+v:'')+'">'+inner+'</button>';
+  }
+  tab.innerHTML=h;
+  const cuenta=new Array(10).fill(0); P.cur.forEach(v=>{ if(v) cuenta[v]++; });
+  const pad=$('pad'); pad.innerHTML='';
+  for(let d=1;d<=9;d++){ const b=document.createElement('button'); b.innerHTML=d+'<small>'+(9-cuenta[d])+'</small>'; b.dataset.d=d; b.disabled=cuenta[d]>=9||P.fin; pad.appendChild(b); }
+  $('bNotas').classList.toggle('on',notasModo); $('bNotas').setAttribute('aria-pressed',notasModo);
+  $('bUndo').disabled=!P.undo.length||P.fin;
+  ['bBorrar','bPista','bComp','bAuto'].forEach(x=>{ $(x).disabled=P.fin; });
+  $('nom').textContent=P.nombre+(P.fin?' · resuelto':'');
+}
+function pintarLista(){
+  const l=$('lista'); l.innerHTML='';
+  Object.values(S.partidas).sort((a,b)=>(b.id===S.actual)-(a.id===S.actual)||b.fecha-a.fecha).forEach(p=>{
+    const libres=p.given.filter(v=>!v).length, hechas=p.cur.filter((v,i)=>v&&!p.given[i]).length;
+    const it=document.createElement('div'); it.className='it';
+    const b=document.createElement('button'); b.className='us'+(p.id===S.actual?' on':'');
+    b.innerHTML='<b></b><small></small>'; b.firstChild.textContent=p.nombre;
+    b.lastChild.textContent=p.fin?('Resuelto en '+fmtT(p.t)):(hechas+' de '+libres+' casillas · '+fmtT(p.id===S.actual?tiempo():p.t));
+    b.onclick=()=>{ if(p.id!==S.actual){ cierraTiempo(); abrir(p.id); } };
+    it.appendChild(b);
+    if(p.id!=='mio'){ const q=document.createElement('button'); q.className='qt'; q.textContent='Quitar'; q.onclick=()=>{ if(!confirm('¿Quitar «'+p.nombre+'»?')) return; delete S.partidas[p.id]; if(S.actual===p.id) S.actual='mio'; if(!S.partidas.mio){ const m=crearMio(); S.partidas.mio=m; } guardar(); abrir(S.actual); }; it.appendChild(q); }
+    l.appendChild(it);
+  });
+}
+
+/* ---------- eventos ---------- */
+$('tab').addEventListener('click',e=>{ const b=e.target.closest('.c'); if(!b) return; P.sel=+b.dataset.i; guardar(); pintar(); });
+$('pad').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b&&!b.disabled) poner(+b.dataset.d); });
+$('bNotas').onclick=()=>{ notasModo=!notasModo; S.notas=notasModo; guardar(); pintar(); };
+$('bBorrar').onclick=borrar; $('bUndo').onclick=deshacer; $('bPista').onclick=pista; $('bComp').onclick=comprobar; $('bAuto').onclick=autoNotas;
+document.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{ cierraTiempo(); nuevo(b.dataset.n); });
+document.addEventListener('keydown',e=>{
+  if(!P||e.metaKey||e.altKey) return;
+  const k=e.key;
+  if(/^[1-9]$/.test(k)){ poner(+k); e.preventDefault(); }
+  else if(k==='Backspace'||k==='Delete'||k==='0'){ borrar(); e.preventDefault(); }
+  else if((e.ctrlKey)&&k.toLowerCase()==='z'){ deshacer(); e.preventDefault(); }
+  else if(k.toLowerCase()==='n'&&!e.ctrlKey){ $('bNotas').click(); }
+  else if(k.startsWith('Arrow')){
+    let i=P.sel<0?40:P.sel;
+    if(k==='ArrowLeft'&&colu(i)>0) i--; if(k==='ArrowRight'&&colu(i)<8) i++; if(k==='ArrowUp'&&fila(i)>0) i-=9; if(k==='ArrowDown'&&fila(i)<8) i+=9;
+    P.sel=i; pintar(); e.preventDefault();
+  }
+});
+
+iniciar();
+})();
+</script>
+
+<script>
+/* Actualización automática: compara con version.json y recarga si hay versión nueva */
+(function(){
+  var BUILD='V1.31', ROOT='../';
+  if(/[?&]embed=1/.test(location.search)) return;
+  var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
+  function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
+  async function recargar(){
+    intentos(intentos()+1);
+    try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){}
+    location.reload();
+  }
+  function aviso(v){
+    if(document.getElementById('dgpUpd')) return;
+    var d=document.createElement('div'); d.id='dgpUpd'; d.setAttribute('role','status');
+    d.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom,0px));margin:0 auto;max-width:520px;z-index:99999;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-radius:12px;border:1px solid #e8a33d;background:#1b1815;color:#efe7db;font:600 15px/1.3 system-ui,-apple-system,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.4)';
+    d.innerHTML='<span>Hay una versión nueva ('+v+')</span><button style="background:none;border:0;color:#e8a33d;font:inherit;font-weight:700;padding:8px 4px;cursor:pointer">Actualizar</button>';
+    d.querySelector('button').onclick=function(){ intentos(0); recargar(); };
+    document.body.appendChild(d);
+  }
+  async function comprobar(){
+    if(busy) return; busy=true;
+    try{
+      var r=await fetch(VJ+'?t='+Date.now(),{cache:'no-store'}); var j=await r.json();
+      if(j&&j.v&&j.v!==BUILD){
+        if(Date.now()-t0<8000 && intentos()<2) recargar(); else aviso(j.v);
+      } else intentos(0);
+    }catch(e){}
+    busy=false;
+  }
+  comprobar();
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') comprobar(); });
+  setInterval(comprobar,300000);
+})();
+</script>
+</body>
+</html>

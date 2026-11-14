@@ -85,7 +85,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <h2>Mis partidas</h2>
   <div class="lista" id="lista"></div>
 
-  <p class="pie"><span id="version">V1.38</span></p>
+  <p class="pie"><span id="version">V1.39</span></p>
 </main>
 
 <script>
@@ -99,9 +99,10 @@ const MIO_DADOS=['082053107','600800543','030000620','000008302','200935004','30
 const MIO_TUYOS=[[0,0,4],[0,3,6],[0,7,9],[2,8,8],[3,4,6],[4,1,6],[5,8,6],[6,0,8],[6,2,3],[6,3,5],[7,3,3],[7,5,6],[8,1,5],[8,5,7],[8,8,9]];
 
 const MIO_NOTAS={10:'1379',11:'179',13:'279',14:'279',18:'46',20:'46',21:'79',22:'479',23:'479',27:'46',28:'468',29:'4679',34:'17',38:'17',42:'79',43:'7',46:'179',49:'47',50:'49',55:'47',58:'279',59:'279',60:'47',62:'1',65:'47',69:'47',70:'7'};
+function unicos(p){ for(let i=0;i<81;i++){ const n=p.notas[i]; if(!p.cur[i]&&n&&!(n&(n-1))){ p.cur[i]=Math.log2(n)+1; p.notas[i]=0; } } }
 function notasMio(p){
   for(const k in MIO_NOTAS){ const i=+k; if(p.cur[i]||p.notas[i]) continue; let m=0; for(const ch of MIO_NOTAS[k]) m|=1<<(+ch-1); p.notas[i]=m; }
-  p.notasv=1;
+  unicos(p); p.notasv=2;
 }
 /* ---------- resolver y generar ---------- */
 const pop=m=>{let n=0;while(m){m&=m-1;n++;}return n;};
@@ -161,7 +162,8 @@ function crearMio(){
 function iniciar(){
   cargar();
   if(!S||!S.partidas||!Object.keys(S.partidas).length){ const m=crearMio(); S={actual:m.id,notas:false,partidas:{[m.id]:m}}; guardar(); }
-  if(S.partidas.mio&&S.partidas.mio.notasv!==1){ notasMio(S.partidas.mio); guardar(); }
+  if(S.partidas.mio&&S.partidas.mio.notasv!==2){ notasMio(S.partidas.mio); guardar(); }
+  Object.values(S.partidas).forEach(unicos);
   if(!S.partidas[S.actual]) S.actual=Object.keys(S.partidas)[0];
   notasModo=!!S.notas;
   abrir(S.actual,true);
@@ -231,7 +233,7 @@ function poner(d){
   if(!P||P.sel<0||P.fin) return; const i=P.sel; if(esDado(i)) return;
   const v=P.cur[i], b=1<<(d-1);
   if(v){ if(v===d) aplicar([{i,cur:0,nota:0}]); else aplicar([{i,cur:0,nota:(1<<(v-1))|b}]); return; }
-  if(P.notas[i]){ aplicar([{i,cur:0,nota:P.notas[i]^b}]); return; }
+  if(P.notas[i]){ const n=P.notas[i]^b; if(n&&!(n&(n-1))) fijar(Math.log2(n)+1); else aplicar([{i,cur:0,nota:n}]); return; }
   fijar(d);
 }
 function borrar(){ if(!P||P.sel<0||P.fin||esDado(P.sel)) return; const i=P.sel; if(!P.cur[i]&&!P.notas[i]) return; aplicar([{i,cur:0,nota:0}]); }
@@ -339,7 +341,7 @@ iniciar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.38', ROOT='../';
+  var BUILD='V1.39', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

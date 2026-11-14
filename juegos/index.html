@@ -63,7 +63,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
 <main>
   <a class="back" href="../">Volver a DGP</a>
   <h1>Juegos</h1>
-  <p class="sub">Sudoku. Toca un número para ponerlo y vuelve a tocarlo para quitarlo; mantén pulsado un número para poner o quitar ese candidato en la casilla.</p>
+  <p class="sub">Sudoku. Toca un número para ponerlo y vuelve a tocarlo para quitarlo. Si tocas otro número en la misma casilla, pasan a ser candidatos. Mantén pulsado un número para fijarlo aunque haya candidatos.</p>
 
   <div class="top"><b id="nom"></b><span id="reloj">0:00</span></div>
   <div id="tab" role="grid" aria-label="Tablero de sudoku"></div>
@@ -84,7 +84,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <h2>Mis partidas</h2>
   <div class="lista" id="lista"></div>
 
-  <p class="pie"><span id="version">V1.36</span></p>
+  <p class="pie"><span id="version">V1.37</span></p>
 </main>
 
 <script>
@@ -219,16 +219,19 @@ function comprobarFin(){
   if(P.cur.every(v=>v)&&!P.cur.every((v,i)=>v===P.sol[i])){ P.mal=[]; P.cur.forEach((v,i)=>{ if(v!==P.sol[i]) P.mal.push(i); }); msg('El tablero está completo pero hay '+P.mal.length+(P.mal.length===1?' casilla mal, marcada en rojo.':' casillas mal, marcadas en rojo.'),'err'); return; }
   if(P.cur.every((v,i)=>v===P.sol[i])){ P.t=tiempo(); P.fin=true; P.fecha=Date.now(); clearInterval(timer); $('reloj').textContent=fmtT(P.t); msg('Resuelto en '+fmtT(P.t)+'.','ok'); }
 }
-function candidato(d){
-  if(!P||P.sel<0||P.fin) return; const i=P.sel; if(esDado(i)||P.cur[i]) return;
-  aplicar([{i,cur:0,nota:P.notas[i]^(1<<(d-1))}]);
-}
-function poner(d){
+function fijar(d){
   if(!P||P.sel<0||P.fin) return; const i=P.sel; if(esDado(i)) return;
-  if(P.cur[i]===d){ aplicar([{i,cur:0,nota:0}]); return; }
   const ch=[{i,cur:d,nota:0}], b=1<<(d-1);
   for(let j=0;j<81;j++) if(pares(i,j)&&(P.notas[j]&b)) ch.push({i:j,cur:P.cur[j],nota:P.notas[j]&~b});
   aplicar(ch);
+}
+/* Un toque: número si la casilla está vacía; si ya hay otro número o candidatos, se convierten en candidatos. Tocar el mismo número lo quita. */
+function poner(d){
+  if(!P||P.sel<0||P.fin) return; const i=P.sel; if(esDado(i)) return;
+  const v=P.cur[i], b=1<<(d-1);
+  if(v){ if(v===d) aplicar([{i,cur:0,nota:0}]); else aplicar([{i,cur:0,nota:(1<<(v-1))|b}]); return; }
+  if(P.notas[i]){ aplicar([{i,cur:0,nota:P.notas[i]^b}]); return; }
+  fijar(d);
 }
 function borrar(){ if(!P||P.sel<0||P.fin||esDado(P.sel)) return; const i=P.sel; if(!P.cur[i]&&!P.notas[i]) return; aplicar([{i,cur:0,nota:0}]); }
 function deshacer(){
@@ -306,7 +309,7 @@ function pintarLista(){
 $('tab').addEventListener('click',e=>{ const b=e.target.closest('.c'); if(!b) return; P.sel=+b.dataset.i; guardar(); pintar(); });
 (function(){
   const pad=$('pad'); let t=null, largo=false;
-  pad.addEventListener('pointerdown',e=>{ const b=e.target.closest('button'); if(!b||b.disabled) return; largo=false; clearTimeout(t); t=setTimeout(()=>{ largo=true; candidato(+b.dataset.d); if(navigator.vibrate) try{ navigator.vibrate(15); }catch(x){} },450); });
+  pad.addEventListener('pointerdown',e=>{ const b=e.target.closest('button'); if(!b||b.disabled) return; largo=false; clearTimeout(t); t=setTimeout(()=>{ largo=true; fijar(+b.dataset.d); if(navigator.vibrate) try{ navigator.vibrate(15); }catch(x){} },450); });
   ['pointerup','pointercancel','pointerleave'].forEach(ev=>pad.addEventListener(ev,()=>clearTimeout(t)));
   pad.addEventListener('contextmenu',e=>e.preventDefault());
   pad.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b||b.disabled) return; if(largo){ largo=false; return; } poner(+b.dataset.d); });
@@ -316,7 +319,7 @@ document.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{ cierraTiempo();
 document.addEventListener('keydown',e=>{
   if(!P||e.metaKey||e.altKey) return;
   const k=e.key;
-  if(e.shiftKey&&/^Digit[1-9]$/.test(e.code)){ candidato(+e.code.slice(5)); e.preventDefault(); }
+  if(e.shiftKey&&/^Digit[1-9]$/.test(e.code)){ fijar(+e.code.slice(5)); e.preventDefault(); }
   else if(/^[1-9]$/.test(k)){ poner(+k); e.preventDefault(); }
   else if(k==='Backspace'||k==='Delete'||k==='0'){ borrar(); e.preventDefault(); }
   else if((e.ctrlKey)&&k.toLowerCase()==='z'){ deshacer(); e.preventDefault(); }
@@ -334,7 +337,7 @@ iniciar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.36', ROOT='../';
+  var BUILD='V1.37', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

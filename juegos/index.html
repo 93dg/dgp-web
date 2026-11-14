@@ -45,8 +45,8 @@ button.on{border-color:var(--ac)}
 .pad button{padding:0;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.3rem;line-height:1.1;font-variant-numeric:tabular-nums}
 .pad button.on{border-width:2px;border-color:var(--ac)}
 .pad button small{font-size:.62rem;color:var(--mut)}
-.acc{display:grid;grid-template-columns:1fr;gap:6px;margin:6px 0}
-.acc button{padding:0 4px;font-size:.88rem}
+.acc{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0}
+.acc button{padding:0 4px;display:flex;align-items:center;justify-content:center}
 .sec{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0 4px}
 h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:20px 0 8px;font-weight:600}
 .niv{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
@@ -72,7 +72,8 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
 
   <div class="pad" id="pad"></div>
   <div class="acc">
-    <button id="bUndo">Deshacer</button>
+    <button id="bUndo" aria-label="Deshacer" title="Deshacer"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+    <button id="bRedo" aria-label="Rehacer" title="Rehacer"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
   </div>
 
   <h2>Nuevo sudoku</h2>
@@ -85,7 +86,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <h2>Mis partidas</h2>
   <div class="lista" id="lista"></div>
 
-  <p class="pie"><span id="version">V1.39</span></p>
+  <p class="pie"><span id="version">V1.40</span></p>
 </main>
 
 <script>
@@ -214,7 +215,7 @@ function esDado(i){ return P.given[i]!==0; }
 function aplicar(cambios){
   const deshacer=[];
   for(const c of cambios){ deshacer.push([c.i,P.cur[c.i],P.notas[c.i]]); P.cur[c.i]=c.cur; P.notas[c.i]=c.nota; }
-  P.undo.push(deshacer); if(P.undo.length>300) P.undo.shift();
+  P.undo.push(deshacer); if(P.undo.length>300) P.undo.shift(); P.redo=[];
   P.mal=[]; msg(''); comprobarFin(); guardar(); pintar(); pintarLista();
 }
 function comprobarFin(){
@@ -237,11 +238,13 @@ function poner(d){
   fijar(d);
 }
 function borrar(){ if(!P||P.sel<0||P.fin||esDado(P.sel)) return; const i=P.sel; if(!P.cur[i]&&!P.notas[i]) return; aplicar([{i,cur:0,nota:0}]); }
-function deshacer(){
-  if(!P||!P.undo.length||P.fin) return; const u=P.undo.pop();
-  for(const [i,c,n] of u){ P.cur[i]=c; P.notas[i]=n; }
-  P.mal=[]; guardar(); pintar(); pintarLista();
+function paso(de,a){
+  if(!P||!P[de]||!P[de].length||P.fin) return;
+  const u=P[de].pop(), inv=[];
+  for(const [i,c,n] of u){ inv.push([i,P.cur[i],P.notas[i]]); P.cur[i]=c; P.notas[i]=n; }
+  P[a]=P[a]||[]; P[a].push(inv); P.mal=[]; msg(''); guardar(); pintar(); pintarLista();
 }
+const deshacer=()=>paso('undo','redo'), rehacer=()=>paso('redo','undo');
 function pista(){
   if(!P||P.fin) return;
   let i=P.sel;
@@ -291,7 +294,7 @@ function pintar(){
   const enCasilla=d=>P.sel>=0&&(P.cur[P.sel]===d||(!P.cur[P.sel]&&(P.notas[P.sel]&(1<<(d-1)))));
   const pad=$('pad'); pad.innerHTML='';
   for(let d=1;d<=9;d++){ const b=document.createElement('button'); b.innerHTML=d+'<small>'+(9-cuenta[d])+'</small>'; b.dataset.d=d; b.disabled=cuenta[d]>=9&&!enCasilla(d)||P.fin; if(enCasilla(d)){ b.classList.add('on'); b.setAttribute('aria-pressed','true'); } pad.appendChild(b); }
-  $('bUndo').disabled=!P.undo.length||P.fin;
+  $('bUndo').disabled=!P.undo.length||P.fin; $('bRedo').disabled=!(P.redo&&P.redo.length)||P.fin;
   $('nom').textContent=P.nombre+(P.fin?' · resuelto':'');
 }
 function pintarLista(){
@@ -318,7 +321,7 @@ $('tab').addEventListener('click',e=>{ const b=e.target.closest('.c'); if(!b) re
   pad.addEventListener('contextmenu',e=>e.preventDefault());
   pad.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b||b.disabled) return; if(largo){ largo=false; return; } poner(+b.dataset.d); });
 })();
-$('bUndo').onclick=deshacer;
+$('bUndo').onclick=deshacer; $('bRedo').onclick=rehacer;
 document.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{ cierraTiempo(); nuevo(b.dataset.n); });
 document.addEventListener('keydown',e=>{
   if(!P||e.metaKey||e.altKey) return;
@@ -326,7 +329,8 @@ document.addEventListener('keydown',e=>{
   if(e.shiftKey&&/^Digit[1-9]$/.test(e.code)){ fijar(+e.code.slice(5)); e.preventDefault(); }
   else if(/^[1-9]$/.test(k)){ poner(+k); e.preventDefault(); }
   else if(k==='Backspace'||k==='Delete'||k==='0'){ borrar(); e.preventDefault(); }
-  else if((e.ctrlKey)&&k.toLowerCase()==='z'){ deshacer(); e.preventDefault(); }
+  else if(e.ctrlKey&&k.toLowerCase()==='z'&&!e.shiftKey){ deshacer(); e.preventDefault(); }
+  else if(e.ctrlKey&&(k.toLowerCase()==='y'||(k.toLowerCase()==='z'&&e.shiftKey))){ rehacer(); e.preventDefault(); }
   else if(k.startsWith('Arrow')){
     let i=P.sel<0?40:P.sel;
     if(k==='ArrowLeft'&&colu(i)>0) i--; if(k==='ArrowRight'&&colu(i)<8) i++; if(k==='ArrowUp'&&fila(i)>0) i-=9; if(k==='ArrowDown'&&fila(i)<8) i+=9;
@@ -341,7 +345,7 @@ iniciar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.39', ROOT='../';
+  var BUILD='V1.40', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

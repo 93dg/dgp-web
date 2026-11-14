@@ -44,7 +44,7 @@ button.on{border-color:var(--ac)}
 .pad{display:grid;grid-template-columns:repeat(9,1fr);gap:5px;margin:8px 0}
 .pad button{padding:0;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.3rem;line-height:1.1;font-variant-numeric:tabular-nums}
 .pad button small{font-size:.62rem;color:var(--mut)}
-.acc{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:6px 0}
+.acc{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin:6px 0}
 .acc button{padding:0 4px;font-size:.88rem}
 .sec{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0 4px}
 h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:20px 0 8px;font-weight:600}
@@ -73,7 +73,6 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <div class="acc">
     <button id="bBorrar">Borrar</button>
     <button id="bUndo">Deshacer</button>
-    <button id="bComp">Comprobar</button>
   </div>
 
   <h2>Nuevo sudoku</h2>
@@ -86,7 +85,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <h2>Mis partidas</h2>
   <div class="lista" id="lista"></div>
 
-  <p class="pie"><span id="version">V1.33</span></p>
+  <p class="pie"><span id="version">V1.34</span></p>
 </main>
 
 <script>
@@ -214,10 +213,11 @@ function aplicar(cambios){
   const deshacer=[];
   for(const c of cambios){ deshacer.push([c.i,P.cur[c.i],P.notas[c.i]]); P.cur[c.i]=c.cur; P.notas[c.i]=c.nota; }
   P.undo.push(deshacer); if(P.undo.length>300) P.undo.shift();
-  P.mal=[]; comprobarFin(); guardar(); pintar(); pintarLista();
+  P.mal=[]; msg(''); comprobarFin(); guardar(); pintar(); pintarLista();
 }
 function comprobarFin(){
   if(P.fin) return;
+  if(P.cur.every(v=>v)&&!P.cur.every((v,i)=>v===P.sol[i])){ P.mal=[]; P.cur.forEach((v,i)=>{ if(v!==P.sol[i]) P.mal.push(i); }); msg('El tablero está completo pero hay '+P.mal.length+(P.mal.length===1?' casilla mal, marcada en rojo.':' casillas mal, marcadas en rojo.'),'err'); return; }
   if(P.cur.every((v,i)=>v===P.sol[i])){ P.t=tiempo(); P.fin=true; P.fecha=Date.now(); clearInterval(timer); $('reloj').textContent=fmtT(P.t); msg('Resuelto en '+fmtT(P.t)+'.','ok'); }
 }
 function poner(d){
@@ -286,7 +286,7 @@ function pintar(){
   const pad=$('pad'); pad.innerHTML='';
   for(let d=1;d<=9;d++){ const b=document.createElement('button'); b.innerHTML=d+'<small>'+(9-cuenta[d])+'</small>'; b.dataset.d=d; b.disabled=cuenta[d]>=9||P.fin; pad.appendChild(b); }
   $('bUndo').disabled=!P.undo.length||P.fin;
-  ['bBorrar','bComp'].forEach(x=>{ $(x).disabled=P.fin; });
+  ['bBorrar'].forEach(x=>{ $(x).disabled=P.fin; });
   $('nom').textContent=P.nombre+(P.fin?' · resuelto':'');
 }
 function pintarLista(){
@@ -307,7 +307,7 @@ function pintarLista(){
 /* ---------- eventos ---------- */
 $('tab').addEventListener('click',e=>{ const b=e.target.closest('.c'); if(!b) return; P.sel=+b.dataset.i; guardar(); pintar(); });
 $('pad').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b&&!b.disabled) poner(+b.dataset.d); });
-$('bBorrar').onclick=borrar; $('bUndo').onclick=deshacer; $('bComp').onclick=comprobar;
+$('bBorrar').onclick=borrar; $('bUndo').onclick=deshacer;
 document.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{ cierraTiempo(); nuevo(b.dataset.n); });
 document.addEventListener('keydown',e=>{
   if(!P||e.metaKey||e.altKey) return;
@@ -329,7 +329,7 @@ iniciar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.33', ROOT='../';
+  var BUILD='V1.34', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

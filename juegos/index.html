@@ -43,6 +43,7 @@ button.on{border-color:var(--ac)}
 #msg.ok{color:var(--pos)}#msg.err{color:var(--neg)}
 .pad{display:grid;grid-template-columns:repeat(9,1fr);gap:5px;margin:8px 0}
 .pad button{padding:0;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.3rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.pad button.on{border-width:2px;border-color:var(--ac)}
 .pad button small{font-size:.62rem;color:var(--mut)}
 .acc{display:grid;grid-template-columns:1fr;gap:6px;margin:6px 0}
 .acc button{padding:0 4px;font-size:.88rem}
@@ -84,7 +85,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <h2>Mis partidas</h2>
   <div class="lista" id="lista"></div>
 
-  <p class="pie"><span id="version">V1.37</span></p>
+  <p class="pie"><span id="version">V1.38</span></p>
 </main>
 
 <script>
@@ -285,8 +286,9 @@ function pintar(){
   }
   tab.innerHTML=h;
   const cuenta=new Array(10).fill(0); P.cur.forEach(v=>{ if(v) cuenta[v]++; });
+  const enCasilla=d=>P.sel>=0&&(P.cur[P.sel]===d||(!P.cur[P.sel]&&(P.notas[P.sel]&(1<<(d-1)))));
   const pad=$('pad'); pad.innerHTML='';
-  for(let d=1;d<=9;d++){ const b=document.createElement('button'); b.innerHTML=d+'<small>'+(9-cuenta[d])+'</small>'; b.dataset.d=d; b.disabled=cuenta[d]>=9||P.fin; pad.appendChild(b); }
+  for(let d=1;d<=9;d++){ const b=document.createElement('button'); b.innerHTML=d+'<small>'+(9-cuenta[d])+'</small>'; b.dataset.d=d; b.disabled=cuenta[d]>=9&&!enCasilla(d)||P.fin; if(enCasilla(d)){ b.classList.add('on'); b.setAttribute('aria-pressed','true'); } pad.appendChild(b); }
   $('bUndo').disabled=!P.undo.length||P.fin;
   $('nom').textContent=P.nombre+(P.fin?' · resuelto':'');
 }
@@ -337,7 +339,7 @@ iniciar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.37', ROOT='../';
+  var BUILD='V1.38', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

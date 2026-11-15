@@ -31,7 +31,6 @@ button.on{border-color:var(--ac)}
 .pad.mini button{min-height:50px;font-size:1.3rem;font-weight:500;color:var(--mut)}
 .pad.mini button small{display:none}
 .pad.mini button.on{color:var(--pos);border-color:var(--pos)}
-.pad.mini button.hecho{color:var(--pos)}
 .pad.pausa,.acc.pausa{opacity:.45;pointer-events:none}
 #tab{display:grid;grid-template-columns:repeat(9,1fr);width:100%;aspect-ratio:1;border:2px solid var(--bd2);border-radius:6px;overflow:hidden;background:var(--s1)}
 .c{position:relative;min-height:0;padding:0;border:0;border-radius:0;background:var(--s1);border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:clamp(20px,6.6vw,31px);font-variant-numeric:tabular-nums;line-height:1}
@@ -54,9 +53,9 @@ button.on{border-color:var(--ac)}
 #msg.ok{color:var(--pos)}#msg.err{color:var(--neg)}
 .pad{display:grid;grid-template-columns:repeat(9,1fr);gap:4px;margin:10px 0}
 .pad button{padding:0;min-height:76px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.9rem;font-weight:500;line-height:1.1;font-variant-numeric:tabular-nums}
-.pad button.hecho{color:var(--pos);border-color:color-mix(in srgb,var(--pos) 55%,transparent);background:color-mix(in srgb,var(--pos) 12%,var(--s1))}
-.pad button.hecho small{color:var(--pos)}
-.pad button.hecho.on{border-color:var(--ac)}
+.pad button.hecho{opacity:.32}
+.pad button.hecho.on{opacity:.6}
+.pad.mini button.hecho{opacity:1;color:var(--pos);border-color:color-mix(in srgb,var(--pos) 55%,transparent);background:color-mix(in srgb,var(--pos) 12%,var(--s1))}
 .pad button.on{border-width:2px;border-color:var(--ac)}
 .pad button small{font-size:.72rem;color:var(--mut)}
 .acc{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0}
@@ -103,7 +102,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <h2>Mis partidas</h2>
   <div class="lista" id="lista"></div>
 
-  <p class="pie"><span id="version">V1.54</span></p>
+  <p class="pie"><span id="version">V1.55</span></p>
 </main>
 
 <script>
@@ -519,7 +518,7 @@ sincronizar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.54', ROOT='../';
+  var BUILD='V1.55', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

@@ -45,6 +45,8 @@ button.on{border-color:var(--ac)}
 #msg.ok{color:var(--pos)}#msg.err{color:var(--neg)}
 .pad{display:grid;grid-template-columns:repeat(9,1fr);gap:4px;margin:10px 0}
 .pad button{padding:0;min-height:76px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.9rem;font-weight:500;line-height:1.1;font-variant-numeric:tabular-nums}
+.pad button.hecho{opacity:.32}
+.pad button.hecho.on{opacity:.6}
 .pad button.on{border-width:2px;border-color:var(--ac)}
 .pad button small{font-size:.72rem;color:var(--mut)}
 .acc{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0}
@@ -87,7 +89,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <h2>Mis partidas</h2>
   <div class="lista" id="lista"></div>
 
-  <p class="pie"><span id="version">V1.48</span></p>
+  <p class="pie"><span id="version">V1.49</span></p>
 </main>
 
 <script>
@@ -134,24 +136,79 @@ function resolver(g0,lim,azar){
   }
   rec(); return {n,sol};
 }
-const OBJ={facil:40,medio:32,dificil:26};
-function generar(nivel){
-  const sol=resolver(new Array(81).fill(0),1,true).sol, g=sol.slice();
-  const orden=[...Array(81).keys()]; for(let i=80;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [orden[i],orden[j]]=[orden[j],orden[i]]; }
-  let dados=81;
-  for(const i of orden){
-    if(dados<=OBJ[nivel]) break;
-    const v=g[i]; g[i]=0;
-    if(resolver(g,2,false).n!==1) g[i]=v; else dados--;
+/* Dificultad por técnica: Fácil = solo casillas con un único candidato; Medio = además números que solo caben en un sitio de su fila, columna o caja; Difícil = hace falta algo más (pares, parejas ocultas, etc.). */
+function soloSimples(g,soloDesnudos){
+  const a=g.slice(), cand=new Array(81).fill(0);
+  const cands=i=>{ let m=511; for(let j=0;j<81;j++) if(a[j]&&pares(i,j)) m&=~(1<<(a[j]-1)); return m; };
+  const unid=[]; for(let r=0;r<9;r++) unid.push([...Array(9).keys()].map(c=>r*9+c)); for(let c=0;c<9;c++) unid.push([...Array(9).keys()].map(r=>r*9+c));
+  for(let br=0;br<3;br++) for(let bc=0;bc<3;bc++){ const u=[]; for(let r=0;r<3;r++) for(let c=0;c<3;c++) u.push((br*3+r)*9+bc*3+c); unid.push(u); }
+  let avance=true;
+  while(avance){
+    avance=false;
+    for(let i=0;i<81;i++) if(!a[i]){ const m=cands(i); cand[i]=m; if(m&&!(m&(m-1))){ a[i]=Math.log2(m)+1; avance=true; } }
+    if(avance) continue;
+    if(!soloDesnudos){
+      for(const u of unid) for(let d=0;d<9;d++){
+        if(u.some(i=>a[i]===d+1)) continue;
+        const sitios=u.filter(i=>!a[i]&&(cands(i)&(1<<d)));
+        if(sitios.length===1){ a[sitios[0]]=d+1; avance=true; }
+      }
+    }
   }
-  return {given:g,sol};
+  return a.every(v=>v);
+}
+const OBJ={facil:[38,42],medio:[30,34],dificil:[22,27]};
+function generar(nivel){
+  let mejor=null;
+  for(let intento=0;intento<60;intento++){
+    const sol=resolver(new Array(81).fill(0),1,true).sol, g=sol.slice();
+    const orden=[...Array(81).keys()]; for(let i=80;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [orden[i],orden[j]]=[orden[j],orden[i]]; }
+    let dados=81; const meta=OBJ[nivel][0];
+    for(const i of orden){
+      if(dados<=meta) break;
+      const v=g[i]; g[i]=0;
+      if(resolver(g,2,false).n!==1) g[i]=v; else dados--;
+    }
+    mejor={given:g,sol};
+    const desn=soloSimples(g,true), simp=soloSimples(g,false);
+    if(nivel==='facil'&&desn) return mejor;
+    if(nivel==='medio'&&!desn&&simp) return mejor;
+    if(nivel==='dificil'&&!simp) return mejor;
+  }
+  return mejor;
 }
 
 /* ---------- estado y guardado ---------- */
 let S=null, P=null, notasModo=false, timer=null, ultSave=0, visibleDesde=Date.now();
 const NOMBRES={facil:'Fácil',medio:'Medio',dificil:'Difícil',mio:'El mío'};
 function cargar(){ try{ S=JSON.parse(localStorage.getItem(KEY)||'null'); }catch(e){ S=null; } }
-function guardar(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
+const SB_URL='https://qtnqupcfgooazjzkpmtx.supabase.co/rest/v1/ui_estado', SB_KEY='sb_publishable_brvDWgh8e_IrS8NWDvt7xg_rbL2dqcd', SB_H={apikey:SB_KEY,Authorization:'Bearer '+SB_KEY};
+let tSub=0;
+function guardarLocal(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
+function guardar(sinTs){ if(!sinTs){ S.ts=Date.now(); subir(); } guardarLocal(); }
+function subir(ya){
+  clearTimeout(tSub);
+  tSub=setTimeout(async()=>{
+    try{
+      const copia=JSON.parse(JSON.stringify(S));
+      for(const p of Object.values(copia.partidas)){ p.undo=(p.undo||[]).slice(-40); p.redo=[]; }
+      const cuerpo=JSON.stringify([{clave:'juegos_sudoku',valor:copia,actualizado:new Date().toISOString()}]);
+      await fetch(SB_URL+'?on_conflict=clave',{method:'POST',keepalive:cuerpo.length<60000,headers:Object.assign({'Content-Type':'application/json','Content-Profile':'personal',Prefer:'resolution=merge-duplicates,return=minimal'},SB_H),body:cuerpo});
+    }catch(e){}
+  },ya?0:1200);
+}
+async function sincronizar(){
+  try{
+    const r=await fetch(SB_URL+'?clave=eq.juegos_sudoku&select=valor',{headers:Object.assign({'Accept-Profile':'personal'},SB_H)});
+    if(!r.ok) return; const a=await r.json(), v=a[0]&&a[0].valor, ts=v&&v.ts||0;
+    if(v&&v.partidas&&ts>(S.ts||0)){
+      const abierta=P&&P.id;
+      S=v; Object.values(S.partidas).forEach(p=>{ p.undo=p.undo||[]; p.redo=p.redo||[]; p.mal=[]; unicos(p); });
+      if(!S.partidas[S.actual]) S.actual=Object.keys(S.partidas)[0];
+      guardarLocal(); abrir(S.actual,true);
+    } else if((S.ts||0)>ts) subir(true);
+  }catch(e){}
+}
 function nuevaPartida(id,nombre,nivel,given,sol,cur){
   return {id,nombre,nivel,given,sol,cur:cur||given.slice(),notas:new Array(81).fill(0),t:0,fecha:Date.now(),fin:false,undo:[],sel:-1,mal:[]};
 }
@@ -163,8 +220,8 @@ function crearMio(){
 }
 function iniciar(){
   cargar();
-  if(!S||!S.partidas||!Object.keys(S.partidas).length){ const m=crearMio(); S={actual:m.id,notas:false,partidas:{[m.id]:m}}; guardar(); }
-  if(S.partidas.mio&&S.partidas.mio.notasv!==2){ notasMio(S.partidas.mio); guardar(); }
+  if(!S||!S.partidas||!Object.keys(S.partidas).length){ const m=crearMio(); S={actual:m.id,notas:false,ts:0,partidas:{[m.id]:m}}; guardar(true); }
+  if(S.partidas.mio&&S.partidas.mio.notasv!==2){ notasMio(S.partidas.mio); guardar(true); }
   Object.values(S.partidas).forEach(unicos);
   if(!S.partidas[S.actual]) S.actual=Object.keys(S.partidas)[0];
   notasModo=!!S.notas;
@@ -200,9 +257,9 @@ function arrancarReloj(){
   clearInterval(timer); $('reloj').textContent=fmtT(tiempo());
   timer=setInterval(()=>{ if(document.hidden) return; $('reloj').textContent=fmtT(tiempo()); if(Date.now()-ultSave>5000){ cierraTiempo(); } },1000);
 }
-function cierraTiempo(){ if(!P||P.fin){ return; } P.t=tiempo(); visibleDesde=Date.now(); ultSave=Date.now(); guardar(); }
-document.addEventListener('visibilitychange',()=>{ if(document.hidden) cierraTiempo(); else visibleDesde=Date.now(); });
-window.addEventListener('pagehide',cierraTiempo);
+function cierraTiempo(){ if(!P||P.fin){ return; } P.t=tiempo(); visibleDesde=Date.now(); ultSave=Date.now(); guardar(true); }
+document.addEventListener('visibilitychange',()=>{ if(document.hidden){ cierraTiempo(); if(S.ts) subir(true); } else{ visibleDesde=Date.now(); sincronizar(); } });
+window.addEventListener('pagehide',()=>{ cierraTiempo(); if(S.ts) subir(true); });
 
 /* ---------- lógica de casillas ---------- */
 const fila=i=>(i/9)|0, colu=i=>i%9, caja=i=>((fila(i)/3)|0)*3+((colu(i)/3)|0);
@@ -274,17 +331,16 @@ function msg(t,c){ const m=$('msg'); m.textContent=t||''; m.className=c||''; }
 /* ---------- pintado ---------- */
 function pintar(){
   const tab=$('tab'), cf=conflictos(), selv=P.sel>=0?P.cur[P.sel]:0;
-  const mk=P.marca&&P.sel<0?P.marca:0, mF=new Set(), mC=new Set(), mB=new Set();
+  const mk=P.sel<0?(P.marca||0):(P.cur[P.sel]||0), mF=new Set(), mC=new Set(), mB=new Set();
   if(mk) for(let j=0;j<81;j++) if(P.cur[j]===mk){ mF.add(fila(j)); mC.add(colu(j)); mB.add(caja(j)); }
   let h='';
   for(let i=0;i<81;i++){
     const r=fila(i), c=colu(i), v=P.cur[i];
     let k='c'+((c%3===2&&c<8)?' r2':'')+((r%3===2&&r<8)?' b2':'')+(c===8?' c8':'')+(r===8?' f8':'');
     if(esDado(i)) k+=' g'; else if(v) k+=' u';
-    if(P.sel>=0&&pares(P.sel,i)) k+=' rel';
+    if(P.sel>=0&&!mk&&pares(P.sel,i)) k+=' rel';
     if(mk&&(mF.has(r)||mC.has(c)||mB.has(caja(i)))) k+=' mk';
     if(mk&&v===mk) k+=' same';
-    if(selv&&v===selv&&i!==P.sel) k+=' same';
     if(cf.has(i)) k+=' cf';
     if(P.mal.includes(i)) k+=' mal';
     if(i===P.sel) k+=' sel';
@@ -297,7 +353,7 @@ function pintar(){
   const cuenta=new Array(10).fill(0); P.cur.forEach(v=>{ if(v) cuenta[v]++; });
   const enCasilla=d=>P.sel>=0&&(P.cur[P.sel]===d||(!P.cur[P.sel]&&(P.notas[P.sel]&(1<<(d-1)))));
   const pad=$('pad'); pad.innerHTML='';
-  for(let d=1;d<=9;d++){ const b=document.createElement('button'); b.innerHTML=d+'<small>'+(9-cuenta[d])+'</small>'; b.dataset.d=d; b.disabled=P.fin||(cuenta[d]>=9&&P.sel>=0&&!enCasilla(d)); if(enCasilla(d)||(P.sel<0&&P.marca===d)){ b.classList.add('on'); b.setAttribute('aria-pressed','true'); } pad.appendChild(b); }
+  for(let d=1;d<=9;d++){ const b=document.createElement('button'); b.innerHTML=d+'<small>'+(9-cuenta[d])+'</small>'; b.dataset.d=d; b.disabled=P.fin||(cuenta[d]>=9&&P.sel>=0&&!enCasilla(d)); if(enCasilla(d)||(P.sel<0&&P.marca===d)){ b.classList.add('on'); b.setAttribute('aria-pressed','true'); } if(cuenta[d]>=9) b.classList.add('hecho'); pad.appendChild(b); }
   $('bUndo').disabled=!P.undo.length||P.fin; $('bRedo').disabled=!(P.redo&&P.redo.length)||P.fin;
   $('nom').textContent=P.nombre+(P.fin?' · resuelto':'');
 }
@@ -343,13 +399,14 @@ document.addEventListener('keydown',e=>{
 });
 
 iniciar();
+sincronizar();
 })();
 </script>
 
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.48', ROOT='../';
+  var BUILD='V1.49', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

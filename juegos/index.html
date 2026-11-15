@@ -44,13 +44,11 @@ button.on{border-color:var(--ac)}
 .c.same{color:var(--ac)}
 .c.mk{background:color-mix(in srgb,var(--ac) 13%,var(--s1))}
 .c.cab{outline:3px solid var(--ac);outline-offset:-3px;z-index:1}
-.c.cf{color:var(--neg)}
 .c.mal{color:var(--neg);text-decoration:underline}
 .c.sel{outline:3px solid var(--ac);outline-offset:-3px;z-index:1}
 .nt{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);width:100%;height:100%;padding:1px;color:var(--mut);font-size:clamp(10px,3.1vw,14px);font-weight:600}
 .nt i{font-style:normal;display:flex;align-items:center;justify-content:center}
 .nt i.h{color:var(--pos);font-weight:800}
-#reloj.pasa{color:var(--neg)}
 .rec{min-height:1.3em;margin:-2px 0 8px;font-size:.85rem;color:var(--mut);font-variant-numeric:tabular-nums}
 .rec b{color:var(--ac);font-weight:600;letter-spacing:.08em}
 #fin[hidden],#finForm[hidden]{display:none!important}
@@ -119,7 +117,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <h2>Mis partidas</h2>
   <div class="lista" id="lista"></div>
 
-  <p class="pie"><span id="version">V1.60</span></p>
+  <p class="pie"><span id="version">V1.61</span></p>
 </main>
 
 <script>
@@ -366,7 +364,7 @@ function limpiarViejas(){
 /* ---------- tiempo ---------- */
 function tiempo(){ return P.t+((P.fin||P.pausa)?0:Math.floor((Date.now()-visibleDesde)/1000)); }
 function fmtT(s){ const m=Math.floor(s/60); return m+':'+String(s%60).padStart(2,'0'); }
-function pintaReloj(){ const t=tiempo(); $('reloj').textContent=fmtT(t); $('reloj').classList.toggle('pasa',!!(P.rec&&!P.fin&&t>P.rec.t)); }
+function pintaReloj(){ const t=tiempo(); $('reloj').textContent=fmtT(t); }
 function arrancarReloj(){
   clearInterval(timer); pintaReloj();
   timer=setInterval(()=>{ if(document.hidden) return; pintaReloj(); if(Date.now()-ultSave>5000){ cierraTiempo(); } },1000);
@@ -462,7 +460,6 @@ function pintar(){
     if(mk&&(v||mF.has(r)||mC.has(c)||mB.has(caja(i)))) k+=' mk';
     if(mk&&v===mk) k+=' same';
     if(v&&cuenta[v]>=9&&!cf.has(i)) k+=' comp';
-    if(cf.has(i)) k+=' cf';
     if(P.mal.includes(i)) k+=' mal';
     if(i===P.sel) k+=' sel';
     let inner='';
@@ -549,7 +546,7 @@ sincronizar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.60', ROOT='../';
+  var BUILD='V1.61', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

@@ -40,6 +40,7 @@ button.on{border-color:var(--ac)}
 .c.rel{background:var(--s2)}
 .c.g{font-weight:700}
 .c.u{color:var(--usr);font-weight:500}
+.c.comp{color:var(--pos)}
 .c.same{color:var(--ac)}
 .c.mk{background:color-mix(in srgb,var(--ac) 13%,var(--s1))}
 .c.cab{outline:3px solid var(--ac);outline-offset:-3px;z-index:1}
@@ -101,7 +102,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <h2>Mis partidas</h2>
   <div class="lista" id="lista"></div>
 
-  <p class="pie"><span id="version">V1.57</span></p>
+  <p class="pie"><span id="version">V1.58</span></p>
 </main>
 
 <script>
@@ -432,6 +433,7 @@ function pintar(){
   const tab=$('tab'), cf=conflictos(), selv=P.sel>=0?P.cur[P.sel]:0;
   const mk=P.sel<0?(P.marca||0):(P.cur[P.sel]||0), mF=new Set(), mC=new Set(), mB=new Set();
   if(mk) for(let j=0;j<81;j++) if(P.cur[j]===mk){ mF.add(fila(j)); mC.add(colu(j)); mB.add(caja(j)); }
+  const cuenta=new Array(10).fill(0); P.cur.forEach(v=>{ if(v) cuenta[v]++; });
   let h='';
   for(let i=0;i<81;i++){
     const r=fila(i), c=colu(i), v=P.cur[i];
@@ -440,6 +442,7 @@ function pintar(){
     if(P.sel>=0&&!mk&&pares(P.sel,i)) k+=' rel';
     if(mk&&(v||mF.has(r)||mC.has(c)||mB.has(caja(i)))) k+=' mk';
     if(mk&&v===mk) k+=' same';
+    if(v&&cuenta[v]>=9&&!cf.has(i)) k+=' comp';
     if(cf.has(i)) k+=' cf';
     if(P.mal.includes(i)) k+=' mal';
     if(i===P.sel) k+=' sel';
@@ -449,7 +452,6 @@ function pintar(){
     h+='<button class="'+k+'" data-i="'+i+'" role="gridcell" aria-label="Fila '+(r+1)+', columna '+(c+1)+(v?', '+v:'')+'">'+inner+'</button>';
   }
   tab.innerHTML=h;
-  const cuenta=new Array(10).fill(0); P.cur.forEach(v=>{ if(v) cuenta[v]++; });
   const enCasilla=d=>P.sel>=0&&P.cur[P.sel]===d;
   const padC=$('padC'); padC.innerHTML='';
   for(let d=1;d<=9;d++){ const b=document.createElement('button'); b.textContent=d; b.dataset.d=d; b.setAttribute('aria-label','Candidato '+d);
@@ -514,7 +516,7 @@ sincronizar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.57', ROOT='../';
+  var BUILD='V1.58', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

@@ -32,12 +32,12 @@ button.on{border-color:var(--ac)}
 .pad.mini button small{display:none}
 .pad.mini button.on{color:var(--pos);border-color:var(--pos)}
 .pad.val{margin:10px 0 0}
-.pad.val button{min-height:62px;font-size:1.7rem;font-weight:600;background:var(--s2);color:var(--tx);border:1px solid var(--bd);border-bottom:4px solid var(--ac);border-radius:12px}
-.pad.val button.on{border-color:var(--tx);border-bottom-color:var(--ac)}
+.pad.val button{min-height:50px;font-size:1.5rem;font-weight:600;background:var(--s2);color:var(--usr);border:1px solid var(--bd);border-bottom:4px solid var(--usr);border-radius:12px}
+.pad.val button.on{border-color:var(--usr)}
 .pad.val button:disabled{opacity:.3}
-#pad button{border-radius:3px;background:transparent;border:1px solid color-mix(in srgb,var(--usr) 45%,transparent);color:var(--usr);min-height:68px;font-weight:400}
-#pad button small{color:var(--mut);font-size:.7rem;font-weight:500}
-#pad button.on{background:var(--s2);border:2px solid var(--usr)}
+#pad button{border-radius:3px;background:transparent;border:1px solid var(--bd2);color:var(--tx);min-height:88px;font-size:2.3rem;font-weight:500}
+#pad button small{color:var(--mut);font-size:.75rem;font-weight:500}
+#pad button.on{background:var(--s2);border:2px solid var(--ac)}
 .pad.mini button{border-radius:999px;border-style:dashed;min-height:40px;font-size:1.1rem}
 .pad.pausa,.acc.pausa{opacity:.45;pointer-events:none}
 #tab{display:grid;grid-template-columns:repeat(9,1fr);width:100%;aspect-ratio:1;border:2px solid var(--bd2);border-radius:6px;overflow:hidden;background:var(--s1)}
@@ -127,7 +127,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <h2>Mis partidas</h2>
   <div class="lista" id="lista"></div>
 
-  <p class="pie"><span id="version">V1.66</span></p>
+  <p class="pie"><span id="version">V1.67</span></p>
 </main>
 
 <script>
@@ -566,7 +566,7 @@ sincronizar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.66', ROOT='../';
+  var BUILD='V1.67', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

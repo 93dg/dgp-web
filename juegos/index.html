@@ -31,7 +31,7 @@ button.on{border-color:var(--ac)}
 .pad.mini button{min-height:50px;font-size:1.3rem;font-weight:500;color:var(--mut)}
 .pad.mini button small{display:none}
 .pad.mini button.on{color:var(--pos);border-color:var(--pos)}
-.pad.val{margin:0 0 10px}
+.pad.val{margin:10px 0 0}
 .pad.val button{min-height:58px;font-size:1.6rem;font-weight:600}
 .pad.val button:disabled{opacity:.35}
 .pad.pausa,.acc.pausa{opacity:.45;pointer-events:none}
@@ -90,7 +90,6 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
 
   <div class="top"><b id="nom"></b><span class="rl"><span id="reloj">0:00</span><button id="bPausa" aria-label="Pausar" title="Pausar"></button></span></div>
   <div class="rec" id="rec"></div>
-  <div class="pad val" id="padV" aria-label="Poner número definitivo"></div>
   <div id="tab" role="grid" aria-label="Tablero de sudoku"></div>
   <div id="msg" role="status" aria-live="polite"></div>
   <div id="fin" hidden>
@@ -101,6 +100,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
     <button id="bOtra">Intentarlo de nuevo</button>
   </div>
 
+  <div class="pad val" id="padV" aria-label="Poner número definitivo"></div>
   <div class="pad mini" id="padC" aria-label="Candidatos"></div>
   <div class="pad" id="pad"></div>
   <div class="acc">
@@ -122,7 +122,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <h2>Mis partidas</h2>
   <div class="lista" id="lista"></div>
 
-  <p class="pie"><span id="version">V1.63</span></p>
+  <p class="pie"><span id="version">V1.64</span></p>
 </main>
 
 <script>
@@ -561,7 +561,7 @@ sincronizar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.63', ROOT='../';
+  var BUILD='V1.64', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

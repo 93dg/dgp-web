@@ -50,6 +50,15 @@ button.on{border-color:var(--ac)}
 .nt{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);width:100%;height:100%;padding:1px;color:var(--mut);font-size:clamp(10px,3.1vw,14px);font-weight:600}
 .nt i{font-style:normal;display:flex;align-items:center;justify-content:center}
 .nt i.h{color:var(--pos);font-weight:800}
+#reloj.pasa{color:var(--neg)}
+.rec{min-height:1.3em;margin:-2px 0 8px;font-size:.85rem;color:var(--mut);font-variant-numeric:tabular-nums}
+.rec b{color:var(--ac);font-weight:600;letter-spacing:.08em}
+#fin[hidden],#finForm[hidden]{display:none!important}
+#fin{display:grid;gap:8px;margin:8px 0 4px}
+#finForm{display:flex;gap:8px}
+#finForm input{font:inherit;font-size:16px;width:92px;min-height:48px;text-align:center;text-transform:uppercase;letter-spacing:.2em;font-weight:600;color:var(--tx);background:var(--s1);border:1px solid var(--bd);border-radius:10px;-webkit-user-select:text;user-select:text}
+#finForm input:focus{outline:none;border-color:var(--ac)}
+#finForm button{flex:1}
 #msg{min-height:1.5em;margin:10px 0 2px;font-size:.9rem;color:var(--mut)}
 #msg.ok{color:var(--pos)}#msg.err{color:var(--neg)}
 .pad{display:grid;grid-template-columns:repeat(9,1fr);gap:4px;margin:10px 0}
@@ -79,8 +88,16 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <h1>Juegos</h1>
 
   <div class="top"><b id="nom"></b><span class="rl"><span id="reloj">0:00</span><button id="bPausa" aria-label="Pausar" title="Pausar"></button></span></div>
+  <div class="rec" id="rec"></div>
   <div id="tab" role="grid" aria-label="Tablero de sudoku"></div>
   <div id="msg" role="status" aria-live="polite"></div>
+  <div id="fin" hidden>
+    <div id="finForm">
+      <input id="ini" maxlength="3" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="ABC" aria-label="Tus tres iniciales">
+      <button id="bGuardaMarca">Guardar marca</button>
+    </div>
+    <button id="bOtra">Intentarlo de nuevo</button>
+  </div>
 
   <div class="pad mini" id="padC" aria-label="Candidatos"></div>
   <div class="pad" id="pad"></div>
@@ -102,7 +119,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <h2>Mis partidas</h2>
   <div class="lista" id="lista"></div>
 
-  <p class="pie"><span id="version">V1.59</span></p>
+  <p class="pie"><span id="version">V1.60</span></p>
 </main>
 
 <script>
@@ -342,16 +359,17 @@ function nuevo(nivel){
 function limpiarViejas(){
   const ids=Object.keys(S.partidas);
   if(ids.length<=20) return;
-  const lista=ids.map(i=>S.partidas[i]).filter(p=>p.id!=='mio'&&p.id!==S.actual&&p.fin).sort((a,b)=>a.fecha-b.fecha);
+  const lista=ids.map(i=>S.partidas[i]).filter(p=>p.id!=='mio'&&p.id!==S.actual&&p.fin&&!p.rec).sort((a,b)=>a.fecha-b.fecha);
   while(Object.keys(S.partidas).length>20&&lista.length){ delete S.partidas[lista.shift().id]; }
 }
 
 /* ---------- tiempo ---------- */
 function tiempo(){ return P.t+((P.fin||P.pausa)?0:Math.floor((Date.now()-visibleDesde)/1000)); }
 function fmtT(s){ const m=Math.floor(s/60); return m+':'+String(s%60).padStart(2,'0'); }
+function pintaReloj(){ const t=tiempo(); $('reloj').textContent=fmtT(t); $('reloj').classList.toggle('pasa',!!(P.rec&&!P.fin&&t>P.rec.t)); }
 function arrancarReloj(){
-  clearInterval(timer); $('reloj').textContent=fmtT(tiempo());
-  timer=setInterval(()=>{ if(document.hidden) return; $('reloj').textContent=fmtT(tiempo()); if(Date.now()-ultSave>5000){ cierraTiempo(); } },1000);
+  clearInterval(timer); pintaReloj();
+  timer=setInterval(()=>{ if(document.hidden) return; pintaReloj(); if(Date.now()-ultSave>5000){ cierraTiempo(); } },1000);
 }
 function cierraTiempo(){ if(!P||P.fin||P.pausa){ return; } P.t=tiempo(); visibleDesde=Date.now(); ultSave=Date.now(); guardar(true); }
 document.addEventListener('visibilitychange',()=>{ if(document.hidden){ cierraTiempo(); if(S.ts) subir(true); } else{ visibleDesde=Date.now(); sincronizar(); } });
@@ -375,7 +393,8 @@ function aplicar(cambios){
 function comprobarFin(){
   if(P.fin) return;
   if(P.cur.every(v=>v)&&!P.cur.every((v,i)=>v===P.sol[i])){ P.mal=[]; P.cur.forEach((v,i)=>{ if(v!==P.sol[i]) P.mal.push(i); }); msg('El tablero está completo pero hay '+P.mal.length+(P.mal.length===1?' casilla mal, marcada en rojo.':' casillas mal, marcadas en rojo.'),'err'); return; }
-  if(P.cur.every((v,i)=>v===P.sol[i])){ P.t=tiempo(); P.fin=true; P.fecha=Date.now(); clearInterval(timer); $('reloj').textContent=fmtT(P.t); msg('Resuelto en '+fmtT(P.t)+'.','ok'); }
+  if(P.cur.every((v,i)=>v===P.sol[i])){ P.t=tiempo(); P.fin=true; P.fecha=Date.now(); clearInterval(timer); $('reloj').textContent=fmtT(P.t); $('reloj').classList.remove('pasa'); P.guardada=false;
+    msg(!P.rec?'Resuelto en '+fmtT(P.t)+'. Pon tus iniciales para guardar la marca.':P.t<P.rec.t?'Nueva mejor marca: '+fmtT(P.t)+'. Pon tus iniciales.':'Resuelto en '+fmtT(P.t)+'. La marca a batir sigue siendo '+fmtT(P.rec.t)+'.','ok'); }
 }
 function fijar(d){
   if(!P||P.sel<0||P.fin||P.pausa) return; const i=P.sel; if(esDado(i)) return;
@@ -462,6 +481,9 @@ function pintar(){
   $('bUndo').disabled=!P.undo.length||P.fin; $('bRedo').disabled=!(P.redo&&P.redo.length)||P.fin;
   $('nom').textContent=P.nombre+(P.fin?' · resuelto':P.pausa?' · en pausa':'');
   $('tab').classList.toggle('pausa',!!P.pausa); $('pad').classList.toggle('pausa',!!P.pausa); $('padC').classList.toggle('pausa',!!P.pausa); document.querySelector('.acc').classList.toggle('pausa',!!P.pausa);
+  $('rec').innerHTML=P.rec?'Marca a batir: <b>'+P.rec.ini+'</b> · '+fmtT(P.rec.t):'';
+  $('fin').hidden=!P.fin;
+  if(P.fin){ const mejora=!P.rec||P.t<P.rec.t; $('finForm').hidden=!(mejora&&!P.guardada); if(!$('ini').value) $('ini').value=S.ini||''; }
   const bp=$('bPausa'); bp.hidden=!!P.fin; bp.setAttribute('aria-label',P.pausa?'Seguir':'Pausar'); bp.title=P.pausa?'Seguir':'Pausar';
   bp.innerHTML=P.pausa?'<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>':'<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
 }
@@ -472,7 +494,7 @@ function pintarLista(){
     const it=document.createElement('div'); it.className='it';
     const b=document.createElement('button'); b.className='us'+(p.id===S.actual?' on':'');
     b.innerHTML='<b></b><small></small>'; b.firstChild.textContent=p.nombre;
-    b.lastChild.textContent=p.fin?('Resuelto en '+fmtT(p.t)):(hechas+' de '+libres+' casillas · '+fmtT(p.id===S.actual?tiempo():p.t));
+    b.lastChild.textContent=(p.fin?('Resuelto en '+fmtT(p.t)):(hechas+' de '+libres+' casillas · '+fmtT(p.id===S.actual?tiempo():p.t)))+(p.rec?' · marca '+p.rec.ini+' '+fmtT(p.rec.t):'');
     b.onclick=()=>{ if(p.id!==S.actual){ cierraTiempo(); abrir(p.id); } };
     it.appendChild(b);
     if(p.id!=='mio'){ const q=document.createElement('button'); q.className='qt'; q.textContent='Quitar'; q.onclick=()=>{ if(!confirm('¿Quitar «'+p.nombre+'»?')) return; delete S.partidas[p.id]; if(S.actual===p.id) S.actual='mio'; if(!S.partidas.mio){ const m=crearMio(); S.partidas.mio=m; } guardar(); abrir(S.actual); }; it.appendChild(q); }
@@ -490,11 +512,22 @@ $('tab').addEventListener('click',e=>{ const b=e.target.closest('.c'); if(!b) re
   pad.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b||b.disabled) return; if(largo){ largo=false; return; } poner(+b.dataset.d); });
 })();
 $('padC').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b&&!b.disabled) candidato(+b.dataset.d); });
+$('ini').addEventListener('input',e=>{ e.target.value=e.target.value.toUpperCase().replace(/[^A-ZÑ]/g,'').slice(0,3); });
+$('bGuardaMarca').onclick=()=>{
+  const ini=$('ini').value.toUpperCase().replace(/[^A-ZÑ]/g,'');
+  if(ini.length!==3){ msg('Escribe tres letras.','err'); return; }
+  if(P.rec&&P.t>=P.rec.t) return;
+  P.rec={ini,t:P.t,fecha:Date.now()}; P.guardada=true; S.ini=ini; msg('Marca guardada: '+ini+' · '+fmtT(P.t)+'.','ok'); guardar(); pintar(); pintarLista();
+};
+$('bOtra').onclick=()=>{
+  P.cur=P.given.slice(); P.notas=new Array(81).fill(0); P.t=0; P.fin=false; P.pausa=false; P.undo=[]; P.redo=[]; P.sel=-1; P.marca=0; P.mal=[]; P.guardada=false;
+  visibleDesde=Date.now(); msg(''); guardar(); pintar(); arrancarReloj(); pintarLista();
+};
 $('bUndo').onclick=deshacer; $('bRedo').onclick=rehacer;
 $('bPausa').onclick=()=>{ if(!P||P.fin) return; if(P.pausa){ P.pausa=false; visibleDesde=Date.now(); } else{ P.t=tiempo(); P.pausa=true; } $('reloj').textContent=fmtT(tiempo()); guardar(); pintar(); };
 document.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{ cierraTiempo(); nuevo(b.dataset.n); });
 document.addEventListener('keydown',e=>{
-  if(!P||e.metaKey||e.altKey) return;
+  if(!P||e.metaKey||e.altKey||(e.target&&e.target.tagName==='INPUT')) return;
   const k=e.key;
   if(e.shiftKey&&/^Digit[1-9]$/.test(e.code)){ fijar(+e.code.slice(5)); e.preventDefault(); }
   else if(/^[1-9]$/.test(k)){ poner(+k); e.preventDefault(); }
@@ -516,7 +549,7 @@ sincronizar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.59', ROOT='../';
+  var BUILD='V1.60', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

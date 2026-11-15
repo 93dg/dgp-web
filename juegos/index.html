@@ -102,6 +102,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <div class="acc">
     <button id="bUndo" aria-label="Deshacer" title="Deshacer"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
     <button id="bRedo" aria-label="Rehacer" title="Rehacer"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+    <button id="bReinicio" style="grid-column:1/-1;min-height:48px">Reiniciar</button>
   </div>
 
   <h2>Nuevo sudoku</h2>
@@ -117,7 +118,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <h2>Mis partidas</h2>
   <div class="lista" id="lista"></div>
 
-  <p class="pie"><span id="version">V1.61</span></p>
+  <p class="pie"><span id="version">V1.62</span></p>
 </main>
 
 <script>
@@ -516,6 +517,12 @@ $('bGuardaMarca').onclick=()=>{
   if(P.rec&&P.t>=P.rec.t) return;
   P.rec={ini,t:P.t,fecha:Date.now()}; P.guardada=true; S.ini=ini; msg('Marca guardada: '+ini+' · '+fmtT(P.t)+'.','ok'); guardar(); pintar(); pintarLista();
 };
+let tReinicio=0;
+$('bReinicio').onclick=()=>{
+  const b=$('bReinicio');
+  if(!tReinicio){ b.textContent='¿Seguro? Toca otra vez para borrar todo'; tReinicio=setTimeout(()=>{ tReinicio=0; b.textContent='Reiniciar'; },4000); return; }
+  clearTimeout(tReinicio); tReinicio=0; b.textContent='Reiniciar'; $('bOtra').onclick();
+};
 $('bOtra').onclick=()=>{
   P.cur=P.given.slice(); P.notas=new Array(81).fill(0); P.t=0; P.fin=false; P.pausa=false; P.undo=[]; P.redo=[]; P.sel=-1; P.marca=0; P.mal=[]; P.guardada=false;
   visibleDesde=Date.now(); msg(''); guardar(); pintar(); arrancarReloj(); pintarLista();
@@ -546,7 +553,7 @@ sincronizar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.61', ROOT='../';
+  var BUILD='V1.62', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

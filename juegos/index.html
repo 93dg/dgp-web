@@ -45,8 +45,9 @@ button.on{border-color:var(--ac)}
 #msg.ok{color:var(--pos)}#msg.err{color:var(--neg)}
 .pad{display:grid;grid-template-columns:repeat(9,1fr);gap:4px;margin:10px 0}
 .pad button{padding:0;min-height:76px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.9rem;font-weight:500;line-height:1.1;font-variant-numeric:tabular-nums}
-.pad button.hecho{opacity:.32}
-.pad button.hecho.on{opacity:.6}
+.pad button.hecho{color:var(--pos);border-color:color-mix(in srgb,var(--pos) 55%,transparent);background:color-mix(in srgb,var(--pos) 12%,var(--s1))}
+.pad button.hecho small{color:var(--pos)}
+.pad button.hecho.on{border-color:var(--ac)}
 .pad button.on{border-width:2px;border-color:var(--ac)}
 .pad button small{font-size:.72rem;color:var(--mut)}
 .acc{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0}
@@ -92,7 +93,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <h2>Mis partidas</h2>
   <div class="lista" id="lista"></div>
 
-  <p class="pie"><span id="version">V1.51</span></p>
+  <p class="pie"><span id="version">V1.52</span></p>
 </main>
 
 <script>
@@ -493,7 +494,7 @@ sincronizar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.51', ROOT='../';
+  var BUILD='V1.52', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

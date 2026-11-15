@@ -81,15 +81,18 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
 
   <h2>Nuevo sudoku</h2>
   <div class="niv">
+    <button data-n="muyfacil">Muy fácil</button>
     <button data-n="facil">Fácil</button>
     <button data-n="medio">Medio</button>
     <button data-n="dificil">Difícil</button>
+    <button data-n="experto">Experto</button>
+    <button data-n="maestro">Maestro</button>
   </div>
 
   <h2>Mis partidas</h2>
   <div class="lista" id="lista"></div>
 
-  <p class="pie"><span id="version">V1.49</span></p>
+  <p class="pie"><span id="version">V1.50</span></p>
 </main>
 
 <script>
@@ -157,10 +160,86 @@ function soloSimples(g,soloDesnudos){
   }
   return a.every(v=>v);
 }
-const OBJ={facil:[38,42],medio:[30,34],dificil:[22,27]};
+/* Experto: ni siquiera bastan las técnicas intermedias (parejas, tríos, apuntadores y reducción caja-línea). */
+function conTecnicas(g,avanzado){
+  const v=new Array(81).fill(0), c=new Array(81).fill(511), U=[];
+  for(let r=0;r<9;r++) U.push([...Array(9).keys()].map(k=>r*9+k)); for(let k=0;k<9;k++) U.push([...Array(9).keys()].map(r=>r*9+k));
+  for(let br=0;br<3;br++) for(let bc=0;bc<3;bc++){ const u=[]; for(let r=0;r<3;r++) for(let k=0;k<3;k++) u.push((br*3+r)*9+bc*3+k); U.push(u); }
+  const poner=(i,d)=>{ v[i]=d; c[i]=0; const b=1<<(d-1); for(let j=0;j<81;j++) if(pares(i,j)) c[j]&=~b; };
+  for(let i=0;i<81;i++) if(g[i]) poner(i,g[i]);
+  const quitar=(i,m)=>{ if(c[i]&m){ c[i]&=~m; return true; } return false; };
+  let cambio=true;
+  while(cambio){
+    cambio=false;
+    for(let i=0;i<81;i++){ if(!v[i]&&!c[i]) return false; if(!v[i]&&!(c[i]&(c[i]-1))){ poner(i,Math.log2(c[i])+1); cambio=true; } }
+    if(cambio) continue;
+    for(const u of U) for(let d=0;d<9;d++){
+      if(u.some(i=>v[i]===d+1)) continue;
+      const si=u.filter(i=>!v[i]&&(c[i]&(1<<d)));
+      if(si.length===1){ poner(si[0],d+1); cambio=true; }
+    }
+    if(cambio) continue;
+    for(const u of U){
+      const li=u.filter(i=>!v[i]);
+      for(let a=0;a<li.length;a++) for(let b=a+1;b<li.length;b++){
+        const m2=c[li[a]]|c[li[b]];
+        if(pop(m2)===2) for(const i of li) if(i!==li[a]&&i!==li[b]&&quitar(i,m2)) cambio=true;
+        for(let e=b+1;e<li.length;e++){
+          const m3=m2|c[li[e]];
+          if(pop(m3)===3) for(const i of li) if(i!==li[a]&&i!==li[b]&&i!==li[e]&&quitar(i,m3)) cambio=true;
+        }
+      }
+      for(let d1=0;d1<9;d1++) for(let d2=d1+1;d2<9;d2++){
+        const s1=li.filter(i=>c[i]&(1<<d1)), s2=li.filter(i=>c[i]&(1<<d2));
+        if(s1.length===2&&s2.length===2&&s1[0]===s2[0]&&s1[1]===s2[1]){ const m=(1<<d1)|(1<<d2); for(const i of s1) if(c[i]&~m){ c[i]&=m; cambio=true; } }
+      }
+    }
+    for(let bi=18;bi<27;bi++) for(let d=0;d<9;d++){
+      const si=U[bi].filter(i=>!v[i]&&(c[i]&(1<<d)));
+      if(si.length>1){
+        if(si.every(i=>fila(i)===fila(si[0]))) for(let k=0;k<9;k++){ const j=fila(si[0])*9+k; if(caja(j)!==bi-18&&!v[j]&&quitar(j,1<<d)) cambio=true; }
+        if(si.every(i=>colu(i)===colu(si[0]))) for(let k=0;k<9;k++){ const j=k*9+colu(si[0]); if(caja(j)!==bi-18&&!v[j]&&quitar(j,1<<d)) cambio=true; }
+      }
+    }
+    for(let ui=0;ui<18;ui++) for(let d=0;d<9;d++){
+      const si=U[ui].filter(i=>!v[i]&&(c[i]&(1<<d)));
+      if(si.length>1&&si.every(i=>caja(i)===caja(si[0]))) for(let j=0;j<81;j++) if(caja(j)===caja(si[0])&&!U[ui].includes(j)&&!v[j]&&quitar(j,1<<d)) cambio=true;
+    }
+    if(cambio||!avanzado) continue;
+    /* X-Wing, Swordfish y Jellyfish (filas y columnas) */
+    for(let d=0;d<9;d++) for(const [lin,otra] of [[(k,m)=>k*9+m,(k,m)=>m*9+k],[(k,m)=>m*9+k,(k,m)=>k*9+m]]){
+      const pos=[]; for(let k=0;k<9;k++){ const ms=[]; for(let m=0;m<9;m++){ const i=lin(k,m); if(!v[i]&&(c[i]&(1<<d))) ms.push(m); } pos.push(ms); }
+      const cand=[...Array(9).keys()].filter(k=>pos[k].length>=2&&pos[k].length<=4);
+      const comb=(n,ini,act)=>{
+        if(act.length===n){
+          const un=new Set(); act.forEach(k=>pos[k].forEach(m=>un.add(m)));
+          if(un.size===n) for(const m of un) for(let k=0;k<9;k++) if(!act.includes(k)){ const i=otra(m,k); if(!v[i]&&quitar(i,1<<d)) cambio=true; }
+          return;
+        }
+        for(let t=ini;t<cand.length;t++) comb(n,t+1,act.concat(cand[t]));
+      };
+      for(let n=2;n<=4;n++) comb(n,0,[]);
+    }
+    if(cambio) continue;
+    /* XY-Wing */
+    for(let p=0;p<81;p++){
+      if(v[p]||pop(c[p])!==2) continue;
+      const ds=[]; for(let d=0;d<9;d++) if(c[p]&(1<<d)) ds.push(d);
+      const [x,y]=ds;
+      for(let a=0;a<81;a++){ if(!pares(p,a)||v[a]||pop(c[a])!==2||!(c[a]&(1<<x))||(c[a]&(1<<y))) continue;
+        const z=Math.log2(c[a]&~(1<<x));
+        for(let b=0;b<81;b++){ if(b===a||!pares(p,b)||v[b]||c[b]!==((1<<y)|(1<<z))) continue;
+          for(let j=0;j<81;j++) if(j!==a&&j!==b&&!v[j]&&pares(j,a)&&pares(j,b)&&quitar(j,1<<z)) cambio=true;
+        }
+      }
+    }
+  }
+  return v.every(x=>x);
+}
+const OBJ={muyfacil:[46,50],facil:[38,42],medio:[30,34],dificil:[24,27],experto:[22,25],maestro:[20,24]};
 function generar(nivel){
-  let mejor=null;
-  for(let intento=0;intento<60;intento++){
+  let mejor=null; const max=nivel==='maestro'?400:100, t0=Date.now();
+  for(let intento=0;intento<max&&Date.now()-t0<14000;intento++){
     const sol=resolver(new Array(81).fill(0),1,true).sol, g=sol.slice();
     const orden=[...Array(81).keys()]; for(let i=80;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [orden[i],orden[j]]=[orden[j],orden[i]]; }
     let dados=81; const meta=OBJ[nivel][0];
@@ -169,18 +248,26 @@ function generar(nivel){
       const v=g[i]; g[i]=0;
       if(resolver(g,2,false).n!==1) g[i]=v; else dados--;
     }
-    mejor={given:g,sol};
-    const desn=soloSimples(g,true), simp=soloSimples(g,false);
-    if(nivel==='facil'&&desn) return mejor;
-    if(nivel==='medio'&&!desn&&simp) return mejor;
-    if(nivel==='dificil'&&!simp) return mejor;
+    const cand={given:g,sol};
+    const desn=soloSimples(g,true);
+    if(nivel==='muyfacil'||nivel==='facil'){ if(desn) return cand; mejor=cand; continue; }
+    const simp=soloSimples(g,false);
+    if(nivel==='medio'){ if(!desn&&simp) return cand; mejor=cand; continue; }
+    if(simp){ continue; }
+    const tec=conTecnicas(g,false);
+    if(nivel==='dificil'){ if(tec) return cand; if(!mejor) mejor=cand; continue; }
+    if(tec){ continue; }
+    const ava=conTecnicas(g,true);
+    if(nivel==='experto'){ if(ava) return cand; if(!mejor) mejor=cand; continue; }
+    if(!ava) return cand;
+    if(!mejor) mejor=cand;
   }
-  return mejor;
+  return mejor||{given:new Array(81).fill(0),sol:null};
 }
 
 /* ---------- estado y guardado ---------- */
 let S=null, P=null, notasModo=false, timer=null, ultSave=0, visibleDesde=Date.now();
-const NOMBRES={facil:'Fácil',medio:'Medio',dificil:'Difícil',mio:'El mío'};
+const NOMBRES={muyfacil:'Muy fácil',facil:'Fácil',medio:'Medio',dificil:'Difícil',experto:'Experto',maestro:'Maestro',mio:'El mío'};
 function cargar(){ try{ S=JSON.parse(localStorage.getItem(KEY)||'null'); }catch(e){ S=null; } }
 const SB_URL='https://qtnqupcfgooazjzkpmtx.supabase.co/rest/v1/ui_estado', SB_KEY='sb_publishable_brvDWgh8e_IrS8NWDvt7xg_rbL2dqcd', SB_H={apikey:SB_KEY,Authorization:'Bearer '+SB_KEY};
 let tSub=0;
@@ -406,7 +493,7 @@ sincronizar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.49', ROOT='../';
+  var BUILD='V1.50', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

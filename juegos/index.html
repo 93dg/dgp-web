@@ -23,7 +23,11 @@ button:disabled{opacity:.4;cursor:default}
 button.on{border-color:var(--ac)}
 .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 8px}
 .top b{font-weight:600}
-.top span{color:var(--mut);font-variant-numeric:tabular-nums}
+.top #reloj{color:var(--mut);font-variant-numeric:tabular-nums;font-size:1.05rem}
+.rl{display:flex;align-items:center;gap:8px}
+#bPausa{min-height:44px;width:44px;padding:0;display:flex;align-items:center;justify-content:center}
+#tab.pausa{filter:blur(14px);opacity:.5;pointer-events:none}
+.pad.pausa,.acc.pausa{opacity:.45;pointer-events:none}
 #tab{display:grid;grid-template-columns:repeat(9,1fr);width:100%;aspect-ratio:1;border:2px solid var(--bd2);border-radius:6px;overflow:hidden;background:var(--s1)}
 .c{position:relative;min-height:0;padding:0;border:0;border-radius:0;background:var(--s1);border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:clamp(20px,6.6vw,31px);font-variant-numeric:tabular-nums;line-height:1}
 .c.r2{border-right:2px solid var(--bd2)}
@@ -70,7 +74,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <a class="back" href="../">Volver a DGP</a>
   <h1>Juegos</h1>
 
-  <div class="top"><b id="nom"></b><span id="reloj">0:00</span></div>
+  <div class="top"><b id="nom"></b><span class="rl"><span id="reloj">0:00</span><button id="bPausa" aria-label="Pausar" title="Pausar"></button></span></div>
   <div id="tab" role="grid" aria-label="Tablero de sudoku"></div>
   <div id="msg" role="status" aria-live="polite"></div>
 
@@ -93,7 +97,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <h2>Mis partidas</h2>
   <div class="lista" id="lista"></div>
 
-  <p class="pie"><span id="version">V1.52</span></p>
+  <p class="pie"><span id="version">V1.53</span></p>
 </main>
 
 <script>
@@ -339,13 +343,13 @@ function limpiarViejas(){
 }
 
 /* ---------- tiempo ---------- */
-function tiempo(){ return P.t+(P.fin?0:Math.floor((Date.now()-visibleDesde)/1000)); }
+function tiempo(){ return P.t+((P.fin||P.pausa)?0:Math.floor((Date.now()-visibleDesde)/1000)); }
 function fmtT(s){ const m=Math.floor(s/60); return m+':'+String(s%60).padStart(2,'0'); }
 function arrancarReloj(){
   clearInterval(timer); $('reloj').textContent=fmtT(tiempo());
   timer=setInterval(()=>{ if(document.hidden) return; $('reloj').textContent=fmtT(tiempo()); if(Date.now()-ultSave>5000){ cierraTiempo(); } },1000);
 }
-function cierraTiempo(){ if(!P||P.fin){ return; } P.t=tiempo(); visibleDesde=Date.now(); ultSave=Date.now(); guardar(true); }
+function cierraTiempo(){ if(!P||P.fin||P.pausa){ return; } P.t=tiempo(); visibleDesde=Date.now(); ultSave=Date.now(); guardar(true); }
 document.addEventListener('visibilitychange',()=>{ if(document.hidden){ cierraTiempo(); if(S.ts) subir(true); } else{ visibleDesde=Date.now(); sincronizar(); } });
 window.addEventListener('pagehide',()=>{ cierraTiempo(); if(S.ts) subir(true); });
 
@@ -370,11 +374,12 @@ function comprobarFin(){
   if(P.cur.every((v,i)=>v===P.sol[i])){ P.t=tiempo(); P.fin=true; P.fecha=Date.now(); clearInterval(timer); $('reloj').textContent=fmtT(P.t); msg('Resuelto en '+fmtT(P.t)+'.','ok'); }
 }
 function fijar(d){
-  if(!P||P.sel<0||P.fin) return; const i=P.sel; if(esDado(i)) return;
+  if(!P||P.sel<0||P.fin||P.pausa) return; const i=P.sel; if(esDado(i)) return;
   aplicar([{i,cur:d,nota:0}]);
 }
 /* Un toque: número si la casilla está vacía; si ya hay otro número o candidatos, se convierten en candidatos. Tocar el mismo número lo quita. */
 function poner(d){
+  if(P&&P.pausa) return;
   if(P&&!P.fin&&P.sel<0){ P.marca=(P.marca===d)?0:d; pintar(); return; }
   if(!P||P.sel<0||P.fin) return; const i=P.sel; if(esDado(i)) return;
   const v=P.cur[i], b=1<<(d-1);
@@ -384,7 +389,7 @@ function poner(d){
 }
 function borrar(){ if(!P||P.sel<0||P.fin||esDado(P.sel)) return; const i=P.sel; if(!P.cur[i]&&!P.notas[i]) return; aplicar([{i,cur:0,nota:0}]); }
 function paso(de,a){
-  if(!P||!P[de]||!P[de].length||P.fin) return;
+  if(!P||!P[de]||!P[de].length||P.fin||P.pausa) return;
   const u=P[de].pop(), inv=[];
   for(const [i,c,n] of u){ inv.push([i,P.cur[i],P.notas[i]]); P.cur[i]=c; P.notas[i]=n; }
   P[a]=P[a]||[]; P[a].push(inv); P.mal=[]; msg(''); guardar(); pintar(); pintarLista();
@@ -443,7 +448,10 @@ function pintar(){
   const pad=$('pad'); pad.innerHTML='';
   for(let d=1;d<=9;d++){ const b=document.createElement('button'); b.innerHTML=d+'<small>'+(9-cuenta[d])+'</small>'; b.dataset.d=d; b.disabled=P.fin||(cuenta[d]>=9&&P.sel>=0&&!enCasilla(d)); if(enCasilla(d)||(P.sel<0&&P.marca===d)){ b.classList.add('on'); b.setAttribute('aria-pressed','true'); } if(cuenta[d]>=9) b.classList.add('hecho'); pad.appendChild(b); }
   $('bUndo').disabled=!P.undo.length||P.fin; $('bRedo').disabled=!(P.redo&&P.redo.length)||P.fin;
-  $('nom').textContent=P.nombre+(P.fin?' · resuelto':'');
+  $('nom').textContent=P.nombre+(P.fin?' · resuelto':P.pausa?' · en pausa':'');
+  $('tab').classList.toggle('pausa',!!P.pausa); $('pad').classList.toggle('pausa',!!P.pausa); document.querySelector('.acc').classList.toggle('pausa',!!P.pausa);
+  const bp=$('bPausa'); bp.hidden=!!P.fin; bp.setAttribute('aria-label',P.pausa?'Seguir':'Pausar'); bp.title=P.pausa?'Seguir':'Pausar';
+  bp.innerHTML=P.pausa?'<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>':'<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
 }
 function pintarLista(){
   const l=$('lista'); l.innerHTML='';
@@ -470,6 +478,7 @@ $('tab').addEventListener('click',e=>{ const b=e.target.closest('.c'); if(!b) re
   pad.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b||b.disabled) return; if(largo){ largo=false; return; } poner(+b.dataset.d); });
 })();
 $('bUndo').onclick=deshacer; $('bRedo').onclick=rehacer;
+$('bPausa').onclick=()=>{ if(!P||P.fin) return; if(P.pausa){ P.pausa=false; visibleDesde=Date.now(); } else{ P.t=tiempo(); P.pausa=true; } $('reloj').textContent=fmtT(tiempo()); guardar(); pintar(); };
 document.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{ cierraTiempo(); nuevo(b.dataset.n); });
 document.addEventListener('keydown',e=>{
   if(!P||e.metaKey||e.altKey) return;
@@ -494,7 +503,7 @@ sincronizar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.52', ROOT='../';
+  var BUILD='V1.53', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

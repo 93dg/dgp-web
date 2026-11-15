@@ -31,6 +31,9 @@ button.on{border-color:var(--ac)}
 .pad.mini button{min-height:50px;font-size:1.3rem;font-weight:500;color:var(--mut)}
 .pad.mini button small{display:none}
 .pad.mini button.on{color:var(--pos);border-color:var(--pos)}
+.pad.val{margin:0 0 10px}
+.pad.val button{min-height:58px;font-size:1.6rem;font-weight:600}
+.pad.val button:disabled{opacity:.35}
 .pad.pausa,.acc.pausa{opacity:.45;pointer-events:none}
 #tab{display:grid;grid-template-columns:repeat(9,1fr);width:100%;aspect-ratio:1;border:2px solid var(--bd2);border-radius:6px;overflow:hidden;background:var(--s1)}
 .c{position:relative;min-height:0;padding:0;border:0;border-radius:0;background:var(--s1);border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:clamp(20px,6.6vw,31px);font-variant-numeric:tabular-nums;line-height:1}
@@ -87,6 +90,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
 
   <div class="top"><b id="nom"></b><span class="rl"><span id="reloj">0:00</span><button id="bPausa" aria-label="Pausar" title="Pausar"></button></span></div>
   <div class="rec" id="rec"></div>
+  <div class="pad val" id="padV" aria-label="Poner número definitivo"></div>
   <div id="tab" role="grid" aria-label="Tablero de sudoku"></div>
   <div id="msg" role="status" aria-live="polite"></div>
   <div id="fin" hidden>
@@ -118,7 +122,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <h2>Mis partidas</h2>
   <div class="lista" id="lista"></div>
 
-  <p class="pie"><span id="version">V1.62</span></p>
+  <p class="pie"><span id="version">V1.63</span></p>
 </main>
 
 <script>
@@ -401,7 +405,7 @@ function fijar(d){
 }
 function candidato(d){
   if(!P||P.fin||P.pausa) return;
-  if(P.sel<0){ P.marca=(P.marca===d)?0:d; pintar(); return; }
+  if(P.sel<0){ marcar(d); return; }
   const i=P.sel; if(esDado(i)||P.cur[i]) return;
   aplicar([{i,cur:0,nota:P.notas[i]^(1<<(d-1))}]);
 }
@@ -412,6 +416,11 @@ function poner(d){
   if(!P||P.sel<0||P.fin) return; const i=P.sel; if(esDado(i)) return;
   if(P.cur[i]===d) aplicar([{i,cur:0,nota:0}]); else fijar(d);
 }
+function ponerV(d){
+  if(!P||P.pausa||P.fin||P.sel<0) return; const i=P.sel; if(esDado(i)) return;
+  if(P.cur[i]===d) aplicar([{i,cur:0,nota:0}]); else fijar(d);
+}
+function marcar(d){ if(!P||P.pausa) return; P.marca=(P.marca===d)?0:d; guardar(); pintar(); }
 function borrar(){ if(!P||P.sel<0||P.fin||esDado(P.sel)) return; const i=P.sel; if(!P.cur[i]&&!P.notas[i]) return; aplicar([{i,cur:0,nota:0}]); }
 function paso(de,a){
   if(!P||!P[de]||!P[de].length||P.fin||P.pausa) return;
@@ -449,7 +458,7 @@ function msg(t,c){ const m=$('msg'); m.textContent=t||''; m.className=c||''; }
 /* ---------- pintado ---------- */
 function pintar(){
   const tab=$('tab'), cf=conflictos(), selv=P.sel>=0?P.cur[P.sel]:0;
-  const mk=P.sel<0?(P.marca||0):(P.cur[P.sel]||0), mF=new Set(), mC=new Set(), mB=new Set();
+  const mk=P.marca||(P.sel>=0?(P.cur[P.sel]||0):0), mF=new Set(), mC=new Set(), mB=new Set();
   if(mk) for(let j=0;j<81;j++) if(P.cur[j]===mk){ mF.add(fila(j)); mC.add(colu(j)); mB.add(caja(j)); }
   const cuenta=new Array(10).fill(0); P.cur.forEach(v=>{ if(v) cuenta[v]++; });
   let h='';
@@ -474,11 +483,15 @@ function pintar(){
   for(let d=1;d<=9;d++){ const b=document.createElement('button'); b.textContent=d; b.dataset.d=d; b.setAttribute('aria-label','Candidato '+d);
     const ent=P.sel>=0&&!P.cur[P.sel]&&(P.notas[P.sel]&(1<<(d-1)));
     b.disabled=P.fin||(P.sel>=0&&!!P.cur[P.sel]); if(ent||(P.sel<0&&P.marca===d)) b.classList.add('on'); if(cuenta[d]>=9) b.classList.add('hecho'); padC.appendChild(b); }
+  const padV=$('padV'); padV.innerHTML='';
+  const selOk=P.sel>=0&&!esDado(P.sel)&&!P.fin;
+  for(let d=1;d<=9;d++){ const b=document.createElement('button'); b.textContent=d; b.dataset.d=d; b.setAttribute('aria-label','Poner '+d);
+    b.disabled=!selOk||(cuenta[d]>=9&&!enCasilla(d)); if(enCasilla(d)) b.classList.add('on'); padV.appendChild(b); }
   const pad=$('pad'); pad.innerHTML='';
-  for(let d=1;d<=9;d++){ const b=document.createElement('button'); b.innerHTML=d+'<small>'+(9-cuenta[d])+'</small>'; b.dataset.d=d; b.disabled=P.fin||(cuenta[d]>=9&&P.sel>=0&&!enCasilla(d)); if(enCasilla(d)||(P.sel<0&&P.marca===d)){ b.classList.add('on'); b.setAttribute('aria-pressed','true'); } if(cuenta[d]>=9) b.classList.add('hecho'); pad.appendChild(b); }
+  for(let d=1;d<=9;d++){ const b=document.createElement('button'); b.innerHTML=d+'<small>'+(9-cuenta[d])+'</small>'; b.dataset.d=d; b.disabled=false; if(P.marca===d){ b.classList.add('on'); b.setAttribute('aria-pressed','true'); } if(cuenta[d]>=9) b.classList.add('hecho'); pad.appendChild(b); }
   $('bUndo').disabled=!P.undo.length||P.fin; $('bRedo').disabled=!(P.redo&&P.redo.length)||P.fin;
   $('nom').textContent=P.nombre+(P.fin?' · resuelto':P.pausa?' · en pausa':'');
-  $('tab').classList.toggle('pausa',!!P.pausa); $('pad').classList.toggle('pausa',!!P.pausa); $('padC').classList.toggle('pausa',!!P.pausa); document.querySelector('.acc').classList.toggle('pausa',!!P.pausa);
+  $('tab').classList.toggle('pausa',!!P.pausa); $('pad').classList.toggle('pausa',!!P.pausa); $('padV').classList.toggle('pausa',!!P.pausa); $('padC').classList.toggle('pausa',!!P.pausa); document.querySelector('.acc').classList.toggle('pausa',!!P.pausa);
   $('rec').innerHTML=P.rec?'Marca a batir: <b>'+P.rec.ini+'</b> · '+fmtT(P.rec.t):'';
   $('fin').hidden=!P.fin;
   if(P.fin){ const mejora=!P.rec||P.t<P.rec.t; $('finForm').hidden=!(mejora&&!P.guardada); if(!$('ini').value) $('ini').value=S.ini||''; }
@@ -501,14 +514,9 @@ function pintarLista(){
 }
 
 /* ---------- eventos ---------- */
-$('tab').addEventListener('click',e=>{ const b=e.target.closest('.c'); if(!b) return; const i=+b.dataset.i; P.sel=(P.sel===i)?-1:i; P.marca=0; guardar(); pintar(); });
-(function(){
-  const pad=$('pad'); let t=null, largo=false;
-  pad.addEventListener('pointerdown',e=>{ const b=e.target.closest('button'); if(!b||b.disabled) return; largo=false; clearTimeout(t); t=setTimeout(()=>{ largo=true; fijar(+b.dataset.d); if(navigator.vibrate) try{ navigator.vibrate(15); }catch(x){} },450); });
-  ['pointerup','pointercancel','pointerleave'].forEach(ev=>pad.addEventListener(ev,()=>clearTimeout(t)));
-  pad.addEventListener('contextmenu',e=>e.preventDefault());
-  pad.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b||b.disabled) return; if(largo){ largo=false; return; } poner(+b.dataset.d); });
-})();
+$('tab').addEventListener('click',e=>{ const b=e.target.closest('.c'); if(!b) return; const i=+b.dataset.i; P.sel=(P.sel===i)?-1:i; guardar(); pintar(); });
+$('pad').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b&&!b.disabled) marcar(+b.dataset.d); });
+$('padV').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b&&!b.disabled) ponerV(+b.dataset.d); });
 $('padC').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b&&!b.disabled) candidato(+b.dataset.d); });
 $('ini').addEventListener('input',e=>{ e.target.value=e.target.value.toUpperCase().replace(/[^A-ZÑ]/g,'').slice(0,3); });
 $('bGuardaMarca').onclick=()=>{
@@ -553,7 +561,7 @@ sincronizar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.62', ROOT='../';
+  var BUILD='V1.63', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

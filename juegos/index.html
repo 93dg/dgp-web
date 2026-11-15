@@ -102,7 +102,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <h2>Mis partidas</h2>
   <div class="lista" id="lista"></div>
 
-  <p class="pie"><span id="version">V1.55</span></p>
+  <p class="pie"><span id="version">V1.56</span></p>
 </main>
 
 <script>
@@ -445,10 +445,7 @@ function pintar(){
     if(P.mal.includes(i)) k+=' mal';
     if(i===P.sel) k+=' sel';
     let inner='';
-    const nn=P.notas[i], uno=!v&&nn&&!(nn&(nn-1));
-    if(uno) k+=' u';
     if(v) inner=v;
-    else if(uno) inner=Math.log2(nn)+1;
     else if(P.notas[i]){ inner='<div class="nt">'; for(let d=1;d<=9;d++) inner+='<i'+(((mk||selv)===d)?' class="h"':'')+'>'+((P.notas[i]&(1<<(d-1)))?d:'')+'</i>'; inner+='</div>'; }
     h+='<button class="'+k+'" data-i="'+i+'" role="gridcell" aria-label="Fila '+(r+1)+', columna '+(c+1)+(v?', '+v:'')+'">'+inner+'</button>';
   }
@@ -518,7 +515,7 @@ sincronizar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.55', ROOT='../';
+  var BUILD='V1.56', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

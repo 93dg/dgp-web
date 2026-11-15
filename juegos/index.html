@@ -27,6 +27,11 @@ button.on{border-color:var(--ac)}
 .rl{display:flex;align-items:center;gap:8px}
 #bPausa{min-height:44px;width:44px;padding:0;display:flex;align-items:center;justify-content:center}
 #tab.pausa{filter:blur(14px);opacity:.5;pointer-events:none}
+.pad.mini{margin:10px 0 0}
+.pad.mini button{min-height:50px;font-size:1.3rem;font-weight:500;color:var(--mut)}
+.pad.mini button small{display:none}
+.pad.mini button.on{color:var(--pos);border-color:var(--pos)}
+.pad.mini button.hecho{color:var(--pos)}
 .pad.pausa,.acc.pausa{opacity:.45;pointer-events:none}
 #tab{display:grid;grid-template-columns:repeat(9,1fr);width:100%;aspect-ratio:1;border:2px solid var(--bd2);border-radius:6px;overflow:hidden;background:var(--s1)}
 .c{position:relative;min-height:0;padding:0;border:0;border-radius:0;background:var(--s1);border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:clamp(20px,6.6vw,31px);font-variant-numeric:tabular-nums;line-height:1}
@@ -78,6 +83,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <div id="tab" role="grid" aria-label="Tablero de sudoku"></div>
   <div id="msg" role="status" aria-live="polite"></div>
 
+  <div class="pad mini" id="padC" aria-label="Candidatos"></div>
   <div class="pad" id="pad"></div>
   <div class="acc">
     <button id="bUndo" aria-label="Deshacer" title="Deshacer"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
@@ -97,7 +103,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <h2>Mis partidas</h2>
   <div class="lista" id="lista"></div>
 
-  <p class="pie"><span id="version">V1.53</span></p>
+  <p class="pie"><span id="version">V1.54</span></p>
 </main>
 
 <script>
@@ -295,7 +301,7 @@ async function sincronizar(){
     if(!r.ok) return; const a=await r.json(), v=a[0]&&a[0].valor, ts=v&&v.ts||0;
     if(v&&v.partidas&&ts>(S.ts||0)){
       const abierta=P&&P.id;
-      S=v; Object.values(S.partidas).forEach(p=>{ p.undo=p.undo||[]; p.redo=p.redo||[]; p.mal=[]; unicos(p); });
+      S=v; Object.values(S.partidas).forEach(p=>{ p.undo=p.undo||[]; p.redo=p.redo||[]; p.mal=[]; });
       if(!S.partidas[S.actual]) S.actual=Object.keys(S.partidas)[0];
       guardarLocal(); abrir(S.actual,true);
     } else if((S.ts||0)>ts) subir(true);
@@ -314,7 +320,6 @@ function iniciar(){
   cargar();
   if(!S||!S.partidas||!Object.keys(S.partidas).length){ const m=crearMio(); S={actual:m.id,notas:false,ts:0,partidas:{[m.id]:m}}; guardar(true); }
   if(S.partidas.mio&&S.partidas.mio.notasv!==2){ notasMio(S.partidas.mio); guardar(true); }
-  Object.values(S.partidas).forEach(unicos);
   if(!S.partidas[S.actual]) S.actual=Object.keys(S.partidas)[0];
   notasModo=!!S.notas;
   abrir(S.actual,true);
@@ -377,15 +382,18 @@ function fijar(d){
   if(!P||P.sel<0||P.fin||P.pausa) return; const i=P.sel; if(esDado(i)) return;
   aplicar([{i,cur:d,nota:0}]);
 }
-/* Un toque: número si la casilla está vacía; si ya hay otro número o candidatos, se convierten en candidatos. Tocar el mismo número lo quita. */
+function candidato(d){
+  if(!P||P.fin||P.pausa) return;
+  if(P.sel<0){ P.marca=(P.marca===d)?0:d; pintar(); return; }
+  const i=P.sel; if(esDado(i)||P.cur[i]) return;
+  aplicar([{i,cur:0,nota:P.notas[i]^(1<<(d-1))}]);
+}
+/* Panel grande: pone el número (sustituye lo que hubiera). Tocar el mismo número lo quita. Los candidatos van en la fila pequeña. */
 function poner(d){
   if(P&&P.pausa) return;
   if(P&&!P.fin&&P.sel<0){ P.marca=(P.marca===d)?0:d; pintar(); return; }
   if(!P||P.sel<0||P.fin) return; const i=P.sel; if(esDado(i)) return;
-  const v=P.cur[i], b=1<<(d-1);
-  if(v){ if(v===d) aplicar([{i,cur:0,nota:0}]); else aplicar([{i,cur:0,nota:(1<<(v-1))|b}]); return; }
-  if(P.notas[i]){ const n=P.notas[i]^b; if(n&&!(n&(n-1))) fijar(Math.log2(n)+1); else aplicar([{i,cur:0,nota:n}]); return; }
-  fijar(d);
+  if(P.cur[i]===d) aplicar([{i,cur:0,nota:0}]); else fijar(d);
 }
 function borrar(){ if(!P||P.sel<0||P.fin||esDado(P.sel)) return; const i=P.sel; if(!P.cur[i]&&!P.notas[i]) return; aplicar([{i,cur:0,nota:0}]); }
 function paso(de,a){
@@ -438,18 +446,25 @@ function pintar(){
     if(P.mal.includes(i)) k+=' mal';
     if(i===P.sel) k+=' sel';
     let inner='';
+    const nn=P.notas[i], uno=!v&&nn&&!(nn&(nn-1));
+    if(uno) k+=' u';
     if(v) inner=v;
+    else if(uno) inner=Math.log2(nn)+1;
     else if(P.notas[i]){ inner='<div class="nt">'; for(let d=1;d<=9;d++) inner+='<i'+(((mk||selv)===d)?' class="h"':'')+'>'+((P.notas[i]&(1<<(d-1)))?d:'')+'</i>'; inner+='</div>'; }
     h+='<button class="'+k+'" data-i="'+i+'" role="gridcell" aria-label="Fila '+(r+1)+', columna '+(c+1)+(v?', '+v:'')+'">'+inner+'</button>';
   }
   tab.innerHTML=h;
   const cuenta=new Array(10).fill(0); P.cur.forEach(v=>{ if(v) cuenta[v]++; });
-  const enCasilla=d=>P.sel>=0&&(P.cur[P.sel]===d||(!P.cur[P.sel]&&(P.notas[P.sel]&(1<<(d-1)))));
+  const enCasilla=d=>P.sel>=0&&P.cur[P.sel]===d;
+  const padC=$('padC'); padC.innerHTML='';
+  for(let d=1;d<=9;d++){ const b=document.createElement('button'); b.textContent=d; b.dataset.d=d; b.setAttribute('aria-label','Candidato '+d);
+    const ent=P.sel>=0&&!P.cur[P.sel]&&(P.notas[P.sel]&(1<<(d-1)));
+    b.disabled=P.fin||(P.sel>=0&&!!P.cur[P.sel]); if(ent||(P.sel<0&&P.marca===d)) b.classList.add('on'); if(cuenta[d]>=9) b.classList.add('hecho'); padC.appendChild(b); }
   const pad=$('pad'); pad.innerHTML='';
   for(let d=1;d<=9;d++){ const b=document.createElement('button'); b.innerHTML=d+'<small>'+(9-cuenta[d])+'</small>'; b.dataset.d=d; b.disabled=P.fin||(cuenta[d]>=9&&P.sel>=0&&!enCasilla(d)); if(enCasilla(d)||(P.sel<0&&P.marca===d)){ b.classList.add('on'); b.setAttribute('aria-pressed','true'); } if(cuenta[d]>=9) b.classList.add('hecho'); pad.appendChild(b); }
   $('bUndo').disabled=!P.undo.length||P.fin; $('bRedo').disabled=!(P.redo&&P.redo.length)||P.fin;
   $('nom').textContent=P.nombre+(P.fin?' · resuelto':P.pausa?' · en pausa':'');
-  $('tab').classList.toggle('pausa',!!P.pausa); $('pad').classList.toggle('pausa',!!P.pausa); document.querySelector('.acc').classList.toggle('pausa',!!P.pausa);
+  $('tab').classList.toggle('pausa',!!P.pausa); $('pad').classList.toggle('pausa',!!P.pausa); $('padC').classList.toggle('pausa',!!P.pausa); document.querySelector('.acc').classList.toggle('pausa',!!P.pausa);
   const bp=$('bPausa'); bp.hidden=!!P.fin; bp.setAttribute('aria-label',P.pausa?'Seguir':'Pausar'); bp.title=P.pausa?'Seguir':'Pausar';
   bp.innerHTML=P.pausa?'<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>':'<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
 }
@@ -477,6 +492,7 @@ $('tab').addEventListener('click',e=>{ const b=e.target.closest('.c'); if(!b) re
   pad.addEventListener('contextmenu',e=>e.preventDefault());
   pad.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b||b.disabled) return; if(largo){ largo=false; return; } poner(+b.dataset.d); });
 })();
+$('padC').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b&&!b.disabled) candidato(+b.dataset.d); });
 $('bUndo').onclick=deshacer; $('bRedo').onclick=rehacer;
 $('bPausa').onclick=()=>{ if(!P||P.fin) return; if(P.pausa){ P.pausa=false; visibleDesde=Date.now(); } else{ P.t=tiempo(); P.pausa=true; } $('reloj').textContent=fmtT(tiempo()); guardar(); pintar(); };
 document.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{ cierraTiempo(); nuevo(b.dataset.n); });
@@ -503,7 +519,7 @@ sincronizar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.53', ROOT='../';
+  var BUILD='V1.54', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

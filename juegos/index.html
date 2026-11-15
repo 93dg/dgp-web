@@ -40,7 +40,7 @@ button.on{border-color:var(--ac)}
 .c.rel{background:var(--s2)}
 .c.g{font-weight:700}
 .c.u{color:var(--usr);font-weight:500}
-.c.comp{color:var(--pos)}
+.c.comp{color:color-mix(in srgb,var(--pos) 38%,var(--mut))}
 .c.same{color:var(--ac)}
 .c.mk{background:color-mix(in srgb,var(--ac) 13%,var(--s1))}
 .c.cab{outline:3px solid var(--ac);outline-offset:-3px;z-index:1}
@@ -102,7 +102,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <h2>Mis partidas</h2>
   <div class="lista" id="lista"></div>
 
-  <p class="pie"><span id="version">V1.58</span></p>
+  <p class="pie"><span id="version">V1.59</span></p>
 </main>
 
 <script>
@@ -516,7 +516,7 @@ sincronizar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.58', ROOT='../';
+  var BUILD='V1.59', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

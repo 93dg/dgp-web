@@ -1096,7 +1096,7 @@ if(!window.storage){
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="verBadge">V1.73</div>
+<div id="verBadge">V1.74</div>
 <div class="wrap">
   <header>
     <div class="song-bar">
@@ -1316,6 +1316,14 @@ if(!window.storage){
         <div class="uni-stats" id="p2Count"></div>
       </div>
       <div class="unified-bar">
+        <select id="p2Sort" class="uni-sort" title="Cómo ordenar los versos">
+          <option value="manual">⇅ Ordenar: manual</option>
+          <option value="parecidas">⇅ Ordenar: frases parecidas</option>
+          <option value="rima">⇅ Ordenar: por rima</option>
+          <option value="metrica">⇅ Ordenar: por métrica</option>
+          <option value="marca">⇅ Ordenar: por marca</option>
+          <option value="seccion">⇅ Ordenar: por sección</option>
+        </select>
         <div class="uni-seg" id="p2Seg">
           <button class="uni-seg-btn active" data-f="todas">Todos</button>
           <button class="uni-seg-btn" data-f="love" title="Me encanta">★</button>
@@ -1617,6 +1625,9 @@ async function loadDB(){
   renderFamilyChips();
   renderTabs();
   render();
+  const _cs = db.songs[db.currentSong] || {};
+  const _p2 = document.getElementById("p2Sort");
+  if(_p2 && _cs.phase2Sort) _p2.value = _cs.phase2Sort;
   if(db.lastUniSort){
     unifiedSort = db.lastUniSort;
     const sel = document.getElementById("uniSort");
@@ -3913,6 +3924,16 @@ function phase2Lines(){
   const marks = marksBag();
   const cs = currentState();
   const alive = unifiedLines().filter(l => (marks[l.key] || {}).mark !== "no");
+  const sortMode = cs.phase2Sort || "manual";
+  if(sortMode !== "manual"){
+    const prev = unifiedSort;
+    unifiedSort = sortMode;
+    const g = groupUnified(alive);
+    unifiedSort = prev;
+    const out = [];
+    g.order.forEach(k => g.map[k].forEach(l => out.push(l)));
+    return out;
+  }
   const order = cs.phase2Order || [];
   const pos = {};
   order.forEach((k, i) => { pos[k] = i; });
@@ -3933,6 +3954,8 @@ function savePhase2Order(keys){
 function renderPhase2(){
   const list = document.getElementById("phase2List");
   if(!list) return;
+  const sortSel = document.getElementById("p2Sort");
+  if(sortSel) sortSel.value = currentState().phase2Sort || "manual";
   const m1 = marksBag();
   const marks = marks2Bag();
   list.innerHTML = "";
@@ -4290,6 +4313,14 @@ function p2Scored(){
     };
   });
 }
+
+document.getElementById("p2Sort").addEventListener("change", (e)=>{
+  const cs = currentState();
+  cs.phase2Sort = e.target.value;
+  if(e.target.value !== "manual") delete cs.phase2Order;
+  saveDB();
+  renderPhase2();
+});
 
 document.getElementById("p2Inspira").addEventListener("click", (e)=>{
   const ls = p2Scored();
@@ -4838,7 +4869,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.73', ROOT='../';
+  var BUILD='V1.74', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

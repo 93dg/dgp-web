@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Juegos">
+<title>Crucigramas</title>
+<script>try{localStorage.setItem('dgp-juego-ult','c');localStorage.setItem('dgp-ultimo','juegos/')}catch(e){}</script>
+<style>
+:root{--bg:#0a0c11;--s1:#11141b;--s2:#181c26;--bd:rgba(255,255,255,.14);--bd2:rgba(255,255,255,.38);--tx:#eef0f5;--mut:#98a1b5;--ac:#ffb81c;--pos:#35d39a;--neg:#ff7070;--usr:#7f9bff;--blk:#05060a;--cel:#2d374c;--r:12px}
+@media(prefers-color-scheme:light){:root{--bg:#f3f4f8;--s1:#fff;--s2:#eef0f6;--bd:rgba(15,20,35,.16);--bd2:rgba(15,20,35,.5);--tx:#10131a;--mut:#58627a;--ac:#946100;--pos:#0e7c57;--neg:#c42b2b;--usr:#2f4fd0;--blk:#1d2230;--cel:#fff}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{background:var(--bg);color:var(--tx);font:16px/1.45 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;padding:max(14px,env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom));-webkit-user-select:none;user-select:none;touch-action:manipulation}
+main{max-width:512px;margin:0 auto}
+a.back{display:inline-block;color:var(--mut);font-size:.8rem;text-decoration:none;padding:6px 0}
+h1{font-size:1.35rem;margin:2px 0 8px;font-weight:700}
+.tabs{display:flex;gap:6px;margin:0 0 12px}
+.tabs a{flex:1;text-align:center;padding:10px 0;border:1px solid var(--bd);border-radius:10px;color:var(--mut);text-decoration:none;font-weight:600;background:var(--s1)}
+.tabs a.on{color:var(--tx);border-color:var(--ac)}
+button{font:inherit;color:var(--tx);background:var(--s1);border:1px solid var(--bd);border-radius:10px;min-height:44px;padding:0 12px;cursor:pointer}
+button:disabled{opacity:.4;cursor:default}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 8px}
+.top b{font-weight:600}
+#reloj{color:var(--mut);font-variant-numeric:tabular-nums;font-size:1.05rem}
+.rl{display:flex;align-items:center;gap:8px}
+#bPausa{width:44px;padding:0;display:flex;align-items:center;justify-content:center}
+#pista{display:grid;grid-template-columns:44px 1fr 44px;gap:6px;align-items:stretch;margin:0 0 10px;min-height:64px}
+#pista button{min-height:64px;padding:0;font-size:1.3rem}
+#pista div{display:flex;flex-direction:column;justify-content:center;padding:6px 12px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;line-height:1.3}
+#pista small{color:var(--ac);font-weight:700;font-size:.78rem}
+#pista span{font-size:1.02rem}
+#tab{display:grid;grid-template-columns:repeat(var(--n),1fr);width:100%;border:2px solid var(--bd2);border-radius:4px;overflow:hidden;background:var(--blk);gap:1px}
+#tab.pausa{filter:blur(14px);opacity:.5;pointer-events:none}
+.c{position:relative;aspect-ratio:1;background:var(--cel);display:flex;align-items:center;justify-content:center;font-weight:600;color:var(--usr);font-size:calc((min(100vw,512px) - 32px)/var(--n)*.58);text-transform:uppercase;cursor:pointer}
+.c.k{background:var(--blk);cursor:default}
+.c.w{background:color-mix(in srgb,var(--usr) 42%,var(--cel))}
+.c.sel{background:color-mix(in srgb,var(--ac) 55%,var(--cel));outline:2px solid var(--ac);outline-offset:-2px;z-index:1}
+.c.mal{color:var(--neg)}
+.c.ok{color:var(--pos)}
+.c i{position:absolute;left:2px;top:0;font-style:normal;font-weight:500;color:var(--mut);font-size:calc((min(100vw,512px) - 32px)/var(--n)*.27);line-height:1.15}
+#msg{min-height:1.5em;margin:8px 0 2px;font-size:.95rem;color:var(--mut)}
+#msg.ok{color:var(--pos)}#msg.err{color:var(--neg)}
+#teclado{display:grid;gap:6px;margin:8px 0}
+#teclado .f{display:grid;gap:5px;grid-template-columns:repeat(10,1fr)}
+#teclado button{min-height:48px;padding:0;font-size:1.15rem;font-weight:600}
+#teclado.pausa{opacity:.45;pointer-events:none}
+.niv{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.niv small{display:block;color:var(--mut);font-weight:400;font-size:.72rem}
+h2{font-size:1rem;margin:18px 0 6px}
+.lista button{display:block;width:100%;text-align:left;margin:0 0 6px;padding:8px 12px;min-height:44px}
+.lista button small{display:block;color:var(--mut)}
+.lista button.on{border-color:var(--ac)}
+details{margin:12px 0}
+summary{cursor:pointer;font-weight:600;padding:8px 0}
+.cl{display:block;width:100%;text-align:left;border:0;background:none;padding:5px 0;min-height:0;border-radius:6px;font-size:.92rem;color:var(--tx)}
+.cl b{color:var(--ac);display:inline-block;min-width:1.7em}
+.cl.on{background:var(--s2)}
+.pie{color:var(--mut);font-size:.75rem;text-align:center;margin-top:20px}
+#bReinicio{width:100%;margin-top:6px}
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="../../?inicio=1">← Volver a DGP</a>
+  <h1>Juegos</h1>
+  <nav class="tabs"><a href="../?s=1">Sudoku</a><a class="on" href="./">Crucigramas</a></nav>
+  <div class="top"><b id="nom">Crucigrama</b><div class="rl"><span id="reloj">0:00</span><button id="bPausa" aria-label="Pausar"></button></div></div>
+  <div id="pista"><button id="bPrev" aria-label="Pista anterior">‹</button><div><small id="pNum"></small><span id="pTxt"></span></div><button id="bNext" aria-label="Pista siguiente">›</button></div>
+  <div id="tab" role="grid"></div>
+  <div id="msg" role="status" aria-live="polite"></div>
+  <div id="teclado"></div>
+  <button id="bReinicio">Reiniciar</button>
+  <h2>Nuevo crucigrama</h2>
+  <div class="niv"><button data-n="9" data-m="7">Pequeño<small>9×9</small></button><button data-n="11" data-m="11">Mediano<small>11×11</small></button><button data-n="13" data-m="15">Grande<small>13×13</small></button></div>
+  <details id="det"><summary>Todas las pistas</summary><div id="lh"></div><div id="lv"></div></details>
+  <h2>Mis crucigramas</h2>
+  <div class="lista" id="lista"></div>
+  <p class="pie"><span id="version">V1.72</span></p>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+'use strict';
+const BANCO=`MADRID|Capital de España
+PARIS|Ciudad del Sena y la torre Eiffel
+ROMA|Capital italiana de las siete colinas
+LISBOA|Capital de Portugal
+BERLIN|Capital alemana dividida por un muro hasta 1989
+LONDRES|Capital del Reino Unido
+SEVILLA|Ciudad andaluza de la Giralda
+VALENCIA|Ciudad de las paellas y las fallas
+BILBAO|Ciudad del museo Guggenheim
+TOLEDO|Ciudad imperial sobre el Tajo
+LEON|Ciudad con una famosa catedral de vidrieras
+CADIZ|Ciudad andaluza famosa por su carnaval
+MALAGA|Ciudad natal de Picasso
+GRANADA|Ciudad de la Alhambra
+BURGOS|Ciudad castellana de la catedral gótica y el Cid
+SORIA|Provincia de Machado y sus campos de Castilla
+HUELVA|Provincia andaluza de las fresas y Doñana
+ALMERIA|Provincia andaluza con desierto de Tabernas
+LUGO|Provincia gallega con muralla romana
+AVILA|Ciudad amurallada de Santa Teresa
+CUENCA|Ciudad de las casas colgadas
+JAEN|Provincia con mar de olivos
+GIJON|Ciudad asturiana con playa de San Lorenzo
+VIGO|Gran ciudad gallega con puerto pesquero
+LIMA|Capital de Perú
+QUITO|Capital de Ecuador
+BOGOTA|Capital de Colombia
+CARACAS|Capital de Venezuela
+HABANA|Capital de Cuba
+SANTIAGO|Capital de Chile
+MONTEVIDEO|Capital de Uruguay
+ASUNCION|Capital de Paraguay
+TOKIO|Capital de Japón
+PEKIN|Capital de China
+MOSCU|Capital de Rusia
+OSLO|Capital de Noruega
+ATENAS|Capital de Grecia
+VIENA|Capital de Austria
+BERNA|Capital de Suiza
+DUBLIN|Capital de Irlanda
+NILO|Río que cruza Egipto
+TAJO|Río más largo de la península ibérica
+EBRO|Río que desemboca en un delta en Tarragona
+DUERO|Río que pasa por Soria y Zamora
+GUADALQUIVIR|Río que atraviesa Sevilla
+AMAZONAS|Río más caudaloso del mundo
+DANUBIO|Río europeo que cruza Viena y Budapest
+SENA|Río de París
+TAMESIS|Río de Londres
+TIBER|Río de Roma
+ANDES|Gran cordillera sudamericana
+ALPES|Cordillera de Mont Blanc y Cervino
+PIRINEOS|Cordillera entre España y Francia
+TEIDE|Volcán más alto de España
+ETNA|Volcán siciliano
+EVEREST|Montaña más alta del mundo
+SAHARA|Mayor desierto cálido del mundo
+ISLA|Tierra rodeada de agua por todas partes
+GOLFO|Entrante grande del mar en la costa
+CABO|Punta de tierra que se adentra en el mar
+DELTA|Desembocadura de un río en forma de abanico
+VALLE|Terreno llano entre montañas
+COLINA|Elevación del terreno menor que un monte
+LAGO|Gran extensión de agua rodeada de tierra
+RIO|Corriente natural de agua que va al mar
+OCEANO|Gran masa de agua que separa continentes
+ATLANTICO|Océano que baña España por el oeste
+PACIFICO|Mayor océano del planeta
+ARTICO|Polo norte
+ASIA|El continente más grande
+AFRICA|Continente de la sabana y el Kilimanjaro
+EUROPA|Continente de España
+OCEANIA|Continente de Australia
+CHILE|País largo y estrecho de Sudamérica
+PERU|País de Machu Picchu
+CUBA|La isla mayor del Caribe
+MEXICO|País de los aztecas y los mariachis
+ITALIA|País con forma de bota
+FRANCIA|País de la baguette y el vino de Burdeos
+GRECIA|Cuna de la filosofía y los juegos olímpicos
+EGIPTO|País de las pirámides
+JAPON|País del sol naciente
+BRASIL|País del samba y la selva amazónica
+CANADA|País de la hoja de arce
+INDIA|País del Ganges y el Taj Mahal
+CHINA|País de la Gran Muralla
+SUIZA|País de los relojes y el chocolate
+ARGENTINA|País del tango y la Patagonia
+PORTUGAL|País vecino al oeste de España
+HOLANDA|País de los tulipanes y los molinos
+GATO|Felino doméstico que maúlla
+PERRO|El mejor amigo del hombre
+CABALLO|Animal que relincha
+VACA|Da leche y muge
+OVEJA|Da lana y bala
+CERDO|Animal que gruñe y da jamón
+GALLINA|Pone huevos
+PATO|Ave que hace cuac
+LOBO|Cánido salvaje que aúlla
+OSO|Animal grande que hiberna
+ZORRO|Animal astuto de cola espesa
+CIERVO|Rumiante con cornamenta ramificada
+JIRAFA|Animal de cuello muy largo
+ELEFANTE|Mayor animal terrestre
+TIGRE|Felino rayado
+CEBRA|Équido con rayas blancas y negras
+HIPOPOTAMO|Gran mamífero que pasa el día en el agua africana
+RINOCERONTE|Animal con cuerno sobre la nariz
+CANGURO|Marsupial saltador de Australia
+KOALA|Marsupial que come eucalipto
+PANDA|Oso blanco y negro que come bambú
+DELFIN|Mamífero marino muy inteligente
+BALLENA|Mayor mamífero marino
+TIBURON|Pez depredador con aleta dorsal triangular
+PULPO|Molusco de ocho tentáculos
+CALAMAR|Molusco con diez brazos que se come en anillas
+ATUN|Pez grande de carne roja
+SARDINA|Pececillo azul que se asa en la parrilla
+MERLUZA|Pez blanco muy habitual en la cocina española
+SALMON|Pez que remonta los ríos para desovar
+CANGREJO|Crustáceo que camina de lado
+LANGOSTA|Crustáceo de lujo con grandes pinzas
+TORTUGA|Reptil con caparazón
+SERPIENTE|Reptil sin patas que repta
+LAGARTO|Reptil de cuatro patas y larga cola
+RANA|Anfibio que croa
+SAPO|Anfibio de piel rugosa
+AGUILA|Ave rapaz de vista aguda
+BUHO|Ave nocturna de grandes ojos
+LORO|Ave que repite palabras
+CIGUEÑA|Ave que anida en campanarios
+PALOMA|Ave símbolo de la paz
+GAVIOTA|Ave marina blanca
+PINGUINO|Ave que no vuela y vive en el polo sur
+CANARIO|Pájaro amarillo cantor
+ABEJA|Insecto que fabrica miel
+HORMIGA|Insecto trabajador que vive en colonias
+MOSCA|Insecto molesto de dos alas
+ARAÑA|Arácnido que teje telarañas
+MARIPOSA|Insecto de alas coloridas que antes fue oruga
+GRILLO|Insecto que canta de noche
+MOSQUITO|Insecto que pica en verano
+CARACOL|Molusco con concha en espiral
+CAMELLO|Animal del desierto con dos jorobas
+DROMEDARIO|Camello de una sola joroba
+BURRO|Asno
+MONO|Primate de larga cola
+GORILA|Primate de gran tamaño africano
+CONEJO|Roedor de largas orejas
+RATON|Roedor pequeño al que persigue el gato
+ARDILLA|Roedor que guarda bellotas
+NUTRIA|Mamífero acuático de piel suave
+TOPO|Animal que vive bajo tierra y casi no ve
+MURCIELAGO|Mamífero volador nocturno
+ERIZO|Animal cubierto de púas
+JABALI|Cerdo salvaje
+LINCE|Felino ibérico en peligro de extinción
+PAN|Alimento básico hecho con harina
+QUESO|Producto lácteo curado
+LECHE|Líquido blanco que da la vaca
+HUEVO|Lo pone la gallina
+ARROZ|Cereal base de la paella
+PASTA|Espaguetis, macarrones
+PATATA|Tubérculo de la tortilla
+TOMATE|Fruto rojo del gazpacho
+CEBOLLA|Bulbo que hace llorar al cortarlo
+AJO|Bulbo de diente que da sabor al sofrito
+LECHUGA|Hortaliza base de la ensalada
+ZANAHORIA|Raíz naranja
+PIMIENTO|Hortaliza que puede ser rojo o verde
+CALABAZA|Hortaliza naranja de Halloween
+SETA|Hongo comestible
+LENTEJAS|Legumbre de cuchara
+GARBANZO|Legumbre del cocido
+JUDIA|Legumbre verde o blanca
+MANZANA|Fruta que cayó sobre Newton
+PERA|Fruta de forma abombada
+NARANJA|Cítrico del zumo
+LIMON|Cítrico muy ácido
+PLATANO|Fruta amarilla alargada
+FRESA|Fruta roja pequeña con semillas fuera
+UVA|Fruta de la vid
+CEREZA|Fruta roja pequeña de hueso
+SANDIA|Fruta grande verde por fuera y roja por dentro
+MELON|Fruta de verano de piel amarilla o verde
+MELOCOTON|Fruta de hueso de piel aterciopelada
+HIGO|Fruto de la higuera
+DATIL|Fruto de la palmera
+ALMENDRA|Fruto seco del turrón
+NUEZ|Fruto seco de cáscara dura y forma de cerebro
+MIEL|La fabrican las abejas
+AZUCAR|Endulzante blanco
+SAL|Condimento básico
+ACEITE|Líquido dorado que da la aceituna
+VINO|Bebida fermentada de la uva
+CERVEZA|Bebida de cebada y lúpulo
+CAFE|Infusión negra que despierta por la mañana
+CAVA|Vino espumoso catalán
+SIDRA|Bebida de manzana asturiana
+PAELLA|Plato valenciano de arroz
+TORTILLA|Plato de huevos y patata
+GAZPACHO|Sopa fría andaluza
+JAMON|Embutido ibérico de pata de cerdo
+CHORIZO|Embutido rojo con pimentón
+CHURRO|Fritura alargada que se moja en chocolate
+FLAN|Postre de huevo con caramelo
+TURRON|Dulce navideño de almendra
+TARTA|Pastel grande
+GALLETA|Dulce crujiente
+HELADO|Postre frío
+CHOCOLATE|Dulce hecho de cacao
+MESA|Mueble para comer
+SILLA|Asiento con respaldo
+CAMA|Mueble para dormir
+SOFA|Asiento largo y mullido
+ARMARIO|Mueble para guardar ropa
+LAMPARA|Da luz en una habitación
+ESPEJO|Refleja la imagen
+PUERTA|Se abre para entrar
+VENTANA|Se abre para que entre aire
+TECHO|Cubre una habitación por arriba
+SUELO|Superficie que pisamos dentro de casa
+ESCALERA|Se sube peldaño a peldaño
+COCINA|Habitación donde se prepara la comida
+BAÑO|Habitación del lavabo
+SALON|Estancia principal de la casa
+BALCON|Saliente con barandilla de un piso
+CHIMENEA|Conducto del humo
+ALFOMBRA|Tejido grande que cubre el suelo
+CORTINA|Tela que cubre la ventana
+CUCHARA|Cubierto para la sopa
+TENEDOR|Cubierto de púas
+CUCHILLO|Cubierto cortante
+PLATO|Recipiente plano para servir comida
+VASO|Recipiente para beber
+TAZA|Recipiente con asa para el café
+SARTEN|Utensilio para freír
+OLLA|Recipiente para cocer
+JARRA|Recipiente con asa para servir agua
+LLAVE|Abre la cerradura
+RELOJ|Marca la hora
+LIBRO|Conjunto de páginas encuadernadas
+LAPIZ|Se usa para escribir y se borra con goma
+BOLIGRAFO|Instrumento de tinta para escribir
+PAPEL|Se escribe sobre él
+TIJERAS|Sirven para cortar papel
+MARTILLO|Herramienta para clavar
+CLAVO|Pieza metálica que se clava
+SIERRA|Herramienta dentada para cortar madera
+PINCEL|Herramienta del pintor
+CUERDA|Cordel grueso
+BOLSA|Se usa para llevar la compra
+MALETA|Se usa para viajar con ropa
+PARAGUAS|Protege de la lluvia
+GAFAS|Ayudan a ver mejor
+ZAPATO|Calzado para el pie
+CAMISA|Prenda con botones y cuello
+PANTALON|Prenda que cubre las piernas
+FALDA|Prenda femenina que cuelga de la cintura
+ABRIGO|Prenda para el frío
+BUFANDA|Cubre el cuello en invierno
+GUANTE|Cubre la mano
+SOMBRERO|Cubre la cabeza
+CALCETIN|Prenda del pie bajo el zapato
+BOTA|Calzado que cubre el tobillo
+CINTURON|Sujeta el pantalón
+CORBATA|Complemento del traje al cuello
+CABEZA|Parte del cuerpo que contiene el cerebro
+CEREBRO|Órgano del pensamiento
+CORAZON|Órgano que bombea sangre
+PULMON|Órgano de la respiración
+HIGADO|Órgano que fabrica la bilis
+RIÑON|Órgano que filtra la sangre
+ESTOMAGO|Órgano de la digestión
+HUESO|Parte dura del esqueleto
+MUSCULO|Tejido que permite el movimiento
+PIEL|Cubre todo el cuerpo
+SANGRE|Líquido rojo que circula por las venas
+OJO|Órgano de la vista
+OREJA|Parte externa del oído
+NARIZ|Órgano del olfato
+BOCA|Por ella comemos
+DIENTE|Pieza dura de la boca
+LENGUA|Músculo del gusto
+CUELLO|Une la cabeza con el tronco
+HOMBRO|Une el brazo con el tronco
+BRAZO|Miembro superior
+MANO|Tiene cinco dedos
+DEDO|Cada uno de los cinco de la mano
+PIE|Parte inferior de la pierna
+RODILLA|Articulación de la pierna
+CODO|Articulación del brazo
+CINTURA|Parte estrecha del tronco
+ESPALDA|Parte posterior del tronco
+PECHO|Parte frontal del tronco
+CEJA|Pelo sobre el ojo
+PESTAÑA|Pelo del párpado
+BARBA|Pelo de la cara del hombre
+UÑA|Se corta en la punta del dedo
+FIEBRE|Subida anormal de temperatura
+TOS|Expulsión brusca de aire por la garganta
+GRIPE|Enfermedad con fiebre y mocos en invierno
+MEDICO|Profesional que cura enfermedades
+ENFERMERA|Cuida a los pacientes en el hospital
+HOSPITAL|Lugar donde se ingresa a los enfermos
+VACUNA|Previene enfermedades
+SOL|Estrella de nuestro sistema
+LUNA|Satélite de la Tierra
+TIERRA|Planeta que habitamos
+MARTE|Planeta rojo
+VENUS|Segundo planeta del sistema solar
+JUPITER|El mayor planeta del sistema solar
+SATURNO|Planeta de los anillos
+NEPTUNO|Planeta más lejano del sistema solar
+MERCURIO|El planeta más cercano al Sol
+ESTRELLA|Cuerpo celeste que brilla de noche
+COMETA|Astro con cola luminosa
+GALAXIA|Conjunto de millones de estrellas
+PLANETA|Astro que gira alrededor de una estrella
+ECLIPSE|Ocultación de un astro por otro
+ORBITA|Trayectoria de un astro alrededor de otro
+COHETE|Vehículo espacial
+LLUVIA|Agua que cae de las nubes
+NIEVE|Agua helada que cae en copos
+VIENTO|Aire en movimiento
+NUBE|Masa de vapor de agua en el cielo
+TORMENTA|Lluvia con truenos y rayos
+RAYO|Descarga eléctrica de las nubes
+TRUENO|Estruendo que sigue al relámpago
+NIEBLA|Nube a ras de suelo
+HIELO|Agua en estado sólido
+GRANIZO|Lluvia helada en forma de bolitas
+ARCOIRIS|Arco de siete colores tras la lluvia
+CLIMA|Condiciones atmosféricas habituales de una zona
+INVIERNO|Estación más fría
+VERANO|Estación más calurosa
+OTOÑO|Estación en que caen las hojas
+PRIMAVERA|Estación de las flores
+ROSA|Flor con espinas
+TULIPAN|Flor holandesa de colores
+CLAVEL|Flor símbolo de la revolución portuguesa
+MARGARITA|Flor de pétalos blancos y centro amarillo
+AZAHAR|Flor del naranjo
+ENCINA|Árbol de las bellotas
+PINO|Árbol de piñas
+ROBLE|Árbol de madera dura y fuerte
+OLIVO|Árbol del aceite
+PALMERA|Árbol de los dátiles
+CACTUS|Planta espinosa del desierto
+HIERBA|Planta verde que cubre el prado
+HOJA|Parte verde de la planta
+RAMA|Parte del árbol que sale del tronco
+RAIZ|Parte de la planta bajo tierra
+BOSQUE|Terreno poblado de árboles
+SELVA|Bosque tropical espeso
+CAMPO|Terreno fuera de la ciudad
+PRADO|Terreno de hierba
+ROJO|Color de la sangre
+AZUL|Color del cielo despejado
+VERDE|Color de la hierba
+AMARILLO|Color del limón
+NEGRO|Color de la noche
+BLANCO|Color de la nieve
+MORADO|Color de la berenjena
+GRIS|Color de las nubes de lluvia
+CIRCULO|Figura plana redonda
+CUADRADO|Figura de cuatro lados iguales
+TRIANGULO|Figura de tres lados
+CUBO|Cuerpo de seis caras cuadradas
+ESFERA|Cuerpo redondo como una pelota
+LINEA|Sucesión continua de puntos
+ANGULO|Abertura entre dos rectas
+SUMA|Operación de añadir
+RESTA|Operación de quitar
+DIVISION|Operación de repartir
+PRODUCTO|Resultado de multiplicar
+PRIMO|Número que solo se divide por uno y por sí mismo
+CERO|Número sin valor
+DECENA|Conjunto de diez
+DOCENA|Conjunto de doce
+SIGLO|Cien años
+DECADA|Diez años
+SEMANA|Siete días
+LUNES|Primer día laborable
+MARTES|Día de la semana tras el lunes
+VIERNES|Día antes del fin de semana
+DOMINGO|Día de descanso por excelencia
+ENERO|Primer mes del año
+MARZO|Mes de las fallas
+JUNIO|Mes en que empieza el verano
+JULIO|Mes de las vacaciones en pleno verano
+AGOSTO|Mes más vacacional
+MAYO|Mes de las flores
+ABRIL|Mes de las aguas mil
+OCTUBRE|Décimo mes del año
+FUTBOL|Deporte de once contra once con balón
+TENIS|Deporte de raqueta y red
+BALONCESTO|Deporte de canasta
+NATACION|Deporte que se practica en la piscina
+CICLISMO|Deporte del Tour de Francia
+ATLETISMO|Carreras, saltos y lanzamientos
+RUGBY|Deporte de balón ovalado
+GOLF|Deporte de hoyos y palos
+BOXEO|Deporte de guantes y ring
+AJEDREZ|Juego de reyes, torres y peones
+DAMAS|Juego de fichas sobre tablero de 64 casillas
+DADO|Cubo con puntos del uno al seis
+NAIPE|Carta de la baraja
+GOL|Tanto en el fútbol
+PORTERO|Jugador que defiende la portería
+ARBITRO|Hace cumplir el reglamento en el campo
+ESTADIO|Recinto deportivo con gradas
+MEDALLA|Premio de oro, plata o bronce
+TROFEO|Premio que se entrega al campeón
+CAMPEON|Quien gana la competición
+RED|Malla que divide la pista de tenis
+GUITARRA|Instrumento de seis cuerdas
+PIANO|Instrumento de teclas blancas y negras
+VIOLIN|Instrumento de cuerda y arco
+FLAUTA|Instrumento de viento de tubo
+TAMBOR|Instrumento de percusión
+TROMPETA|Instrumento de viento metálico
+ARPA|Instrumento de cuerdas verticales
+OPERA|Obra cantada y representada en un teatro
+CANCION|Música con letra
+CORO|Grupo de personas que cantan juntas
+ORQUESTA|Conjunto de músicos con director
+NOTA|Cada signo musical
+MELODIA|Sucesión de sonidos agradable
+BAILE|Movimiento rítmico del cuerpo al compás
+FLAMENCO|Arte andaluz de cante, baile y guitarra
+TANGO|Baile argentino
+VALS|Baile de tres tiempos
+CINE|Arte de las películas
+PELICULA|Obra que se proyecta en el cine
+ACTOR|Intérprete de un papel
+DIRECTOR|Dirige un rodaje
+TEATRO|Lugar y arte de la escena
+ESCENA|Parte de una obra o película
+GUION|Texto de una película
+OSCAR|Premio del cine de Hollywood
+NOVELA|Narración larga de ficción
+POEMA|Obra en verso
+POETA|Autor de versos
+CUENTO|Narración breve
+AUTOR|Quien escribe una obra
+LECTOR|Quien lee
+BIBLIOTECA|Lugar donde se prestan libros
+DICCIONARIO|Libro con el significado de las palabras
+PALABRA|Unidad con significado formada por letras
+VERSO|Cada línea de un poema
+RIMA|Coincidencia de sonidos al final de los versos
+QUIJOTE|Caballero de la Mancha
+CERVANTES|Autor del Quijote
+LORCA|Poeta granadino del Romancero gitano
+GOYA|Pintor de La maja desnuda y los fusilamientos
+PICASSO|Pintor del Guernica
+VELAZQUEZ|Pintor de Las Meninas
+DALI|Pintor surrealista de los relojes blandos
+MIRO|Pintor catalán de estrellas y constelaciones
+LIENZO|Tela sobre la que pinta el artista
+ESCULTURA|Obra tallada o modelada en tres dimensiones
+MUSEO|Edificio donde se exponen obras de arte
+RETRATO|Pintura de una persona
+PAISAJE|Pintura o vista de campo
+DIBUJO|Imagen hecha con lápiz
+CATEDRAL|Iglesia principal de una diócesis
+IGLESIA|Templo cristiano
+CASTILLO|Fortaleza medieval
+PALACIO|Residencia de reyes
+PUENTE|Estructura para cruzar un río
+TORRE|Edificio alto y estrecho
+MURALLA|Muro que rodea una ciudad
+PLAZA|Espacio abierto en una ciudad
+CALLE|Vía urbana con casas a los lados
+AVENIDA|Calle ancha con árboles
+PIRAMIDE|Monumento egipcio con base cuadrada
+ACUEDUCTO|Construcción romana que lleva agua, como el de Segovia
+COLISEO|Anfiteatro de Roma
+ALHAMBRA|Palacio nazarí de Granada
+TREN|Vehículo que circula por vías
+AVION|Vehículo que vuela
+BARCO|Vehículo que navega
+BICICLETA|Vehículo de dos ruedas con pedales
+COCHE|Automóvil
+AUTOBUS|Transporte urbano de muchas plazas
+METRO|Ferrocarril subterráneo de la ciudad
+CAMION|Vehículo grande de carga
+MOTO|Vehículo de dos ruedas con motor
+TAXI|Coche con conductor que se alquila por trayecto
+PUERTO|Lugar donde atracan los barcos
+AEROPUERTO|Lugar de despegues y aterrizajes
+ESTACION|Lugar donde para el tren
+BILLETE|Papel que permite viajar
+VIAJE|Desplazamiento a un lugar lejano
+MAPA|Representación de un territorio
+BRUJULA|Instrumento que señala el norte
+ANCLA|Pieza que sujeta el barco al fondo
+VELA|Tela que impulsa un velero
+REMO|Pala larga para mover una barca
+TIMON|Dirige el barco
+FARO|Torre con luz que guía a los barcos
+PIRATA|Ladrón del mar
+TESORO|Conjunto de riquezas escondidas
+REY|Monarca
+REINA|Esposa del rey o soberana
+PRINCIPE|Hijo del rey
+PRINCESA|Hija del rey
+CABALLERO|Hombre noble de armas
+ESPADA|Arma blanca larga
+ESCUDO|Arma defensiva que se lleva en el brazo
+ARCO|Arma que dispara flechas
+FLECHA|Proyectil del arco
+LANZA|Arma de asta larga
+CORONA|Adorno de la cabeza de los reyes
+TRONO|Asiento del rey
+DRAGON|Animal fantástico que escupe fuego
+HADA|Ser fantástico con varita mágica
+BRUJA|Mujer con poderes mágicos y escoba
+MAGO|Hace trucos o hechizos
+GIGANTE|De tamaño enorme
+ENANO|De tamaño muy pequeño
+FANTASMA|Espíritu que asusta
+CUEVA|Cavidad natural en la roca
+ROMANO|Natural de la antigua Roma
+GRIEGO|Natural de la Hélade
+ARABE|Pueblo que dominó Al-Ándalus
+CESAR|Dictador romano asesinado en los idus de marzo
+NAPOLEON|Emperador francés vencido en Waterloo
+COLON|Descubridor de América para los españoles
+MAGALLANES|Navegante que inició la primera vuelta al mundo
+CID|Campeador castellano
+ISABEL|Reina Católica junto a Fernando
+EINSTEIN|Autor de la teoría de la relatividad
+NEWTON|Físico de la gravedad
+DARWIN|Autor de El origen de las especies
+PASTEUR|Científico francés de la vacuna de la rabia
+CURIE|Científica doble premio Nobel y pionera de la radiactividad
+GALILEO|Astrónomo que perfeccionó el telescopio
+ATOMO|Unidad básica de la materia
+CELULA|Unidad básica de los seres vivos
+ENERGIA|Capacidad de realizar trabajo
+GRAVEDAD|Fuerza que nos atrae hacia la Tierra
+MATERIA|Todo lo que ocupa lugar en el espacio
+ELEMENTO|Sustancia pura de la tabla periódica
+ORO|Metal precioso amarillo
+PLATA|Metal blanco brillante
+HIERRO|Metal de la espada y el acero
+COBRE|Metal rojizo conductor
+PLOMO|Metal pesado y blando de símbolo Pb
+ACERO|Aleación de hierro y carbono
+DIAMANTE|Piedra preciosa más dura
+ROCA|Masa de mineral dura
+ARENA|Granos finos de la playa
+BARRO|Mezcla de tierra y agua
+FUEGO|Llama que quema
+AGUA|Líquido de la vida
+AIRE|Mezcla de gases que respiramos
+ELECTRICIDAD|Corriente que ilumina las casas
+PILA|Almacena energía eléctrica en pequeño
+IMAN|Atrae el hierro
+LUZ|Lo contrario de la oscuridad
+SONIDO|Lo que percibe el oído
+TELEFONO|Aparato para hablar a distancia
+ORDENADOR|Computadora
+PANTALLA|Superficie donde se ven las imágenes
+TECLADO|Conjunto de teclas
+INTERNET|Red mundial de ordenadores
+CORREO|Servicio de cartas o mensajes
+CAMARA|Aparato para hacer fotos
+RADIO|Aparato que transmite programas sonoros
+TELEVISION|Pantalla de programas y series
+FOTO|Imagen captada por una cámara
+ROBOT|Máquina programada para realizar tareas
+PROGRAMA|Conjunto de instrucciones de un ordenador
+ESCUELA|Lugar donde se enseña a los niños
+COLEGIO|Centro de enseñanza infantil y primaria
+PROFESOR|Persona que da clases
+ALUMNO|Persona que aprende en clase
+EXAMEN|Prueba para evaluar conocimientos
+PIZARRA|Superficie donde escribe el profesor
+UNIVERSIDAD|Centro de estudios superiores
+TITULO|Documento que acredita unos estudios
+LECCION|Tema que se enseña de una vez
+RECREO|Descanso entre clases
+AMOR|Sentimiento de cariño profundo
+ODIO|Sentimiento contrario al amor
+MIEDO|Sensación ante un peligro
+ALEGRIA|Sentimiento de felicidad
+TRISTEZA|Pena o pesar
+ENFADO|Disgusto o ira
+CELOS|Recelo ante un posible rival
+RISA|Expresión de alegría con carcajadas
+LLANTO|Lágrimas y sollozos
+SUEÑO|Lo que vemos mientras dormimos
+AMISTAD|Relación entre amigos
+FAMILIA|Padres, hijos y hermanos
+PADRE|Progenitor varón
+MADRE|Progenitora
+HERMANO|Hijo de los mismos padres
+ABUELO|Padre del padre o de la madre
+TIO|Hermano del padre o de la madre
+NIETO|Hijo del hijo
+BEBE|Niño de pocos meses
+NIÑO|Persona de corta edad
+JOVEN|De pocos años
+ANCIANO|De mucha edad
+VECINO|Habitante del mismo edificio o barrio
+AMIGO|Persona de confianza que se aprecia
+PUEBLO|Población pequeña
+CIUDAD|Población grande
+PAIS|Territorio de una nación
+NACION|Comunidad con un mismo gobierno y territorio
+FRONTERA|Límite entre dos países
+BANDERA|Enseña de un país
+HIMNO|Canción patriótica
+LEY|Norma que obliga a todos
+JUEZ|Quien dicta sentencia
+JUICIO|Proceso ante un tribunal
+VOTO|Papeleta con la que se elige
+ALCALDE|Presidente del ayuntamiento
+CONGRESO|Cámara de diputados
+GOBIERNO|Poder ejecutivo de un país
+IMPUESTO|Tributo que se paga al Estado
+DINERO|Se usa para comprar
+EURO|Moneda de la Unión Europea
+MONEDA|Pieza metálica de dinero
+BANCO|Entidad que guarda el dinero
+PRECIO|Lo que cuesta algo
+TIENDA|Local donde se vende
+MERCADO|Lugar de venta de productos frescos
+SUPERMERCADO|Gran tienda de alimentación
+OFICINA|Lugar de trabajo con mesas y ordenadores
+TRABAJO|Ocupación remunerada
+SUELDO|Dinero que se cobra por trabajar
+JEFE|Quien manda en el trabajo
+OBRERO|Trabajador manual
+PANADERO|Hace el pan
+CARPINTERO|Trabaja la madera
+PESCADOR|Captura peces
+PASTOR|Cuida el rebaño
+PINTOR|Artista que usa pinceles
+BOMBERO|Apaga los incendios
+POLICIA|Vela por el orden público
+SOLDADO|Militar de tropa
+PILOTO|Conduce un avión
+COCINERO|Prepara la comida en un restaurante
+CAMARERO|Sirve las mesas
+ABOGADO|Defiende en un juicio
+ARQUITECTO|Proyecta edificios
+INGENIERO|Diseña obras y máquinas
+FIESTA|Celebración alegre
+NAVIDAD|Fiesta del 25 de diciembre
+CUMPLEAÑOS|Aniversario de nacimiento
+BODA|Ceremonia de casamiento
+REGALO|Obsequio
+CARNAVAL|Fiesta de disfraces antes de Cuaresma
+FALLA|Monumento que se quema en Valencia
+TORO|Animal de la lidia
+SIESTA|Descanso tras la comida
+VACACIONES|Días libres de trabajo
+PLAYA|Orilla de arena junto al mar
+MONTAÑA|Gran elevación del terreno
+PISCINA|Estanque para nadar
+CAMPING|Acampada en tienda
+HOGUERA|Fuego de leña al aire libre
+SILENCIO|Ausencia de ruido
+VOZ|Sonido que sale de la garganta
+GRITO|Voz muy fuerte
+SUSURRO|Voz muy baja
+SECRETO|Cosa que se oculta
+VERDAD|Lo que es cierto
+MENTIRA|Lo contrario de la verdad
+PAZ|Ausencia de guerra
+GUERRA|Conflicto armado
+LIBERTAD|Capacidad de actuar sin coacción
+JUSTICIA|Virtud de dar a cada uno lo suyo
+ESPERANZA|Confianza en que algo bueno ocurrirá
+SUERTE|Fortuna favorable
+ENIGMA|Misterio por descifrar
+RETO|Desafío
+JUEGO|Actividad para divertirse
+PUZLE|Rompecabezas
+CRUCIGRAMA|Pasatiempo de palabras cruzadas`.split('\n').map(l=>{const i=l.indexOf('|');return {w:l.slice(0,i),c:l.slice(i+1)}});
+const $=id=>document.getElementById(id);
+const KEY='dgp-crucigramas', KS='juegos_crucigramas';
+let S=null, P=null, timer=null, tReinicio=0;
+const fmtT=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+const NIV={9:'Pequeño',11:'Mediano',13:'Grande'};
+
+/* ---------- generador ---------- */
+function azar(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function intentar(n,pool){
+  const g=new Array(n*n).fill(''), dm=new Array(n*n).fill(0), col=[], usados=new Set();
+  const vac=(r,c)=>r<0||c<0||r>=n||c>=n||!g[r*n+c];
+  function ver(w,r,c,d){
+    const dr=d?1:0, dc=d?0:1, L=w.length, er=r+dr*(L-1), ec=c+dc*(L-1);
+    if(r<0||c<0||er>=n||ec>=n) return -1;
+    if(!vac(r-dr,c-dc)||!vac(er+dr,ec+dc)) return -1;
+    let cr=0;
+    for(let k=0;k<L;k++){
+      const rr=r+dr*k, cc=c+dc*k, i=rr*n+cc;
+      if(g[i]){ if(g[i]!==w[k]||(dm[i]&(d?2:1))) return -1; cr++; }
+      else if(!vac(rr+dc,cc+dr)||!vac(rr-dc,cc-dr)) return -1;
+    }
+    return cr;
+  }
+  function poner(o,r,c,d){
+    const dr=d?1:0, dc=d?0:1;
+    for(let k=0;k<o.w.length;k++){ const i=(r+dr*k)*n+c+dc*k; g[i]=o.w[k]; dm[i]|=d?2:1; }
+    col.push({w:o.w,cl:o.c,r,c,d}); usados.add(o.w);
+  }
+  const largas=pool.filter(o=>o.w.length>=Math.max(5,n-4)&&o.w.length<=n);
+  const p0=largas[Math.floor(Math.random()*largas.length)]; if(!p0) return null;
+  poner(p0,Math.floor(n/2),Math.floor((n-p0.w.length)/2),0);
+  const orden=azar(pool.slice());
+  for(let ronda=0;ronda<3;ronda++){
+    let nuevo=false;
+    for(const o of orden){
+      if(usados.has(o.w)) continue;
+      const cand=[];
+      for(let i=0;i<n*n;i++){ if(!g[i]) continue; const r0=Math.floor(i/n), c0=i%n;
+        for(let k=0;k<o.w.length;k++) if(o.w[k]===g[i]){ cand.push([r0-k,c0,1]); cand.push([r0,c0-k,0]); } }
+      azar(cand);
+      for(const [r,c,d] of cand){ const x=ver(o.w,r,c,d); if(x>=1){ poner(o,r,c,d); nuevo=true; break; } }
+    }
+    if(!nuevo) break;
+  }
+  return {g,col,n};
+}
+function generar(n,minimo){
+  const pool=BANCO.filter(o=>o.w.length<=n&&o.w.length>=3);
+  let mejor=null, t0=Date.now();
+  while(Date.now()-t0<700){
+    const r=intentar(n,pool); if(!r) continue;
+    if(!mejor||r.col.length>mejor.col.length) mejor=r;
+    if(r.col.length>=minimo+4) break;
+  }
+  return montar(mejor);
+}
+function montar(r){
+  const {g,col,n}=r; let r0=n,r1=-1,c0=n,c1=-1;
+  for(let i=0;i<n*n;i++) if(g[i]){ const a=Math.floor(i/n),b=i%n; r0=Math.min(r0,a);r1=Math.max(r1,a);c0=Math.min(c0,b);c1=Math.max(c1,b); }
+  const H=r1-r0+1, W=c1-c0+1, sol=new Array(H*W).fill('');
+  for(let a=0;a<H;a++) for(let b=0;b<W;b++) sol[a*W+b]=g[(a+r0)*n+b+c0];
+  const pal=col.map(o=>({ans:o.w,clue:o.cl,r:o.r-r0,c:o.c-c0,d:o.d,len:o.w.length}));
+  return {W,H,sol,pal};
+}
+/* ---------- partida ---------- */
+function numerar(p){
+  let num=0; const nm=new Map();
+  for(let r=0;r<p.H;r++) for(let c=0;c<p.W;c++){
+    if(!p.sol[r*p.W+c]) continue;
+    const h=(c===0||!p.sol[r*p.W+c-1])&&c+1<p.W&&p.sol[r*p.W+c+1];
+    const v=(r===0||!p.sol[(r-1)*p.W+c])&&r+1<p.H&&p.sol[(r+1)*p.W+c];
+    if(h||v){ num++; nm.set(r*p.W+c,num); }
+  }
+  p.pal.forEach(w=>{ w.num=nm.get(w.r*p.W+w.c); });
+  p.pal.sort((a,b)=>a.num-b.num||a.d-b.d);
+}
+function nueva(n,minimo){
+  const g=generar(n,minimo); if(!g) return;
+  const id='c'+Date.now().toString(36);
+  const k=Object.keys(S.partidas).length+1;
+  const p={id,nombre:'Crucigrama '+(S.cuenta=(S.cuenta||0)+1),nivel:n,W:g.W,H:g.H,sol:g.sol,pal:g.pal,cur:g.sol.map(x=>x?'':''),t:0,fecha:Date.now(),fin:false,pausa:false,mal:[],sel:-1,dir:0};
+  numerar(p); S.partidas[id]=p; S.actual=id; limpiar(); guardar(); abrir(id);
+}
+function limpiar(){
+  const ids=Object.keys(S.partidas).sort((a,b)=>S.partidas[b].fecha-S.partidas[a].fecha);
+  ids.slice(12).forEach(i=>{ if(i!==S.actual) delete S.partidas[i]; });
+}
+function cargar(){ try{ S=JSON.parse(localStorage.getItem(KEY)||'null'); }catch(e){ S=null; } }
+function guardarLocal(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
+/* ---------- servidor (misma sesión que DGP) ---------- */
+const SB_URL='https://qtnqupcfgooazjzkpmtx.supabase.co/rest/v1/ui_estado', SB_KEY='sb_publishable_brvDWgh8e_IrS8NWDvt7xg_rbL2dqcd',
+  sbc=(window.supabase?window.supabase.createClient('https://qtnqupcfgooazjzkpmtx.supabase.co',SB_KEY):null);
+async function cab(){ try{ if(!sbc) return null; const {data:{session}}=await sbc.auth.getSession(); return session?{apikey:SB_KEY,Authorization:'Bearer '+session.access_token}:null; }catch(e){ return null; } }
+let tSub=0;
+function guardar(sinTs){ if(!sinTs){ S.ts=Date.now(); subir(); } guardarLocal(); }
+function subir(ya){
+  clearTimeout(tSub);
+  tSub=setTimeout(async()=>{
+    try{
+      const H=await cab(); if(!H) return;
+      const cuerpo=JSON.stringify([{clave:KS,valor:S,actualizado:new Date().toISOString()}]);
+      await fetch(SB_URL+'?on_conflict=clave',{method:'POST',keepalive:cuerpo.length<60000,headers:Object.assign({'Content-Type':'application/json','Content-Profile':'personal',Prefer:'resolution=merge-duplicates,return=minimal'},H),body:cuerpo});
+    }catch(e){}
+  },ya?0:1200);
+}
+async function sincronizar(){
+  try{
+    const H=await cab(); if(!H) return;
+    const r=await fetch(SB_URL+'?clave=eq.'+KS+'&select=valor',{headers:Object.assign({'Accept-Profile':'personal'},H)});
+    if(!r.ok) return; const a=await r.json(), v=a[0]&&a[0].valor, ts=v&&v.ts||0;
+    if(v&&v.partidas&&ts>(S.ts||0)){ S=v; if(!S.partidas[S.actual]) S.actual=Object.keys(S.partidas)[0]; guardarLocal(); if(S.actual) abrir(S.actual); else pintar(); }
+    else if((S.ts||0)>ts) subir(true);
+  }catch(e){}
+}
+/* ---------- selección y palabras ---------- */
+const idx=(r,c)=>r*P.W+c;
+function palabraEn(i,d){ const r=Math.floor(i/P.W), c=i%P.W; return P.pal.find(w=>w.d===d&&(d?(w.c===c&&r>=w.r&&r<w.r+w.len):(w.r===r&&c>=w.c&&c<w.c+w.len))); }
+function celdas(w){ const a=[]; for(let k=0;k<w.len;k++) a.push(w.d?idx(w.r+k,w.c):idx(w.r,w.c+k)); return a; }
+function actual(){ return P.sel>=0?palabraEn(P.sel,P.dir)||palabraEn(P.sel,1-P.dir):null; }
+function tocar(i){
+  if(P.pausa||!P.sol[i]) return;
+  if(P.sel===i){ if(palabraEn(i,1-P.dir)) P.dir=1-P.dir; }
+  else { P.sel=i; if(!palabraEn(i,P.dir)) P.dir=1-P.dir; }
+  pintar();
+}
+function irPalabra(w){ P.dir=w.d; const cs=celdas(w); P.sel=cs.find(i=>!P.cur[i])??cs[0]; pintar(); }
+function otra(s){ const w=actual(); let k=w?P.pal.indexOf(w):-1; k=(k+s+P.pal.length)%P.pal.length; irPalabra(P.pal[k]); }
+function letra(L){
+  if(!P||P.pausa||P.fin||P.sel<0) return;
+  P.cur[P.sel]=L; P.mal=[]; msg('');
+  const w=actual(); if(w){ const cs=celdas(w), k=cs.indexOf(P.sel); const sig=cs.slice(k+1).find(i=>!P.cur[i]); if(sig!==undefined) P.sel=sig; else if(k+1<cs.length) P.sel=cs[k+1]; }
+  tras();
+}
+function borrar(){
+  if(!P||P.pausa||P.fin||P.sel<0) return;
+  P.mal=[]; msg('');
+  if(P.cur[P.sel]) P.cur[P.sel]='';
+  else { const w=actual(); if(w){ const cs=celdas(w), k=cs.indexOf(P.sel); if(k>0){ P.sel=cs[k-1]; P.cur[P.sel]=''; } } }
+  tras();
+}
+function tras(){ comprobarFin(); guardar(); pintar(); pintarLista(); }
+function comprobarFin(){
+  if(P.fin) return;
+  const l=[]; P.sol.forEach((x,i)=>{ if(x) l.push(i); });
+  if(!l.every(i=>P.cur[i])) return;
+  const mal=l.filter(i=>P.cur[i]!==P.sol[i]);
+  if(mal.length){ P.mal=mal; msg('Está completo pero hay '+mal.length+(mal.length===1?' letra mal, marcada en rojo.':' letras mal, marcadas en rojo.'),'err'); return; }
+  P.fin=true; P.fecha=Date.now(); clearInterval(timer); msg('Resuelto en '+fmtT(P.t)+'.','ok');
+}
+function msg(t,k){ const m=$('msg'); m.textContent=t||''; m.className=k||''; }
+/* ---------- pintar ---------- */
+function pintar(){
+  if(!P) return;
+  const tab=$('tab'); tab.style.setProperty('--n',P.W); tab.classList.toggle('pausa',!!P.pausa);
+  const w=actual(), ws=new Set(w?celdas(w):[]);
+  let h='';
+  for(let i=0;i<P.W*P.H;i++){
+    if(!P.sol[i]){ h+='<div class="c k"></div>'; continue; }
+    let k='c'; if(ws.has(i)) k+=' w'; if(i===P.sel) k+=' sel'; if(P.mal.includes(i)) k+=' mal'; if(P.fin) k+=' ok';
+    const r=Math.floor(i/P.W), c=i%P.W, ww=P.pal.find(x=>x.r===r&&x.c===c);
+    h+='<div class="'+k+'" role="gridcell" data-i="'+i+'">'+(ww?'<i>'+ww.num+'</i>':'')+(P.cur[i]||'')+'</div>';
+  }
+  tab.innerHTML=h;
+  $('pNum').textContent=w?w.num+' '+(w.d?'Vertical':'Horizontal')+' · '+w.len+' letras':'Elige una casilla';
+  $('pTxt').textContent=w?w.clue:'';
+  $('nom').textContent=P.nombre+' · '+NIV[P.nivel]+(P.fin?' · resuelto':P.pausa?' · en pausa':'');
+  $('teclado').classList.toggle('pausa',!!(P.pausa||P.fin));
+  $('bPausa').innerHTML=P.pausa?'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>':'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
+  $('bPausa').disabled=P.fin; $('reloj').textContent=fmtT(P.t);
+  const ls=(d)=>'<h2>'+(d?'Verticales':'Horizontales')+'</h2>'+P.pal.filter(x=>x.d===d).map(x=>'<button class="cl'+(w===x?' on':'')+'" data-k="'+P.pal.indexOf(x)+'"><b>'+x.num+'</b>'+x.clue+' <span style="color:var(--mut)">('+x.len+')</span></button>').join('');
+  $('lh').innerHTML=ls(0); $('lv').innerHTML=ls(1);
+}
+function pintarLista(){
+  const ids=Object.keys(S.partidas).sort((a,b)=>S.partidas[b].fecha-S.partidas[a].fecha);
+  $('lista').innerHTML=ids.map(id=>{ const p=S.partidas[id], tot=p.sol.filter(x=>x).length, hechas=p.cur.filter(x=>x).length;
+    return '<button data-id="'+id+'" class="'+(id===S.actual?'on':'')+'">'+p.nombre+' · '+NIV[p.nivel]+'<small>'+(p.fin?'Resuelto en '+fmtT(p.t):hechas+' de '+tot+' letras · '+fmtT(p.t))+'</small></button>'; }).join('')||'<p style="color:var(--mut)">Aún no hay ninguno.</p>';
+}
+function abrir(id){
+  P=S.partidas[id]; if(!P) return; S.actual=id; P.mal=P.mal||[]; if(P.sel<0||!P.sol[P.sel]) { P.sel=P.sol.findIndex(x=>x); P.dir=P.pal[0]?P.pal[0].d:0; }
+  guardarLocal(); msg(''); pintar(); pintarLista(); arrancar();
+}
+function arrancar(){
+  clearInterval(timer);
+  timer=setInterval(()=>{ if(!P||document.hidden||P.pausa||P.fin) return; P.t++; $('reloj').textContent=fmtT(P.t); if(P.t%10===0) guardarLocal(); },1000);
+}
+/* ---------- teclado y eventos ---------- */
+(function(){
+  const fil=['QWERTYUIOP','ASDFGHJKLÑ','ZXCVBNM'];
+  $('teclado').innerHTML=fil.map((f,i)=>'<div class="f" style="'+(i===2?'grid-template-columns:repeat(9,1fr)':'')+'">'+f.split('').map(L=>'<button data-l="'+L+'">'+L+'</button>').join('')+(i===2?'<button data-l="" aria-label="Borrar" style="grid-column:span 2">⌫</button>':'')+'</div>').join('');
+  $('teclado').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; b.dataset.l?letra(b.dataset.l):borrar(); });
+})();
+$('tab').addEventListener('click',e=>{ const c=e.target.closest('.c'); if(c&&c.dataset.i) tocar(+c.dataset.i); });
+$('bPrev').onclick=()=>P&&!P.pausa&&otra(-1); $('bNext').onclick=()=>P&&!P.pausa&&otra(1);
+$('bPausa').onclick=()=>{ if(!P||P.fin) return; P.pausa=!P.pausa; guardar(true); pintar(); };
+$('bReinicio').onclick=()=>{
+  const b=$('bReinicio');
+  if(!tReinicio){ b.textContent='¿Seguro? Toca otra vez para borrar todo'; tReinicio=setTimeout(()=>{ tReinicio=0; b.textContent='Reiniciar'; },4000); return; }
+  clearTimeout(tReinicio); tReinicio=0; b.textContent='Reiniciar';
+  P.cur=P.sol.map(()=>''); P.t=0; P.fin=false; P.pausa=false; P.mal=[]; msg(''); guardar(); pintar(); pintarLista(); arrancar();
+};
+document.querySelector('.niv').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; b.disabled=true; setTimeout(()=>{ nueva(+b.dataset.n,+b.dataset.m); b.disabled=false; window.scrollTo(0,0); },20); });
+$('lista').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b){ guardar(); abrir(b.dataset.id); window.scrollTo(0,0); } });
+['lh','lv'].forEach(id=>$(id).addEventListener('click',e=>{ const b=e.target.closest('.cl'); if(b&&P&&!P.pausa){ irPalabra(P.pal[+b.dataset.k]); window.scrollTo(0,0); } }));
+document.addEventListener('keydown',e=>{
+  if(!P||e.metaKey||e.ctrlKey||e.altKey) return;
+  if(e.key==='Backspace'){ e.preventDefault(); borrar(); }
+  else if(e.key==='Tab'){ e.preventDefault(); otra(e.shiftKey?-1:1); }
+  else if(/^[a-zA-ZñÑ]$/.test(e.key)) letra(e.key.toUpperCase());
+});
+document.addEventListener('visibilitychange',()=>{ if(document.hidden){ guardarLocal(); subir(true); } else sincronizar(); });
+/* ---------- inicio ---------- */
+cargar();
+if(!S||!S.partidas){ S={actual:null,ts:0,cuenta:0,partidas:{}}; }
+if(S.actual&&S.partidas[S.actual]) abrir(S.actual);
+else { pintarLista(); nueva(9,7); }
+sincronizar();
+})();
+</script>
+<script>
+/* Actualización automática: compara con version.json y recarga si hay versión nueva */
+(function(){
+  var BUILD='V1.72', ROOT='../../';
+  var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
+  function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
+  async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }
+  function aviso(v){
+    if(document.getElementById('dgpUpd')) return;
+    var d=document.createElement('div'); d.id='dgpUpd'; d.setAttribute('role','status');
+    d.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom,0px));margin:0 auto;max-width:520px;z-index:99999;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;background:#1b1f2a;color:#eef0f5;border:1px solid rgba(255,255,255,.2);border-radius:12px;font:14px system-ui';
+    d.innerHTML='<span>Hay una versión nueva ('+v+')</span><button style="background:none;border:0;color:#e8a33d;font:inherit;font-weight:700;padding:8px 4px;cursor:pointer">Actualizar</button>';
+    d.querySelector('button').onclick=function(){ intentos(0); recargar(); };
+    document.body.appendChild(d);
+  }
+  async function comprobar(){
+    if(busy) return; busy=true;
+    try{ var r=await fetch(VJ+'?t='+Date.now(),{cache:'no-store'}); var j=await r.json();
+      if(j&&j.v&&j.v!==BUILD){ if(Date.now()-t0<8000 && intentos()<2) recargar(); else aviso(j.v); } else intentos(0);
+    }catch(e){}
+    busy=false;
+  }
+  comprobar();
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden) comprobar(); });
+})();
+</script>
+</body>
+</html>

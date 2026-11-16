@@ -8,6 +8,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Juegos">
 <title>Juegos</title>
+<script>try{if(/[?&]s=1/.test(location.search)){localStorage.setItem('dgp-juego-ult','s');history.replaceState(null,'',location.pathname)}else if(localStorage.getItem('dgp-juego-ult')==='c'){location.replace('crucigramas/')}else{localStorage.setItem('dgp-ultimo','juegos/')}}catch(e){}</script>
 <style>
 :root{--bg:#0a0c11;--s1:#11141b;--s2:#181c26;--bd:rgba(255,255,255,.14);--bd2:rgba(255,255,255,.38);--tx:#eef0f5;--mut:#98a1b5;--ac:#ffb81c;--pos:#35d39a;--neg:#ff7070;--usr:#7f9bff;--r:12px}
 @media(prefers-color-scheme:light){:root{--bg:#f3f4f8;--s1:#fff;--s2:#eef0f6;--bd:rgba(15,20,35,.16);--bd2:rgba(15,20,35,.5);--tx:#10131a;--mut:#58627a;--ac:#946100;--pos:#0e7c57;--neg:#c42b2b;--usr:#2f4fd0}}
@@ -18,6 +19,9 @@ main{max-width:480px;margin:0 auto}
 a.back{display:inline-block;color:var(--mut);font-size:.8rem;text-decoration:none;padding:6px 0}
 h1{font-size:1.35rem;margin:2px 0 2px;font-weight:700}
 .sub{color:var(--mut);font-size:.85rem;margin:0 0 12px}
+.tabs{display:flex;gap:6px;margin:0 0 12px}
+.tabs a{flex:1;text-align:center;padding:10px 0;border:1px solid var(--bd);border-radius:10px;color:var(--mut);text-decoration:none;font-weight:600;background:var(--s1)}
+.tabs a.on{color:var(--tx);border-color:var(--ac)}
 button{font:inherit;color:var(--tx);background:var(--s1);border:1px solid var(--bd);border-radius:10px;min-height:44px;padding:0 12px;cursor:pointer}
 button:disabled{opacity:.4;cursor:default}
 button.on{border-color:var(--ac)}
@@ -92,6 +96,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
 <main>
   <a class="back" href="../?inicio=1">Volver a DGP</a>
   <h1>Juegos</h1>
+  <nav class="tabs"><a class="on" href="./">Sudoku</a><a href="crucigramas/">Crucigramas</a></nav>
 
   <div class="top"><b id="nom"></b><span class="rl"><span id="reloj">0:00</span><button id="bPausa" aria-label="Pausar" title="Pausar"></button></span></div>
   <div class="rec" id="rec"></div>
@@ -127,7 +132,7 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <h2>Mis partidas</h2>
   <div class="lista" id="lista"></div>
 
-  <p class="pie"><span id="version">V1.71</span></p>
+  <p class="pie"><span id="version">V1.72</span></p>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
@@ -570,7 +575,7 @@ sincronizar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.71', ROOT='../';
+  var BUILD='V1.72', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

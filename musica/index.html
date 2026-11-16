@@ -780,6 +780,18 @@ if(!window.storage){
   .uni-seg-btn[data-f="meh"].active{background:#3a3117;color:#f5e2a3;}
   .uni-seg-btn[data-f="no"].active{background:#3a231f;color:#f7c6ba;}
   .uni-group{margin-bottom:22px;}
+  .p2-line{cursor:grab;}
+  .p2-line.dragging{opacity:.35;}
+  .p2-line.over{box-shadow:0 -2px 0 var(--amber);}
+  .p2-grip{
+    color:var(--muted);
+    font-size:14px;
+    padding:3px 2px 0 0;
+    user-select:none;
+    flex-shrink:0;
+    opacity:.4;
+  }
+  .p2-line:hover .p2-grip{opacity:1;color:var(--amber);}
   .uni-group-head{
     display:flex;
     align-items:center;
@@ -1214,6 +1226,7 @@ if(!window.storage){
     <div class="view-switch" id="lyricModeSwitch">
       <button class="view-btn active" id="lyricModeVersions">Versiones</button>
       <button class="view-btn" id="lyricModeUnified">Unificada</button>
+      <button class="view-btn" id="lyricModePhase2">Fase 2</button>
     </div>
 
     <div id="lyricVersionsPane">
@@ -1244,6 +1257,28 @@ if(!window.storage){
         <button class="tool primary" id="unifiedCopyAll">Copiar con apuntes</button>
       </div>
       <div id="unifiedList"></div>
+    </div>
+
+    <div id="lyricPhase2Pane" style="display:none;">
+      <p class="lyric-sub">Lo que ha sobrevivido a la criba. Arrastra para ordenar y vuelve a afinar.</p>
+      <div class="uni-head">
+        <div class="uni-progress" id="p2Progress"></div>
+        <div class="uni-stats" id="p2Count"></div>
+      </div>
+      <div class="unified-bar">
+        <div class="uni-seg" id="p2Seg">
+          <button class="uni-seg-btn active" data-f="todas">Todos</button>
+          <button class="uni-seg-btn" data-f="love" title="Me encanta">★</button>
+          <button class="uni-seg-btn" data-f="like" title="Me gusta">✓</button>
+          <button class="uni-seg-btn" data-f="meh" title="No me convence">~</button>
+          <button class="uni-seg-btn" data-f="pend">Sin marcar</button>
+        </div>
+        <span class="uni-spacer"></span>
+        <button class="tool" id="p2Reset">Reiniciar fase 2</button>
+        <button class="tool" id="p2ToVersion">Crear versión</button>
+        <button class="tool primary" id="p2Copy">Copiar con apuntes</button>
+      </div>
+      <div id="phase2List"></div>
     </div>
   </div>
 
@@ -1531,7 +1566,7 @@ async function loadDB(){
   renderFamilyChips();
   renderTabs();
   render();
-  if(db.lastLyricMode === "unificada") setLyricMode("unificada");
+  if(db.lastLyricMode && db.lastLyricMode !== "versiones") setLyricMode(db.lastLyricMode);
   if(db.lastView && db.lastView !== "estilos") switchView(db.lastView);
 }
 
@@ -3717,6 +3752,230 @@ function renderUnified(){
   });
 }
 
+
+let phase2Filter = "todas";
+let dragP2 = null;
+
+function marks2Bag(){
+  const cs = currentState();
+  if(!cs.lineMarks2) cs.lineMarks2 = {};
+  return cs.lineMarks2;
+}
+
+function phase2Lines(){
+  const marks = marksBag();
+  const cs = currentState();
+  const alive = unifiedLines().filter(l => (marks[l.key] || {}).mark !== "no");
+  const order = cs.phase2Order || [];
+  const pos = {};
+  order.forEach((k, i) => { pos[k] = i; });
+  return alive.sort((a, b) => {
+    const pa = pos[a.key], pb = pos[b.key];
+    if(pa === undefined && pb === undefined) return 0;
+    if(pa === undefined) return 1;
+    if(pb === undefined) return -1;
+    return pa - pb;
+  });
+}
+
+function savePhase2Order(keys){
+  currentState().phase2Order = keys;
+  saveDB();
+}
+
+function renderPhase2(){
+  const list = document.getElementById("phase2List");
+  if(!list) return;
+  const m1 = marksBag();
+  const marks = marks2Bag();
+  list.innerHTML = "";
+
+  let lines = phase2Lines();
+  const total = lines.length;
+
+  if(phase2Filter === "pend") lines = lines.filter(l => !(marks[l.key] || {}).mark);
+  else if(phase2Filter !== "todas") lines = lines.filter(l => (marks[l.key] || {}).mark === phase2Filter);
+
+  const counts = {love:0, like:0, meh:0, no:0};
+  phase2Lines().forEach(l => { const k = (marks[l.key] || {}).mark; if(k) counts[k]++; });
+  const pct = n => total ? (n / total * 100) : 0;
+  const prog = document.getElementById("p2Progress");
+  prog.innerHTML = '<i class="p-love" style="width:' + pct(counts.love) + '%"></i>' +
+                   '<i class="p-like" style="width:' + pct(counts.like) + '%"></i>' +
+                   '<i class="p-meh" style="width:' + pct(counts.meh) + '%"></i>' +
+                   '<i class="p-no" style="width:' + pct(counts.no) + '%"></i>';
+  const done = counts.love + counts.like + counts.meh + counts.no;
+  document.getElementById("p2Count").innerHTML = "<b>" + done + "</b>/" + total + " afinados";
+
+  if(total === 0){
+    list.innerHTML = '<p class="scope-empty">Nada ha pasado la criba todavía. Marca versos en Unificada.</p>';
+    return;
+  }
+  if(lines.length === 0){
+    list.innerHTML = '<p class="scope-empty">Ningún verso con ese filtro.</p>';
+    return;
+  }
+
+  lines.forEach(l => {
+    const m = marks[l.key] || {};
+    const prev = m1[l.key] || {};
+    const row = document.createElement("div");
+    row.className = "uni-line p2-line" + (m.mark ? " " + m.mark : "");
+    row.draggable = true;
+    row.dataset.k = l.key;
+
+    row.addEventListener("dragstart", (e)=>{
+      dragP2 = l.key;
+      row.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      try{ e.dataTransfer.setData("text/plain", l.key); }catch(err){}
+    });
+    row.addEventListener("dragend", ()=>{ row.classList.remove("dragging"); dragP2 = null; });
+    row.addEventListener("dragover", (e)=>{ if(dragP2){ e.preventDefault(); row.classList.add("over"); } });
+    row.addEventListener("dragleave", ()=>row.classList.remove("over"));
+    row.addEventListener("drop", (e)=>{
+      e.preventDefault();
+      row.classList.remove("over");
+      if(!dragP2 || dragP2 === l.key) return;
+      const keys = phase2Lines().map(x => x.key);
+      const from = keys.indexOf(dragP2);
+      if(from >= 0) keys.splice(from, 1);
+      const to = keys.indexOf(l.key);
+      keys.splice(to < 0 ? keys.length : to, 0, dragP2);
+      dragP2 = null;
+      savePhase2Order(keys);
+      renderPhase2();
+    });
+
+    const grip = document.createElement("span");
+    grip.className = "p2-grip";
+    grip.textContent = "⠿";
+    row.appendChild(grip);
+
+    const bar = document.createElement("div");
+    bar.className = "uni-marks";
+    MARK_LEVELS.filter(x => x[0] !== "no").forEach(([k, icon, label]) => {
+      const b = document.createElement("button");
+      b.className = "uni-mark" + (m.mark === k ? " on-" + k : "");
+      b.dataset.k = k;
+      b.textContent = icon;
+      b.title = label;
+      b.addEventListener("click", ()=>{
+        const cur = marks[l.key] || (marks[l.key] = {});
+        cur.mark = (cur.mark === k) ? "" : k;
+        if(!cur.mark && !cur.note && !cur.rewrite && !(cur.bad || []).length) delete marks[l.key];
+        saveDB();
+        renderPhase2();
+      });
+      bar.appendChild(b);
+    });
+    const out = document.createElement("button");
+    out.className = "uni-mark";
+    out.dataset.k = "no";
+    out.textContent = "✕";
+    out.title = "Sacarlo de la fase 2";
+    out.addEventListener("click", ()=>{
+      const c1 = m1[l.key] || (m1[l.key] = {});
+      c1.mark = "no";
+      saveDB();
+      renderPhase2();
+      if(document.getElementById("unifiedList")) renderUnified();
+    });
+    bar.appendChild(out);
+    row.appendChild(bar);
+
+    const body = document.createElement("div");
+    body.className = "uni-body";
+
+    const head = document.createElement("div");
+    head.style.display = "flex";
+    head.style.gap = "8px";
+    head.style.alignItems = "flex-start";
+
+    const txt = document.createElement("div");
+    txt.className = "uni-text";
+    txt.contentEditable = "true";
+    txt.spellcheck = false;
+    txt.title = "Selecciona un trozo para marcarlo";
+    paintLine(txt, m.rewrite || prev.rewrite || l.text, m.bad || []);
+    txt.addEventListener("keydown", (e)=>{ if(e.key === "Enter"){ e.preventDefault(); txt.blur(); } });
+    txt.addEventListener("blur", ()=>{
+      const val = txt.textContent.trim();
+      const cur = marks[l.key] || (marks[l.key] = {});
+      const base = prev.rewrite || l.text;
+      if(val && val !== base) cur.rewrite = val; else delete cur.rewrite;
+      if(cur.bad) cur.bad = cur.bad.filter(b => val.includes(b));
+      saveDB();
+    });
+    txt.addEventListener("click", (e)=>{
+      if(e.target.classList && e.target.classList.contains("uni-bad")){
+        const cur = marks[l.key] || {};
+        cur.bad = (cur.bad || []).filter(b => b !== e.target.textContent);
+        if(!cur.bad.length) delete cur.bad;
+        saveDB();
+        renderPhase2();
+      }
+    });
+    const grab = ()=>{
+      const sel = window.getSelection();
+      if(!sel || sel.isCollapsed) return;
+      if(!txt.contains(sel.anchorNode)) return;
+      const frag = sel.toString().trim();
+      if(frag.length < 2) return;
+      const cur = marks[l.key] || (marks[l.key] = {});
+      cur.bad = cur.bad || [];
+      if(!cur.bad.includes(frag)) cur.bad.push(frag);
+      sel.removeAllRanges();
+      saveDB();
+      renderPhase2();
+    };
+    txt.addEventListener("mouseup", ()=>setTimeout(grab, 0));
+    txt.addEventListener("touchend", ()=>setTimeout(grab, 120));
+    head.appendChild(txt);
+
+    if(prev.mark){
+      const tag = document.createElement("span");
+      tag.className = "uni-src";
+      tag.textContent = prev.mark === "love" ? "★" : prev.mark === "like" ? "✓" : "~";
+      tag.title = "En fase 1: " + MARK_LABEL[prev.mark];
+      head.appendChild(tag);
+    }
+    body.appendChild(head);
+
+    if(m.mark === "meh" || (m.bad && m.bad.length) || m.note){
+      const note = document.createElement("input");
+      note.type = "text";
+      note.className = "uni-note";
+      note.placeholder = "Qué cambiarías...";
+      note.value = m.note || "";
+      note.addEventListener("change", (e)=>{
+        (marks[l.key] || (marks[l.key] = {})).note = e.target.value;
+        saveDB();
+      });
+      body.appendChild(note);
+    }
+
+    row.appendChild(body);
+    list.appendChild(row);
+  });
+}
+
+function phase2Text(withNotes){
+  const m1 = marksBag();
+  const marks = marks2Bag();
+  return phase2Lines().map(l => {
+    const m = marks[l.key] || {};
+    const prev = m1[l.key] || {};
+    const t = m.rewrite || prev.rewrite || l.text;
+    if(!withNotes) return t;
+    const parts = [];
+    if(m.mark) parts.push(MARK_LABEL[m.mark]);
+    if((m.bad || []).length) parts.push('no me convence: "' + m.bad.join('" / "') + '"');
+    if(m.note) parts.push(m.note);
+    return t + (parts.length ? "   <-- " + parts.join(" · ") : "");
+  }).join("\n");
+}
+
 function unifiedText(mode){
   const marks = marksBag();
   const lines = unifiedLines();
@@ -3741,6 +4000,7 @@ function unifiedText(mode){
 
 function renderLyrics(){
   if(document.getElementById("unifiedList")) renderUnified();
+  if(document.getElementById("phase2List")) renderPhase2();
   const cs = currentState();
   const wrap = document.getElementById("lyricVersions");
   wrap.innerHTML = "";
@@ -3848,13 +4108,56 @@ function setLyricMode(m){
   db.lastLyricMode = m;
   document.getElementById("lyricVersionsPane").style.display = m === "versiones" ? "" : "none";
   document.getElementById("lyricUnifiedPane").style.display = m === "unificada" ? "" : "none";
+  document.getElementById("lyricPhase2Pane").style.display = m === "fase2" ? "" : "none";
   document.getElementById("lyricModeVersions").classList.toggle("active", m === "versiones");
   document.getElementById("lyricModeUnified").classList.toggle("active", m === "unificada");
+  document.getElementById("lyricModePhase2").classList.toggle("active", m === "fase2");
   saveDB();
   renderLyrics();
 }
 document.getElementById("lyricModeVersions").addEventListener("click", ()=>setLyricMode("versiones"));
 document.getElementById("lyricModeUnified").addEventListener("click", ()=>setLyricMode("unificada"));
+document.getElementById("lyricModePhase2").addEventListener("click", ()=>setLyricMode("fase2"));
+
+document.querySelectorAll("#p2Seg .uni-seg-btn").forEach(btn => {
+  btn.addEventListener("click", ()=>{
+    phase2Filter = btn.dataset.f;
+    document.querySelectorAll("#p2Seg .uni-seg-btn").forEach(b => b.classList.toggle("active", b === btn));
+    renderPhase2();
+  });
+});
+
+document.getElementById("p2Copy").addEventListener("click", (e)=>{
+  const body = phase2Text(true);
+  if(!body){ flashBtn(e.currentTarget, "Nada aún", "Copiar con apuntes"); return; }
+  copyText("Canción: " + db.currentSong + "\n" +
+    "Versos que ya han pasado la criba, en este orden. ME ENCANTA: intocable. ME GUSTA: consérvalo. " +
+    "NO ME CONVENCE: reescríbelo. Si marco un trozo entre comillas, cambia solo ese trozo.\n" +
+    "Móntame con esto la letra final.\n\n" + body);
+  flashBtn(e.currentTarget, "Copiado ✓", "Copiar con apuntes");
+});
+
+document.getElementById("p2ToVersion").addEventListener("click", (e)=>{
+  const body = phase2Text(false);
+  if(!body){ flashBtn(e.currentTarget, "Nada aún", "Crear versión"); return; }
+  addLyricVersion(body);
+  setLyricMode("versiones");
+});
+
+document.getElementById("p2Reset").addEventListener("click", (e)=>{
+  const b = e.currentTarget;
+  if(b.dataset.armed === "1"){
+    currentState().lineMarks2 = {};
+    delete currentState().phase2Order;
+    saveDB();
+    renderPhase2();
+    b.dataset.armed = ""; b.textContent = "Reiniciar fase 2";
+    return;
+  }
+  b.dataset.armed = "1";
+  b.textContent = "¿Seguro?";
+  setTimeout(()=>{ b.dataset.armed = ""; b.textContent = "Reiniciar fase 2"; }, 3000);
+});
 
 document.querySelectorAll("#uniSeg .uni-seg-btn").forEach(btn => {
   btn.addEventListener("click", ()=>{

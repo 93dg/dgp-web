@@ -752,6 +752,12 @@ if(!window.storage){
     margin-bottom:14px;
   }
   .uni-spacer{flex:1;}
+  .uni-sort{
+    font-size:13.5px;
+    padding:7px 10px;
+    min-width:0;
+    flex:0 1 210px;
+  }
   .uni-seg{
     display:flex;
     gap:2px;
@@ -1251,6 +1257,15 @@ if(!window.storage){
           <button class="uni-seg-btn" data-f="no" title="Fuera">✕</button>
           <button class="uni-seg-btn" data-f="pend">Sin marcar</button>
         </div>
+        <select id="uniSort" class="sec-select uni-sort" title="Cómo agrupar los versos">
+          <option value="seccion">Agrupar: por sección</option>
+          <option value="parecidas">Agrupar: frases parecidas</option>
+          <option value="rima">Agrupar: por rima</option>
+          <option value="repes">Agrupar: más repetidas</option>
+          <option value="marca">Agrupar: por marca</option>
+          <option value="metrica">Agrupar: por métrica</option>
+          <option value="version">Agrupar: por versión</option>
+        </select>
         <span class="uni-spacer"></span>
         <button class="tool" id="unifiedCopySel">Copiar marcadas</button>
         <button class="tool" id="unifiedToVersion">Versión con las ✓</button>
@@ -1567,6 +1582,11 @@ async function loadDB(){
   renderFamilyChips();
   renderTabs();
   render();
+  if(db.lastUniSort){
+    unifiedSort = db.lastUniSort;
+    const sel = document.getElementById("uniSort");
+    if(sel) sel.value = unifiedSort;
+  }
   if(db.lastLyricMode && db.lastLyricMode !== "versiones") setLyricMode(db.lastLyricMode);
   if(db.lastView && db.lastView !== "estilos") switchView(db.lastView);
 }
@@ -3603,6 +3623,97 @@ function unifiedLines(){
   return [...seen.values()];
 }
 
+
+let unifiedSort = "seccion";
+
+const STOP_W = new Set(["de","la","el","los","las","un","una","y","o","que","en","con","por","para","mi","tu","su","me","te","se","lo","al","del","no","si","a","es","mas","muy","ya","como","pero","cuando","donde"]);
+
+function wordsOf(t){
+  return (t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"")
+    .replace(/[^a-z0-9ñ ]/g," ").split(/\s+/).filter(w => w.length > 2 && !STOP_W.has(w));
+}
+
+function jaccard(a, b){
+  if(!a.size || !b.size) return 0;
+  let inter = 0;
+  a.forEach(w => { if(b.has(w)) inter++; });
+  return inter / (a.size + b.size - inter);
+}
+
+function rimaDe(t){
+  const ws = (t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"")
+    .replace(/[^a-z0-9ñ ]/g," ").trim().split(/\s+/);
+  const last = ws[ws.length - 1] || "";
+  if(last.length < 3) return "-" + (last || "?");
+  const vowels = [...last.matchAll(/[aeiou]/g)].map(x => x.index);
+  const start = vowels.length >= 2 ? vowels[vowels.length - 2] : (vowels[0] !== undefined ? vowels[0] : last.length - 3);
+  return "-" + last.slice(start);
+}
+
+function silabasDe(t){
+  const c = (t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"")
+    .replace(/[^a-zñ ]/g,"").match(/[aeiou]+/g);
+  return c ? c.length : 0;
+}
+
+function clusterParecidas(lines){
+  const sets = lines.map(l => new Set(wordsOf(l.text)));
+  const used = new Array(lines.length).fill(false);
+  const groups = [];
+  for(let i = 0; i < lines.length; i++){
+    if(used[i]) continue;
+    const g = [lines[i]];
+    used[i] = true;
+    for(let j = i + 1; j < lines.length; j++){
+      if(used[j]) continue;
+      if(jaccard(sets[i], sets[j]) >= 0.4){ g.push(lines[j]); used[j] = true; }
+    }
+    groups.push(g);
+  }
+  groups.sort((a, b) => b.length - a.length);
+  return groups;
+}
+
+function groupUnified(lines){
+  if(unifiedSort === "parecidas"){
+    const gs = clusterParecidas(lines);
+    const order = [], map = {};
+    gs.forEach(g => {
+      const name = g.length > 1
+        ? g.length + " VARIANTES · " + g[0].text.split(/\s+/).slice(0, 4).join(" ").toUpperCase() + "…"
+        : "SIN PAREJA";
+      let key = name, n = 2;
+      while(map[key] && key !== "SIN PAREJA"){ key = name + " (" + (n++) + ")"; }
+      if(!map[key]){ map[key] = []; order.push(key); }
+      map[key] = map[key].concat(g);
+    });
+    return {order, map};
+  }
+  const keyOf = {
+    seccion: l => l.section,
+    rima:    l => "RIMA EN " + rimaDe(l.text).toUpperCase(),
+    repes:   l => l.srcs.length > 1 ? "EN " + l.srcs.length + " VERSIONES" : "EN UNA SOLA VERSIÓN",
+    marca:   l => { const m = (marksBag()[l.key] || {}).mark; return m ? MARK_LABEL[m] : "SIN MARCAR"; },
+    metrica: l => { const n = silabasDe(l.text); const lo = Math.floor(n / 3) * 3; return lo + "-" + (lo + 2) + " SÍLABAS"; },
+    version: l => l.srcs[0].toUpperCase()
+  }[unifiedSort] || (l => l.section);
+
+  const map = {}, order = [];
+  lines.forEach(l => {
+    const k = keyOf(l);
+    if(!map[k]){ map[k] = []; order.push(k); }
+    map[k].push(l);
+  });
+  if(unifiedSort === "repes") order.sort((a, b) => (map[b][0].srcs.length) - (map[a][0].srcs.length));
+  if(unifiedSort === "metrica") order.sort((a, b) => parseInt(a) - parseInt(b));
+  if(unifiedSort === "marca"){
+    const rank = ["ME ENCANTA","ME GUSTA","NO ME CONVENCE","SIN MARCAR","FUERA"];
+    order.sort((a, b) => rank.indexOf(a) - rank.indexOf(b));
+  }
+  if(unifiedSort === "rima") order.sort((a, b) => map[b].length - map[a].length);
+  return {order, map};
+}
+
 function renderUnified(){
   const list = document.getElementById("unifiedList");
   const marks = marksBag();
@@ -3637,19 +3748,16 @@ function renderUnified(){
     return;
   }
 
-  const groups = {};
-  const order = [];
-  lines.forEach(l => {
-    if(!groups[l.section]){ groups[l.section] = []; order.push(l.section); }
-    groups[l.section].push(l);
-  });
+  const grouped = groupUnified(lines);
+  const groups = grouped.map;
+  const order = grouped.order;
 
   order.forEach(sec => {
     const g = document.createElement("div");
     g.className = "uni-group";
     const h = document.createElement("div");
     h.className = "uni-group-head";
-    h.textContent = sec;
+    h.textContent = sec + "  ·  " + groups[sec].length;
     g.appendChild(h);
 
     groups[sec].forEach(l => {
@@ -4201,6 +4309,13 @@ document.getElementById("p2Reset").addEventListener("click", (e)=>{
   b.dataset.armed = "1";
   b.textContent = "¿Seguro?";
   setTimeout(()=>{ b.dataset.armed = ""; b.textContent = "Reiniciar"; }, 3000);
+});
+
+document.getElementById("uniSort").addEventListener("change", (e)=>{
+  unifiedSort = e.target.value;
+  db.lastUniSort = unifiedSort;
+  saveDB();
+  renderUnified();
 });
 
 document.querySelectorAll("#uniSeg .uni-seg-btn").forEach(btn => {

@@ -712,6 +712,94 @@ if(!window.storage){
     width:12px;
     flex-shrink:0;
   }
+  .unified-bar{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    align-items:center;
+    margin-bottom:10px;
+  }
+  .unified-count{
+    margin-left:auto;
+    font-family:var(--font-mono);
+    font-size:11px;
+    color:var(--muted);
+  }
+  .uni-group{margin-bottom:14px;}
+  .uni-group-head{
+    font-family:var(--font-mono);
+    font-size:11px;
+    color:var(--teal);
+    padding:6px 2px 4px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:4px;
+  }
+  .uni-line{
+    display:flex;
+    align-items:flex-start;
+    gap:8px;
+    padding:5px 8px;
+    border-radius:7px;
+    border:1px solid transparent;
+    border-left:2px solid var(--line);
+    background:var(--card);
+    margin-bottom:3px;
+  }
+  .uni-line.like{background:#16281a;border-left-color:var(--green,#3f9153);}
+  .uni-line.edit{background:#2e2613;border-left-color:#c99a2e;}
+  .uni-line.no{background:#2a1a17;border-left-color:#a84a3a;opacity:.65;}
+  .uni-text{
+    flex:1;
+    font-size:13.5px;
+    line-height:1.55;
+    white-space:pre-wrap;
+    word-break:break-word;
+    cursor:text;
+    min-width:0;
+  }
+  .uni-line.no .uni-text{text-decoration:line-through;}
+  .uni-text:focus{outline:none;box-shadow:0 1px 0 var(--amber);}
+  .uni-src{
+    font-family:var(--font-mono);
+    font-size:9.5px;
+    color:var(--muted);
+    white-space:nowrap;
+    padding-top:3px;
+  }
+  .uni-marks{display:flex;gap:3px;flex-shrink:0;}
+  .uni-mark{
+    width:24px;
+    height:24px;
+    border-radius:5px;
+    border:1px solid var(--line);
+    background:none;
+    color:var(--muted);
+    cursor:pointer;
+    font-size:12px;
+    line-height:1;
+    padding:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .uni-mark:hover{border-color:var(--amber);color:var(--text);}
+  .uni-mark.on-like{background:#1c3524;border-color:#7fd992;color:#bdf0c8;}
+  .uni-mark.on-edit{background:#3a3117;border-color:#e8c56b;color:#f5e2a3;}
+  .uni-mark.on-no{background:#3a231f;border-color:#e88a78;color:#f7c6ba;}
+  .uni-note{
+    width:100%;
+    margin-top:5px;
+    background:var(--bg);
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:5px 8px;
+    border-radius:6px;
+    font-size:12px;
+    font-family:var(--font-body);
+    outline:none;
+  }
+  .uni-note:focus{border-color:var(--amber);}
+  .uni-body{flex:1;min-width:0;}
   .lyric-pick{
     width:15px;
     height:15px;
@@ -1015,10 +1103,29 @@ if(!window.storage){
   </div>
 
   <div id="lyricsSection" style="display:none;">
-    <p class="lyric-sub">Toca Expandir para editar. Duplicar crea una versión nueva.</p>
-    <button class="tool primary" id="newLyricBtn">Nueva letra</button>
-    <button class="tool" id="copyAllLyricsBtn" title="Copia todas las versiones para pegarlas en un prompt">Copiar todas</button>
-    <div id="lyricVersions"></div>
+    <div class="view-switch" id="lyricModeSwitch">
+      <button class="view-btn active" id="lyricModeVersions">Versiones</button>
+      <button class="view-btn" id="lyricModeUnified">Unificada</button>
+    </div>
+
+    <div id="lyricVersionsPane">
+      <p class="lyric-sub">Toca Expandir para editar. Duplicar crea una versión nueva.</p>
+      <button class="tool primary" id="newLyricBtn">Nueva letra</button>
+      <button class="tool" id="copyAllLyricsBtn" title="Copia todas las versiones para pegarlas en un prompt">Copiar todas</button>
+      <div id="lyricVersions"></div>
+    </div>
+
+    <div id="lyricUnifiedPane" style="display:none;">
+      <p class="lyric-sub">Todos los versos de todas las versiones, sin repetir. Marca cada uno: ✓ me gusta · ✎ cambiar · ✕ fuera.</p>
+      <div class="unified-bar">
+        <button class="tool" id="unifiedFilter" data-f="todas">Todas</button>
+        <button class="tool" id="unifiedCopySel">Copiar marcadas</button>
+        <button class="tool primary" id="unifiedCopyAll">Copiar con apuntes</button>
+        <button class="tool" id="unifiedToVersion">Crear versión con las ✓</button>
+        <span class="unified-count" id="unifiedCount"></span>
+      </div>
+      <div id="unifiedList"></div>
+    </div>
   </div>
 
   <footer>Se guarda solo, por canción.</footer>
@@ -1305,6 +1412,7 @@ async function loadDB(){
   renderFamilyChips();
   renderTabs();
   render();
+  if(db.lastLyricMode === "unificada") setLyricMode("unificada");
   if(db.lastView && db.lastView !== "estilos") switchView(db.lastView);
 }
 
@@ -3270,7 +3378,185 @@ function buildLyricBody(v){
 
 let dragLine = null;
 
+
+let lyricMode2 = "versiones";
+let unifiedFilter = "todas";
+
+function lineKey(t){
+  return (t || "").toLowerCase()
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9ñ ]/g, "")
+    .replace(/\s+/g, " ").trim();
+}
+
+function marksBag(){
+  const cs = currentState();
+  if(!cs.lineMarks) cs.lineMarks = {};
+  return cs.lineMarks;
+}
+
+function unifiedLines(){
+  const cs = currentState();
+  const seen = new Map();
+  (cs.lyricVersions || []).forEach((v, vi) => {
+    const label = v.title || ("Versión " + (vi + 1));
+    let section = "";
+    (v.text || "").split("\n").forEach(raw => {
+      const line = raw.trim();
+      if(!line) return;
+      if(/^[\[(].+[\])]$/.test(line)){ section = line.replace(/^[\[(]|[\])]$/g, "").toUpperCase(); return; }
+      const k = lineKey(line);
+      if(!k) return;
+      if(seen.has(k)){
+        const e = seen.get(k);
+        if(!e.srcs.includes(label)) e.srcs.push(label);
+        if(!e.section && section) e.section = section;
+      } else {
+        seen.set(k, {key:k, text:line, srcs:[label], section:section || "SIN SECCIÓN"});
+      }
+    });
+  });
+  return [...seen.values()];
+}
+
+function renderUnified(){
+  const list = document.getElementById("unifiedList");
+  const marks = marksBag();
+  list.innerHTML = "";
+  let lines = unifiedLines();
+  const total = lines.length;
+
+  if(unifiedFilter === "like") lines = lines.filter(l => (marks[l.key] || {}).mark === "like");
+  else if(unifiedFilter === "edit") lines = lines.filter(l => (marks[l.key] || {}).mark === "edit");
+  else if(unifiedFilter === "pend") lines = lines.filter(l => !(marks[l.key] || {}).mark);
+
+  const counts = {like:0, edit:0, no:0};
+  unifiedLines().forEach(l => { const m = (marks[l.key] || {}).mark; if(m) counts[m]++; });
+  document.getElementById("unifiedCount").textContent =
+    total + " versos · ✓" + counts.like + " ✎" + counts.edit + " ✕" + counts.no;
+
+  if(total === 0){
+    list.innerHTML = '<p class="scope-empty">Todavía no hay versos. Escribe alguna versión en la pestaña Versiones.</p>';
+    return;
+  }
+  if(lines.length === 0){
+    list.innerHTML = '<p class="scope-empty">Ningún verso con ese filtro.</p>';
+    return;
+  }
+
+  const groups = {};
+  const order = [];
+  lines.forEach(l => {
+    if(!groups[l.section]){ groups[l.section] = []; order.push(l.section); }
+    groups[l.section].push(l);
+  });
+
+  order.forEach(sec => {
+    const g = document.createElement("div");
+    g.className = "uni-group";
+    const h = document.createElement("div");
+    h.className = "uni-group-head";
+    h.textContent = sec;
+    g.appendChild(h);
+
+    groups[sec].forEach(l => {
+      const m = marks[l.key] || {};
+      const row = document.createElement("div");
+      row.className = "uni-line" + (m.mark ? " " + m.mark : "");
+
+      const body = document.createElement("div");
+      body.className = "uni-body";
+
+      const head = document.createElement("div");
+      head.style.display = "flex";
+      head.style.gap = "8px";
+      head.style.alignItems = "flex-start";
+
+      const txt = document.createElement("div");
+      txt.className = "uni-text";
+      txt.textContent = m.rewrite || l.text;
+      txt.contentEditable = "true";
+      txt.spellcheck = false;
+      txt.title = "Puedes reescribirlo aquí";
+      txt.addEventListener("keydown", (e)=>{ if(e.key === "Enter"){ e.preventDefault(); txt.blur(); } });
+      txt.addEventListener("blur", ()=>{
+        const val = txt.textContent.trim();
+        const cur = marks[l.key] || (marks[l.key] = {});
+        if(val && val !== l.text) cur.rewrite = val; else delete cur.rewrite;
+        saveDB();
+      });
+      head.appendChild(txt);
+
+      const src = document.createElement("span");
+      src.className = "uni-src";
+      src.textContent = l.srcs.length > 1 ? "×" + l.srcs.length : "";
+      src.title = l.srcs.join(" · ");
+      head.appendChild(src);
+
+      body.appendChild(head);
+
+      if(m.mark === "edit"){
+        const note = document.createElement("input");
+        note.type = "text";
+        note.className = "uni-note";
+        note.placeholder = "Qué cambiarías...";
+        note.value = m.note || "";
+        note.addEventListener("change", (e)=>{
+          marks[l.key].note = e.target.value;
+          saveDB();
+        });
+        body.appendChild(note);
+      }
+
+      const bar = document.createElement("div");
+      bar.className = "uni-marks";
+      [["like","✓"],["edit","✎"],["no","✕"]].forEach(([k, icon]) => {
+        const b = document.createElement("button");
+        b.className = "uni-mark" + (m.mark === k ? " on-" + k : "");
+        b.textContent = icon;
+        b.title = k === "like" ? "Me gusta" : k === "edit" ? "Cambiar algo" : "Fuera";
+        b.addEventListener("click", ()=>{
+          const cur = marks[l.key] || (marks[l.key] = {});
+          cur.mark = (cur.mark === k) ? "" : k;
+          if(!cur.mark && !cur.note && !cur.rewrite) delete marks[l.key];
+          saveDB();
+          renderUnified();
+        });
+        bar.appendChild(b);
+      });
+
+      row.appendChild(body);
+      row.appendChild(bar);
+      g.appendChild(row);
+    });
+
+    list.appendChild(g);
+  });
+}
+
+function unifiedText(mode){
+  const marks = marksBag();
+  const lines = unifiedLines();
+  const out = [];
+  let sec = null;
+  lines.forEach(l => {
+    const m = marks[l.key] || {};
+    if(mode === "sel" && !m.mark) return;
+    if(mode === "keep" && m.mark !== "like") return;
+    if(mode === "all" && m.mark === "no") return;
+    if(l.section !== sec){ sec = l.section; out.push((out.length ? "\n" : "") + "[" + sec + "]"); }
+    const t = m.rewrite || l.text;
+    if(mode === "keep"){ out.push(t); return; }
+    const tag = m.mark === "like" ? "  <-- ME GUSTA"
+      : m.mark === "edit" ? ("  <-- CAMBIAR" + (m.note ? ": " + m.note : ""))
+      : m.mark === "no" ? "  <-- FUERA" : "";
+    out.push(t + tag);
+  });
+  return out.join("\n");
+}
+
 function renderLyrics(){
+  if(document.getElementById("unifiedList")) renderUnified();
   const cs = currentState();
   const wrap = document.getElementById("lyricVersions");
   wrap.innerHTML = "";
@@ -3372,6 +3658,56 @@ document.getElementById("viewComposeBtn").addEventListener("click", ()=>switchVi
 document.getElementById("viewRefsBtn").addEventListener("click", ()=>switchView("refs"));
 document.getElementById("viewAntiBtn").addEventListener("click", ()=>switchView("anti"));
 document.getElementById("newLyricBtn").addEventListener("click", ()=>addLyricVersion(""));
+
+function setLyricMode(m){
+  lyricMode2 = m;
+  db.lastLyricMode = m;
+  document.getElementById("lyricVersionsPane").style.display = m === "versiones" ? "" : "none";
+  document.getElementById("lyricUnifiedPane").style.display = m === "unificada" ? "" : "none";
+  document.getElementById("lyricModeVersions").classList.toggle("active", m === "versiones");
+  document.getElementById("lyricModeUnified").classList.toggle("active", m === "unificada");
+  saveDB();
+  renderLyrics();
+}
+document.getElementById("lyricModeVersions").addEventListener("click", ()=>setLyricMode("versiones"));
+document.getElementById("lyricModeUnified").addEventListener("click", ()=>setLyricMode("unificada"));
+
+document.getElementById("unifiedFilter").addEventListener("click", (e)=>{
+  const seq = ["todas","like","edit","pend"];
+  const label = {todas:"Todas", like:"Solo ✓", edit:"Solo ✎", pend:"Sin marcar"};
+  unifiedFilter = seq[(seq.indexOf(unifiedFilter) + 1) % seq.length];
+  e.currentTarget.textContent = label[unifiedFilter];
+  renderUnified();
+});
+
+function flashBtn(btn, msg, back){
+  btn.textContent = msg;
+  setTimeout(()=>{ btn.textContent = back; }, 1600);
+}
+
+document.getElementById("unifiedCopyAll").addEventListener("click", (e)=>{
+  const body = unifiedText("all");
+  if(!body){ flashBtn(e.currentTarget, "No hay versos", "Copiar con apuntes"); return; }
+  copyText("Canción: " + db.currentSong + "\n" +
+    "Estos son todos los versos de mis versiones, sin repetir, con mis apuntes.\n" +
+    "ME GUSTA: consérvalo tal cual. CAMBIAR: reescríbelo siguiendo mi nota. Lo que no lleva apunte, decídelo tú.\n" +
+    "Hazme una versión final con lo mejor de todo.\n\n" + body);
+  flashBtn(e.currentTarget, "Copiado ✓", "Copiar con apuntes");
+});
+
+document.getElementById("unifiedCopySel").addEventListener("click", (e)=>{
+  const body = unifiedText("sel");
+  if(!body){ flashBtn(e.currentTarget, "Nada marcado", "Copiar marcadas"); return; }
+  copyText("Canción: " + db.currentSong + "\n\n" + body);
+  flashBtn(e.currentTarget, "Copiado ✓", "Copiar marcadas");
+});
+
+document.getElementById("unifiedToVersion").addEventListener("click", (e)=>{
+  const body = unifiedText("keep");
+  if(!body){ flashBtn(e.currentTarget, "Ninguna ✓", "Crear versión con las ✓"); return; }
+  addLyricVersion(body);
+  setLyricMode("versiones");
+});
 
 document.getElementById("copyAllLyricsBtn").addEventListener("click", ()=>{
   const btn = document.getElementById("copyAllLyricsBtn");

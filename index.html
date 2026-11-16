@@ -8,6 +8,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="DGP">
 <title>DGP</title>
+<script>try{var q=location.search.indexOf('inicio')>-1,u=localStorage.getItem('dgp-ultimo');if(q){localStorage.removeItem('dgp-ultimo');history.replaceState(null,'',location.pathname)}else if(u==='juegos/')location.replace(u)}catch(e){}</script>
 <style>
 :root{--bg:#0a0c11;--s1:#11141b;--s2:#181c26;--bd:rgba(255,255,255,.09);--tx:#eef0f5;--mut:#98a1b5;--ac:#ffb81c;--warn:#ffb81c;--pos:#35d39a;--neg:#ff7070;--r:14px;--glow:rgba(255,184,28,.08);--c1:#6c8cff;--c2:#35d39a;--c3:#ffb81c;--c4:#ff7070}
 @media(prefers-color-scheme:light){:root{--bg:#f3f4f8;--s1:#fff;--s2:#f7f8fb;--bd:rgba(15,20,35,.11);--tx:#10131a;--mut:#58627a;--ac:#946100;--warn:#946100;--pos:#0e7c57;--neg:#c42b2b;--glow:rgba(148,97,0,.07);--c1:#3d5fe0;--c2:#0e7c57;--c3:#946100;--c4:#c42b2b}}
@@ -184,7 +185,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[t
   <aside class="side">
     <div class="brand">DGP</div>
     <nav id="nav" aria-label="Secciones"></nav>
-    <div class="foot"><span class="m"><span id="version">V1.67</span></span><button id="out">Salir</button></div>
+    <div class="foot"><span class="m"><span id="version">V1.68</span></span><button id="out">Salir</button></div>
   </aside>
   <div>
   <div class="main">
@@ -270,12 +271,13 @@ async function cargarSecciones(){
   secs=r;
   const items=secs.map(s=>`<button data-s="${s.slug}" aria-pressed="false">${icoSec(s)}<span>${esc(s.nombre)}</span></button>`).join('');
   const MUS=ic('M9 18V5l11-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM20 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z');
-  const extra=`<button data-go="musica/">${MUS}<span>Música</span></button><button data-go="musica/#medios">${ic('M4 5h16v14H4zM9 9l6 3-6 3z')}<span>Medios</span></button><button data-go="juegos/">${ic('M7 8h10a4 4 0 0 1 4 4v2a2.5 2.5 0 0 1-4.2 1.8L15.5 15h-7l-1.3 .8A2.5 2.5 0 0 1 3 14v-2a4 4 0 0 1 4-4zM8 10.5v3M6.5 12h3M16 11.5h.01M18 13h.01')}<span>Juegos</span></button>`;
+  const extra=`<button data-go="juegos/">${ic('M7 8h10a4 4 0 0 1 4 4v2a2.5 2.5 0 0 1-4.2 1.8L15.5 15h-7l-1.3 .8A2.5 2.5 0 0 1 3 14v-2a4 4 0 0 1 4-4zM8 10.5v3M6.5 12h3M16 11.5h.01M18 13h.01')}<span>Juegos</span></button>`;
   $('nav').innerHTML=items+extra;$('tabbar').innerHTML=items+extra;
   abrir((secs.find(s=>s.slug===UI.seccion)||secs[0]||{}).slug);
 }
-document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g){location.href=g.dataset.go;return}const b=e.target.closest('[data-s]');if(b&&(b.closest('#nav')||b.closest('#tabbar')))abrir(b.dataset.s)});
+document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g){try{localStorage.setItem('dgp-ultimo',g.dataset.go)}catch(_){}location.href=g.dataset.go;return}const b=e.target.closest('[data-s]');if(b&&(b.closest('#nav')||b.closest('#tabbar')))abrir(b.dataset.s)});
 async function abrir(slug){
+  try{localStorage.removeItem('dgp-ultimo')}catch(_){}
   sec=secs.find(s=>s.slug===slug);if(!sec)return;
   if(UI.seccion!==slug)setUI('seccion',slug);
   document.querySelectorAll('[data-s]').forEach(b=>{const on=b.dataset.s===slug;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});
@@ -848,7 +850,7 @@ iniciar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.67', ROOT='';
+  var BUILD='V1.68', ROOT='';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

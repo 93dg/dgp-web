@@ -912,19 +912,27 @@ if(!window.storage){
   .uni-mark.on-meh{background:#3a3117;color:#f5e2a3;border-color:#a8832b;box-shadow:0 0 12px rgba(168,131,43,.3);}
   .uni-mark.on-no{background:#3a231f;color:#f7c6ba;border-color:#9c5447;box-shadow:0 0 12px rgba(156,84,71,.3);}
   .uni-note{
-    width:100%;
-    margin-top:8px;
-    font-size:13.5px;
-    background:var(--bg);
-    border:1px solid var(--line);
-    color:var(--text);
-    padding:5px 8px;
-    border-radius:6px;
-    font-size:12px;
+    flex:0 0 150px;
+    width:150px;
+    align-self:flex-start;
+    margin-top:1px;
+    background:transparent;
+    border:none;
+    border-bottom:1px dashed var(--line);
+    color:var(--muted);
+    padding:2px 4px;
+    border-radius:0;
+    font-size:12.5px;
     font-family:var(--font-body);
     outline:none;
+    opacity:0;
+    transition:opacity .15s ease, color .15s;
   }
-  .uni-note:focus{border-color:var(--amber);}
+  .uni-line:hover .uni-note, .uni-note:focus, .uni-note.has{opacity:1;}
+  .uni-note.has{color:#e8c56b;border-bottom-color:#8a6f28;}
+  .uni-note:focus{color:var(--text);border-bottom-color:var(--amber);border-bottom-style:solid;}
+  .uni-note::placeholder{color:var(--muted);opacity:.5;}
+  @media (hover:none){ .uni-note{opacity:1;flex-basis:110px;width:110px;} }
   .uni-body{flex:1;min-width:0;}
   .lyric-pick{
     width:15px;
@@ -3819,20 +3827,23 @@ function renderUnified(){
       src.title = l.srcs.join(" · ");
       head.appendChild(src);
 
-      body.appendChild(head);
-
-      if(m.mark !== "no" && (m.mark === "meh" || (m.bad && m.bad.length) || m.note)){
+      if(m.mark !== "no"){
         const note = document.createElement("input");
         note.type = "text";
-        note.className = "uni-note";
-        note.placeholder = m.bad && m.bad.length ? "Qué le pasa a lo subrayado..." : "Qué cambiarías...";
+        note.className = "uni-note" + (m.note ? " has" : "");
+        note.placeholder = "nota";
+        note.title = "Lo que no te convence";
         note.value = m.note || "";
         note.addEventListener("change", (e)=>{
-          (marks[l.key] || (marks[l.key] = {})).note = e.target.value;
+          const cur = marks[l.key] || (marks[l.key] = {});
+          cur.note = e.target.value;
+          if(!cur.note) delete cur.note;
           saveDB();
         });
-        body.appendChild(note);
+        head.appendChild(note);
       }
+
+      body.appendChild(head);
 
       const bar = document.createElement("div");
       bar.className = "uni-marks";
@@ -4049,20 +4060,21 @@ function renderPhase2(){
       tag.title = "En fase 1: " + MARK_LABEL[prev.mark];
       head.appendChild(tag);
     }
-    body.appendChild(head);
+    const note2 = document.createElement("input");
+    note2.type = "text";
+    note2.className = "uni-note" + (m.note ? " has" : "");
+    note2.placeholder = "nota";
+    note2.title = "Lo que no te convence";
+    note2.value = m.note || "";
+    note2.addEventListener("change", (e)=>{
+      const cur = marks[l.key] || (marks[l.key] = {});
+      cur.note = e.target.value;
+      if(!cur.note) delete cur.note;
+      saveDB();
+    });
+    head.appendChild(note2);
 
-    if(m.mark === "meh" || (m.bad && m.bad.length) || m.note){
-      const note = document.createElement("input");
-      note.type = "text";
-      note.className = "uni-note";
-      note.placeholder = "Qué cambiarías...";
-      note.value = m.note || "";
-      note.addEventListener("change", (e)=>{
-        (marks[l.key] || (marks[l.key] = {})).note = e.target.value;
-        saveDB();
-      });
-      body.appendChild(note);
-    }
+    body.appendChild(head);
 
     row.appendChild(body);
     list.appendChild(row);

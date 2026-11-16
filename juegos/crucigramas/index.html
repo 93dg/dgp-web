@@ -39,6 +39,7 @@ button:disabled{opacity:.4;cursor:default}
 .c.k{background:var(--blk);cursor:default}
 .c.w{background:color-mix(in srgb,var(--usr) 42%,var(--cel))}
 .c.sel{background:color-mix(in srgb,var(--ac) 55%,var(--cel));outline:2px solid var(--ac);outline-offset:-2px;z-index:1}
+.c.g{color:var(--tx);font-weight:800}
 .c.mal{color:var(--neg)}
 .c.ok{color:var(--pos)}
 .c i{position:absolute;left:2px;top:0;font-style:normal;font-weight:500;color:var(--mut);font-size:calc((min(100vw,512px) - 32px)/var(--n)*.27);line-height:1.15}
@@ -48,7 +49,7 @@ button:disabled{opacity:.4;cursor:default}
 #teclado .f{display:grid;gap:5px;grid-template-columns:repeat(10,1fr)}
 #teclado button{min-height:48px;padding:0;font-size:1.15rem;font-weight:600}
 #teclado.pausa{opacity:.45;pointer-events:none}
-.niv{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.niv{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:10px 0}
 .niv small{display:block;color:var(--mut);font-weight:400;font-size:.72rem}
 h2{font-size:1rem;margin:18px 0 6px}
 .lista button{display:block;width:100%;text-align:left;margin:0 0 6px;padding:8px 12px;min-height:44px}
@@ -91,11 +92,11 @@ summary{cursor:pointer;font-weight:600;padding:8px 0}
   <div id="teclado"></div>
   <button id="bReinicio">Reiniciar</button>
   <h2>Nuevo crucigrama</h2>
-  <div class="niv"><button data-n="9" data-m="7">Pequeño<small>9×9</small></button><button data-n="11" data-m="11">Mediano<small>11×11</small></button><button data-n="13" data-m="15">Grande<small>13×13</small></button></div>
+  <div class="niv"><button data-k="facil">Fácil<small>9×9 · con letras dadas</small></button><button data-k="medio">Medio<small>11×11 · algunas dadas</small></button><button data-k="dificil">Difícil<small>13×13 · sin ayudas</small></button><button data-k="experto">Experto<small>13×13 · palabras duras</small></button></div>
   <details id="det"><summary>Todas las pistas</summary><div id="lh"></div><div id="lv"></div></details>
   <h2>Mis crucigramas</h2>
   <div class="lista" id="lista"></div>
-  <p class="pie"><span id="version">V1.79</span></p>
+  <p class="pie"><span id="version">V1.80</span></p>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 <script>
@@ -789,7 +790,14 @@ const $=id=>document.getElementById(id);
 const KEY='dgp-crucigramas', KS='juegos_crucigramas';
 let S=null, P=null, timer=null, tReinicio=0;
 const fmtT=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
-const NIV={9:'Pequeño',11:'Mediano',13:'Grande'};
+const NIV={9:'Pequeño',11:'Mediano',13:'Grande',facil:'Fácil',medio:'Medio',dificil:'Difícil',experto:'Experto'};
+const DUROS=new Set('TIBER GUADALQUIVIR DANUBIO TAMESIS EVEREST ETNA ALHAMBRA ACUEDUCTO COLISEO MAGALLANES PASTEUR CURIE GALILEO DARWIN EINSTEIN NEWTON VELAZQUEZ MIRO DALI GOYA LORCA CERVANTES QUIJOTE CID CESAR NAPOLEON COLON ISABEL AZAHAR ENIGMA ARCOIRIS ECLIPSE ORBITA DELTA GOLFO CELOS SUSURRO HOGUERA ACERO PLOMO ELEMENTO MATERIA CORO ARPA VALS NAIPE DROMEDARIO NUTRIA TOPO LINCE ERIZO JABALI MURCIELAGO ENCINA ROBLE LIENZO ESCULTURA MURALLA ACUEDUCTO ATOMO CELULA GRAVEDAD ENERGIA ORO COBRE HIERRO PLATA DIAMANTE IMAN PRODUCTO PRIMO DECADA DECENA SIGLO ANGULO ESFERA MELODIA VERSO RIMA GUION AUTOR LECTOR DICCIONARIO FRONTERA IMPUESTO JUICIO JUSTICIA SOBERANA ARQUITECTO INGENIERO PASTOR CARPINTERO ASUNCION MONTEVIDEO ATENAS BERNA OSLO LUGO JAEN CUENCA AVILA SORIA HUELVA ALMERIA ANDES ALPES PIRINEOS TEIDE SAHARA ARTICO OCEANIA PACIFICO ATLANTICO TULIPAN CLAVEL CACTUS PALMERA OLIVO TIMON ANCLA BRUJULA FARO FLAMENCO TANGO OPERA ORQUESTA FALLA CARNAVAL TROFEO MEDALLA RETRATO PAISAJE CATEDRAL ESTACION HIMNO NACION LEY ANCIANO LLANTO ENANO GIGANTE DRAGON HADA ESCUDO LANZA TRONO MUSCULO HIGADO RIÑON PULMON'.split(' '));
+const NIVELES={
+  facil:{n:9,m:7,pre:.30,pool:o=>!DUROS.has(o.w)},
+  medio:{n:11,m:11,pre:.15,pool:()=>true},
+  dificil:{n:13,m:15,pre:0,pool:()=>true},
+  experto:{n:13,m:14,pre:0,pool:o=>DUROS.has(o.w)||o.w.length>=7}
+};
 
 /* ---------- generador ---------- */
 function azar(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
@@ -831,8 +839,8 @@ function intentar(n,pool){
   }
   return {g,col,n};
 }
-function generar(n,minimo){
-  const pool=BANCO.filter(o=>o.w.length<=n&&o.w.length>=3);
+function generar(n,minimo,filtro){
+  const pool=BANCO.filter(o=>o.w.length<=n&&o.w.length>=3&&(!filtro||filtro(o)));
   let mejor=null, t0=Date.now();
   while(Date.now()-t0<700){
     const r=intentar(n,pool); if(!r) continue;
@@ -861,12 +869,15 @@ function numerar(p){
   p.pal.forEach(w=>{ w.num=nm.get(w.r*p.W+w.c); });
   p.pal.sort((a,b)=>a.num-b.num||a.d-b.d);
 }
-function nueva(n,minimo){
-  const g=generar(n,minimo); if(!g) return;
+function nueva(niv){
+  const L=NIVELES[niv]; let g=generar(L.n,L.m,L.pool); if(!g) g=generar(L.n,L.m); if(!g) return;
   const id='c'+Date.now().toString(36);
   const k=Object.keys(S.partidas).length+1;
-  const p={id,nombre:'Crucigrama '+(S.cuenta=(S.cuenta||0)+1),nivel:n,W:g.W,H:g.H,sol:g.sol,pal:g.pal,cur:g.sol.map(x=>x?'':''),t:0,fecha:Date.now(),fin:false,pausa:false,mal:[],sel:-1,dir:0};
-  numerar(p); S.partidas[id]=p; S.actual=id; limpiar(); guardar(); abrir(id);
+  const p={id,nombre:'Crucigrama '+(S.cuenta=(S.cuenta||0)+1),nivel:niv,W:g.W,H:g.H,sol:g.sol,pal:g.pal,cur:g.sol.map(x=>''),dado:g.sol.map(()=>false),t:0,fecha:Date.now(),fin:false,pausa:false,mal:[],sel:-1,dir:0};
+  numerar(p);
+  const let_=[]; p.sol.forEach((x,i)=>{ if(x) let_.push(i); });
+  azar(let_).slice(0,Math.round(let_.length*L.pre)).forEach(i=>{ p.dado[i]=true; p.cur[i]=p.sol[i]; });
+  S.partidas[id]=p; S.actual=id; limpiar(); guardar(); abrir(id);
 }
 function limpiar(){
   const ids=Object.keys(S.partidas).sort((a,b)=>S.partidas[b].fecha-S.partidas[a].fecha);
@@ -914,6 +925,7 @@ function irPalabra(w){ P.dir=w.d; const cs=celdas(w); P.sel=cs.find(i=>!P.cur[i]
 function otra(s){ const w=actual(); let k=w?P.pal.indexOf(w):-1; k=(k+s+P.pal.length)%P.pal.length; irPalabra(P.pal[k]); }
 function letra(L){
   if(!P||P.pausa||P.fin||P.sel<0) return;
+  if(P.dado&&P.dado[P.sel]){ const w=actual(); if(w){ const cs=celdas(w),k=cs.indexOf(P.sel); const sig=cs.slice(k+1).find(i=>!P.cur[i]); if(sig!==undefined){ P.sel=sig; pintar(); } } return; }
   P.cur[P.sel]=L; P.mal=[]; msg('');
   const w=actual(); if(w){ const cs=celdas(w), k=cs.indexOf(P.sel); const sig=cs.slice(k+1).find(i=>!P.cur[i]); if(sig!==undefined) P.sel=sig; else if(k+1<cs.length) P.sel=cs[k+1]; }
   tras();
@@ -921,8 +933,8 @@ function letra(L){
 function borrar(){
   if(!P||P.pausa||P.fin||P.sel<0) return;
   P.mal=[]; msg('');
-  if(P.cur[P.sel]) P.cur[P.sel]='';
-  else { const w=actual(); if(w){ const cs=celdas(w), k=cs.indexOf(P.sel); if(k>0){ P.sel=cs[k-1]; P.cur[P.sel]=''; } } }
+  if(P.cur[P.sel]){ if(!(P.dado&&P.dado[P.sel])) P.cur[P.sel]=''; }
+  else { const w=actual(); if(w){ const cs=celdas(w), k=cs.indexOf(P.sel); if(k>0){ P.sel=cs[k-1]; if(!(P.dado&&P.dado[P.sel])) P.cur[P.sel]=''; } } }
   tras();
 }
 function tras(){ comprobarFin(); guardar(); pintar(); pintarLista(); }
@@ -944,7 +956,7 @@ function pintar(){
   let h='';
   for(let i=0;i<P.W*P.H;i++){
     if(!P.sol[i]){ h+='<div class="c k"></div>'; continue; }
-    let k='c'; if(ws.has(i)) k+=' w'; if(i===P.sel) k+=' sel'; if(P.mal.includes(i)) k+=' mal'; if(P.fin) k+=' ok';
+    let k='c'; if(ws.has(i)) k+=' w'; if(i===P.sel) k+=' sel'; if(P.mal.includes(i)) k+=' mal'; if(P.fin) k+=' ok'; if(P.dado&&P.dado[i]) k+=' g';
     const r=Math.floor(i/P.W), c=i%P.W, ww=P.pal.find(x=>x.r===r&&x.c===c);
     h+='<div class="'+k+'" role="gridcell" data-i="'+i+'">'+(ww?'<i>'+ww.num+'</i>':'')+(P.cur[i]||'')+'</div>';
   }
@@ -988,7 +1000,7 @@ $('bReinicio').onclick=()=>{
   if(!tReinicio){ b.textContent='¿Seguro? Toca otra vez para borrar todo'; tReinicio=setTimeout(()=>{ tReinicio=0; b.textContent='Reiniciar'; },4000); return; }
   clearTimeout(tReinicio); tReinicio=0; b.textContent='Reiniciar'; reiniciar();
 };
-function reiniciar(){ P.cur=P.sol.map(()=>''); P.t=0; P.fin=false; P.pausa=false; P.mal=[]; P.guardada=false; msg(''); guardar(); pintar(); pintarLista(); arrancar(); }
+function reiniciar(){ P.cur=P.sol.map((x,i)=>(P.dado&&P.dado[i])?x:''); P.t=0; P.fin=false; P.pausa=false; P.mal=[]; P.guardada=false; msg(''); guardar(); pintar(); pintarLista(); arrancar(); }
 $('bOtra').onclick=reiniciar;
 $('ini').addEventListener('input',e=>{ e.target.value=e.target.value.toUpperCase().replace(/[^A-ZÑ]/g,'').slice(0,3); });
 $('bGuardaMarca').onclick=()=>{
@@ -997,7 +1009,7 @@ $('bGuardaMarca').onclick=()=>{
   if(P.rec&&P.t>=P.rec.t) return;
   P.rec={ini,t:P.t,fecha:Date.now()}; P.guardada=true; S.ini=ini; msg('Marca guardada: '+ini+' · '+fmtT(P.t)+'.','ok'); guardar(); pintar(); pintarLista();
 };
-document.querySelector('.niv').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; b.disabled=true; setTimeout(()=>{ nueva(+b.dataset.n,+b.dataset.m); b.disabled=false; window.scrollTo(0,0); },20); });
+document.querySelector('.niv').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; b.disabled=true; setTimeout(()=>{ nueva(b.dataset.k); b.disabled=false; window.scrollTo(0,0); },20); });
 $('lista').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b){ guardar(); abrir(b.dataset.id); window.scrollTo(0,0); } });
 ['lh','lv'].forEach(id=>$(id).addEventListener('click',e=>{ const b=e.target.closest('.cl'); if(b&&P&&!P.pausa){ irPalabra(P.pal[+b.dataset.k]); window.scrollTo(0,0); } }));
 document.addEventListener('keydown',e=>{
@@ -1011,14 +1023,14 @@ document.addEventListener('visibilitychange',()=>{ if(document.hidden){ guardarL
 cargar();
 if(!S||!S.partidas){ S={actual:null,ts:0,cuenta:0,partidas:{}}; }
 if(S.actual&&S.partidas[S.actual]) abrir(S.actual);
-else { pintarLista(); nueva(9,7); }
+else { pintarLista(); nueva('facil'); }
 sincronizar();
 })();
 </script>
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.79', ROOT='../../';
+  var BUILD='V1.80', ROOT='../../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

@@ -793,8 +793,8 @@ if(!window.storage){
   .uni-line{
     display:flex;
     align-items:flex-start;
-    gap:10px;
-    padding:8px 10px 8px 12px;
+    gap:7px;
+    padding:7px 10px 7px 9px;
     border-radius:9px;
     background:var(--card);
     margin-bottom:4px;
@@ -842,16 +842,17 @@ if(!window.storage){
   }
   .uni-marks{
     display:flex;
-    gap:3px;
+    gap:2px;
     flex-shrink:0;
-    opacity:.3;
+    opacity:.45;
     transition:opacity .18s ease;
+    margin-top:-1px;
   }
   .uni-line:hover .uni-marks, .uni-line.like .uni-marks,
   .uni-line.edit .uni-marks, .uni-line.no .uni-marks{opacity:1;}
   .uni-mark{
-    width:26px;
-    height:26px;
+    width:25px;
+    height:25px;
     border-radius:7px;
     border:1px solid transparent;
     background:rgba(255,255,255,.035);
@@ -3629,8 +3630,8 @@ function renderUnified(){
         bar.appendChild(b);
       });
 
-      row.appendChild(body);
       row.appendChild(bar);
+      row.appendChild(body);
       g.appendChild(row);
     });
 

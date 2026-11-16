@@ -127,9 +127,10 @@ h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
   <h2>Mis partidas</h2>
   <div class="lista" id="lista"></div>
 
-  <p class="pie"><span id="version">V1.70</span></p>
+  <p class="pie"><span id="version">V1.71</span></p>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 <script>
 (function(){
 'use strict';
@@ -304,7 +305,8 @@ function generar(nivel){
 let S=null, P=null, notasModo=false, timer=null, ultSave=0, visibleDesde=Date.now();
 const NOMBRES={muyfacil:'Muy fácil',facil:'Fácil',medio:'Medio',dificil:'Difícil',experto:'Experto',maestro:'Maestro',mio:'El mío'};
 function cargar(){ try{ S=JSON.parse(localStorage.getItem(KEY)||'null'); }catch(e){ S=null; } }
-const SB_URL='https://qtnqupcfgooazjzkpmtx.supabase.co/rest/v1/ui_estado', SB_KEY='sb_publishable_brvDWgh8e_IrS8NWDvt7xg_rbL2dqcd', SB_H={apikey:SB_KEY,Authorization:'Bearer '+SB_KEY};
+const SB_URL='https://qtnqupcfgooazjzkpmtx.supabase.co/rest/v1/ui_estado', SB_KEY='sb_publishable_brvDWgh8e_IrS8NWDvt7xg_rbL2dqcd', sbc=(window.supabase?window.supabase.createClient('https://qtnqupcfgooazjzkpmtx.supabase.co',SB_KEY):null);
+async function cab(){ try{ if(!sbc) return null; const {data:{session}}=await sbc.auth.getSession(); return session?{apikey:SB_KEY,Authorization:'Bearer '+session.access_token}:null; }catch(e){ return null; } }
 let tSub=0;
 function guardarLocal(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
 function guardar(sinTs){ if(!sinTs){ S.ts=Date.now(); subir(); } guardarLocal(); }
@@ -312,16 +314,18 @@ function subir(ya){
   clearTimeout(tSub);
   tSub=setTimeout(async()=>{
     try{
+      const H=await cab(); if(!H) return;
       const copia=JSON.parse(JSON.stringify(S));
       for(const p of Object.values(copia.partidas)){ p.undo=(p.undo||[]).slice(-40); p.redo=[]; }
       const cuerpo=JSON.stringify([{clave:'juegos_sudoku',valor:copia,actualizado:new Date().toISOString()}]);
-      await fetch(SB_URL+'?on_conflict=clave',{method:'POST',keepalive:cuerpo.length<60000,headers:Object.assign({'Content-Type':'application/json','Content-Profile':'personal',Prefer:'resolution=merge-duplicates,return=minimal'},SB_H),body:cuerpo});
+      await fetch(SB_URL+'?on_conflict=clave',{method:'POST',keepalive:cuerpo.length<60000,headers:Object.assign({'Content-Type':'application/json','Content-Profile':'personal',Prefer:'resolution=merge-duplicates,return=minimal'},H),body:cuerpo});
     }catch(e){}
   },ya?0:1200);
 }
 async function sincronizar(){
   try{
-    const r=await fetch(SB_URL+'?clave=eq.juegos_sudoku&select=valor',{headers:Object.assign({'Accept-Profile':'personal'},SB_H)});
+    const H=await cab(); if(!H) return;
+    const r=await fetch(SB_URL+'?clave=eq.juegos_sudoku&select=valor',{headers:Object.assign({'Accept-Profile':'personal'},H)});
     if(!r.ok) return; const a=await r.json(), v=a[0]&&a[0].valor, ts=v&&v.ts||0;
     if(v&&v.partidas&&ts>(S.ts||0)){
       const abierta=P&&P.id;
@@ -566,7 +570,7 @@ sincronizar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.70', ROOT='../';
+  var BUILD='V1.71', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

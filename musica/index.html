@@ -3712,7 +3712,7 @@ function renderUnified(){
 
       body.appendChild(head);
 
-      if(m.mark === "meh" || m.mark === "no" || (m.bad && m.bad.length)){
+      if(m.mark !== "no" && (m.mark === "meh" || (m.bad && m.bad.length) || m.note)){
         const note = document.createElement("input");
         note.type = "text";
         note.className = "uni-note";

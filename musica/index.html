@@ -1116,7 +1116,7 @@ if(!window.storage){
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="verBadge">V1.76</div>
+<div id="verBadge">V1.77</div>
 <div class="wrap">
   <header>
     <div class="song-bar">
@@ -4409,41 +4409,47 @@ document.getElementById("p2Inspira").addEventListener("click", (e)=>{
   const body = ls.map(x => "- " + x.text + (x.lvl ? "   [" + MARK_LABEL[x.lvl] + "]" : "")).join("\n");
   copyText(
     "Canción: " + db.currentSong + "\n\n" +
-    "Estas son líneas sueltas y DESORDENADAS que he ido escribiendo. No son una letra, son material.\n" +
+    "Estas son " + ls.length + " líneas sueltas y DESORDENADAS que he ido escribiendo. No son una letra, son material.\n" +
     "Escríbeme con ellas una letra completa: ordénalas como mejor funcione, añade las líneas nuevas que hagan falta " +
     "para cerrar versos y estribillo, y mantén el tono y las imágenes que ya hay.\n" +
     "Las marcadas ME ENCANTA tienen que aparecer sí o sí. Las de NO ME CONVENCE úsalas solo si te sirven, puedes reescribirlas.\n" +
-    "Marca con (nueva) las líneas que añadas tú.\n\n" + body);
+    "Las mías cópialas tal cual, sin retocarlas. Marca con (nueva) TODAS las líneas que escribas tú, sin excepción, " +
+    "para que yo sepa de un vistazo qué es mío y qué es tuyo.\n\n" + body);
   flashBtn(e.currentTarget, "Copiado ✓", "Prompt de inspiración");
 });
 
 document.getElementById("p2Order").addEventListener("click", (e)=>{
   const ls = p2Scored();
   if(!ls.length){ flashBtn(e.currentTarget, "Nada aún", "Reordenar y optimizar"); return; }
-  const body = ls.map(x => {
-    const tags = [];
-    if(x.lvl) tags.push(MARK_LABEL[x.lvl]);
-    if(x.bad.length) tags.push('floja la parte: "' + x.bad.join('" / "') + '"');
-    if(x.note) tags.push(x.note);
-    return "- " + x.text + (tags.length ? "   [" + tags.join(" · ") + "]" : "");
-  }).join("\n");
   copyText(
-    "Canción: " + db.currentSong + "\n\n" +
-    "Estas líneas ya son mías y me gustan. NO las reescribas ni las sustituyas por otras.\n" +
-    "Tu único trabajo es ORDENARLAS para que la letra fluya y RIMEN entre sí: colócalas en el orden que mejor encaje, " +
-    "agrúpalas en versos y estribillo, y empareja las que rimen.\n" +
-    "SOBRE LA RIMA: en español cuenta la rima ASONANTE, que es la normal en la canción popular: basta con que coincidan " +
-    "las vocales desde la última acentuada, aunque las consonantes sean distintas. tiempo/momento riman (e-o). " +
-    "cielo/muero/bueno riman (e-o). casa/mañana/alma riman (a-a). " +
-    "Con ese criterio casi cualquier par de versos rima, así que BUSCA la pareja de cada línea y encuéntrala: " +
-    "no digas que una línea no tiene rima, ni la descartes por eso, ni inventes una línea nueva para rimarla " +
-    "antes de haber probado todas las que te doy.\n" +
-    "Respeta mis puntuaciones: ME ENCANTA va en los sitios de más peso (arranque, estribillo, cierre) y es intocable; " +
-    "ME GUSTA se mantiene tal cual; NO ME CONVENCE solo esas puedes retocarlas, y si marco un trozo entre comillas, " +
-    "cambia únicamente ese trozo.\n" +
-    "Si para cuadrar la rima hace falta alguna línea puente, añádela y márcala con (nueva), pero las mínimas.\n" +
-    "Devuélveme la letra montada y, al final, la lista de parejas de rima indicando la vocal en que riman (por ejemplo: " +
-    "tiempo / momento -> e-o).\n\n" + body);
+    "Canción: " + db.currentSong + "\n" +
+    "Te paso " + ls.length + " líneas MÍAS, numeradas. Son definitivas.\n\n" +
+    "REGLA ABSOLUTA: no puedes escribir NI UNA SOLA palabra tuya.\n" +
+    "- Prohibido añadir líneas nuevas. Cero. Ni puentes, ni intros, ni cierres, ni rellenos.\n" +
+    "- Prohibido cambiar, acortar, alargar o reescribir una línea. Ni una palabra, ni una coma.\n" +
+    "- Cópialas literalmente, carácter por carácter, tal como te las doy.\n" +
+    "- Prohibido repetir una línea en dos sitios, salvo que yo te la haya dado repetida.\n" +
+    "- Única excepción: las marcadas NO ME CONVENCE sí puedes retocarlas, y si te marco un trozo " +
+    "entre comillas, cambias solo ese trozo y nada más.\n\n" +
+    "TU TRABAJO: ordenarlas. Nada más. Colócalas en el orden que mejor suene, agrúpalas en bloques " +
+    "([Verso], [Estribillo], [Puente]...) y empareja las que rimen entre sí.\n\n" +
+    "RIMA: en español vale la ASONANTE, que es la de la canción popular: basta con que coincidan las " +
+    "vocales desde la última acentuada, aunque cambien las consonantes. tiempo/momento riman (e-o). " +
+    "cielo/muero/bueno riman (e-o). casa/mañana/alma riman (a-a). Con ese criterio casi todo rima, " +
+    "así que busca la pareja de cada línea entre las que te doy y encuéntrala. No digas que una línea " +
+    "no tiene rima, no la descartes por eso y no inventes nada para rimarla.\n\n" +
+    "PESO: las marcadas ME ENCANTA van en los sitios fuertes (arranque, estribillo, cierre).\n\n" +
+    "CONTROL: al terminar cuenta las líneas de tu respuesta. Tienen que ser exactamente " + ls.length +
+    ", las mismas que te he dado, sin ninguna añadida. Si te sobra alguna que no encaja en ningún sitio, " +
+    "NO la tires: ponla al final bajo [SUELTAS].\n" +
+    "Después, la lista de parejas de rima con su vocal (ejemplo: tiempo / momento -> e-o).\n\n" +
+    "LÍNEAS:\n" + ls.map((x, i) => (i + 1) + ". " + x.text + (() => {
+      const t = [];
+      if(x.lvl) t.push(MARK_LABEL[x.lvl]);
+      if(x.bad.length) t.push('floja la parte: "' + x.bad.join('" / "') + '"');
+      if(x.note) t.push(x.note);
+      return t.length ? "   [" + t.join(" · ") + "]" : "";
+    })()).join("\n"));
   flashBtn(e.currentTarget, "Copiado ✓", "Reordenar y optimizar");
 });
 
@@ -4974,7 +4980,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.76', ROOT='../';
+  var BUILD='V1.77', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

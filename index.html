@@ -185,7 +185,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[t
   <aside class="side">
     <div class="brand">DGP</div>
     <nav id="nav" aria-label="Secciones"></nav>
-    <div class="foot"><span class="m"><span id="version">V1.68</span></span><button id="out">Salir</button></div>
+    <div class="foot"><span class="m"><span id="version">V1.69</span></span><button id="out">Salir</button></div>
   </aside>
   <div>
   <div class="main">
@@ -215,6 +215,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[t
       <div class="tools">
         <input id="q" class="grow" type="search" placeholder="Buscar título, director o género" aria-label="Buscar título, director o género">
         <div id="ifil" class="tools" style="margin:0"></div>
+        <button id="gustob">Mi gusto</button>
         <button id="addb">Añadir valoración</button>
       </div>
       <div id="add" class="form" hidden>
@@ -224,6 +225,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[t
         <div id="tmsg" class="m"></div>
       </div>
       <div id="stats" class="m" style="margin-bottom:8px"></div>
+      <div id="gusto" class="form" hidden></div>
       <div id="msg" class="vacio">Cargando</div>
       <div id="list"></div>
     </section>
@@ -791,6 +793,28 @@ async function montarImdb(){
   statsImdb();pintarImdb();
 }
 $('q').addEventListener('input',pintarImdb);
+function pintarGusto(){
+  const d=data.filter(x=>x.your_rating!=null),N=d.length;if(!N){$('gusto').innerHTML='Sin datos';return}
+  const avg=a=>a.reduce((t,v)=>t+v,0)/a.length,f1=v=>v.toFixed(1).replace('.',','),f2=v=>v.toFixed(2).replace('.',',');
+  const bar=(v,max,c)=>`<span style="display:inline-block;height:8px;border-radius:4px;background:${c||'var(--ac,#c59a2a)'};width:${Math.max(2,Math.round(v/max*100))}%"></span>`;
+  const fila=(et,n,med,extra,max)=>`<div style="display:grid;grid-template-columns:minmax(80px,32%) 1fr auto;gap:8px;align-items:center;margin:3px 0"><span>${esc(et)}</span><span>${bar(med,10)}</span><span style="font-variant-numeric:tabular-nums;white-space:nowrap">${f1(med)} · ${n}${extra||''}</span></div>`;
+  const con=d.filter(x=>x.imdb_rating!=null),dif=con.length?avg(con.map(x=>x.your_rating-Number(x.imdb_rating))):0;
+  const grupo=(clave,min,orden)=>{const m=new Map();d.forEach(x=>clave(x).forEach(k=>{if(!k)return;(m.get(k)||m.set(k,[]).get(k)).push(x)}));
+    return [...m].map(([k,a])=>({k,n:a.length,m:avg(a.map(x=>x.your_rating)),df:(()=>{const c=a.filter(x=>x.imdb_rating!=null);return c.length?avg(c.map(x=>x.your_rating-Number(x.imdb_rating))):0})()})).filter(g=>g.n>=min).sort(orden||((a,b)=>b.m-a.m||b.n-a.n))};
+  const lista=(g,n,e)=>g.slice(0,n).map(x=>fila(x.k,x.n,x.m,e?` (${x.df>0?'+':''}${f1(x.df)} vs IMDb)`:'')).join('')||'<div class="m">Aún pocos datos</div>';
+  const dist=[...Array(10)].map((_,i)=>d.filter(x=>x.your_rating===i+1).length),mx=Math.max(...dist);
+  const sec=(t,h)=>`<h3 style="margin:14px 0 4px;font-size:1rem">${t}</h3>${h}`;
+  const gen=grupo(x=>(x.genres||'').split(/,\s*/),5),dir=grupo(x=>(x.directors||'').split(/,\s*/),3),dec=grupo(x=>[x.year?Math.floor(x.year/10)*10+'s':null],3,(a,b)=>a.k<b.k?-1:1),tip=grupo(x=>[x.title_type],3,(a,b)=>b.n-a.n);
+  const desac=con.map(x=>({x,df:x.your_rating-Number(x.imdb_rating)})).sort((a,b)=>b.df-a.df),it=o=>`<div style="margin:3px 0">${esc(o.x.title)} <span class="m">(${o.x.year??''}) tú ${o.x.your_rating} · IMDb ${f1(Number(o.x.imdb_rating))}</span></div>`;
+  $('gusto').innerHTML=`<div><b>Nota media ${f2(avg(d.map(x=>x.your_rating)))}</b> sobre ${N} títulos${con.length?`. Frente a IMDb eres ${Math.abs(dif)<0.15?'casi igual':dif>0?'más generoso (+'+f2(dif)+')':'más duro ('+f2(dif)+')'}.`:''}</div>`
+   +sec('Cómo repartes las notas',dist.map((v,i)=>`<div style="display:grid;grid-template-columns:22px 1fr 40px;gap:8px;align-items:center;margin:2px 0"><span>${i+1}</span><span>${bar(v,mx)}</span><span style="text-align:right">${v}</span></div>`).join(''))
+   +sec('Géneros que mejor puntúas (mín. 5)',lista(gen,8,true))
+   +sec('Géneros que peor puntúas',lista([...gen].reverse(),5,true))
+   +sec('Directores favoritos (mín. 3)',lista(dir,8))
+   +sec('Por década',lista(dec,12))+sec('Por tipo',lista(tip,6))
+   +(con.length?sec('Más por encima de IMDb',desac.slice(0,6).map(it).join(''))+sec('Más por debajo de IMDb',desac.slice(-6).reverse().map(it).join('')):'');
+}
+$('gustob').addEventListener('click',()=>{const g=$('gusto');g.hidden=!g.hidden;$('gustob').setAttribute('aria-pressed',String(!g.hidden));if(!g.hidden)pintarGusto()});
 let elegido=null;
 $('addb').addEventListener('click',()=>{$('add').hidden=!$('add').hidden;if(!$('add').hidden)$('tq2').focus()});
 async function tmdbCall(body){
@@ -850,7 +874,7 @@ iniciar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.68', ROOT='';
+  var BUILD='V1.69', ROOT='';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

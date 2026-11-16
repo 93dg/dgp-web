@@ -1065,11 +1065,28 @@ if(!window.storage){
     .dot{width:18px;height:18px;font-size:10px;}
     h1{font-size:20px;}
   }
+  #verBadge{
+    position:fixed;
+    top:calc(6px + env(safe-area-inset-top,0px));
+    right:10px;
+    z-index:9999;
+    font-family:var(--font-mono);
+    font-size:10.5px;
+    letter-spacing:.5px;
+    color:var(--muted);
+    background:rgba(27,24,21,.82);
+    border:1px solid var(--line);
+    border-radius:99px;
+    padding:3px 9px;
+    pointer-events:none;
+    backdrop-filter:blur(6px);
+  }
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
+<div id="verBadge">V1.72</div>
 <div class="wrap">
   <header>
     <div class="song-bar">
@@ -1306,7 +1323,7 @@ if(!window.storage){
     </div>
   </div>
 
-  <footer>Se guarda solo, por canción. · <span style="opacity:.6">V1.72</span></footer>
+  <footer>Se guarda solo, por canción.</footer>
 </div>
 
 <script>

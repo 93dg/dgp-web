@@ -1274,9 +1274,10 @@ if(!window.storage){
           <button class="uni-seg-btn" data-f="pend">Sin marcar</button>
         </div>
         <span class="uni-spacer"></span>
-        <button class="tool" id="p2Reset">Reiniciar fase 2</button>
+        <button class="tool" id="p2Reset">Reiniciar</button>
         <button class="tool" id="p2ToVersion">Crear versión</button>
-        <button class="tool primary" id="p2Copy">Copiar con apuntes</button>
+        <button class="tool primary" id="p2Inspira" title="Para que escriba una letra nueva a partir de estas líneas">Prompt de inspiración</button>
+        <button class="tool primary" id="p2Order" title="Solo ordenar y rimar, sin tocar lo que ya te gusta">Reordenar y optimizar</button>
       </div>
       <div id="phase2List"></div>
     </div>
@@ -4127,14 +4128,57 @@ document.querySelectorAll("#p2Seg .uni-seg-btn").forEach(btn => {
   });
 });
 
-document.getElementById("p2Copy").addEventListener("click", (e)=>{
-  const body = phase2Text(true);
-  if(!body){ flashBtn(e.currentTarget, "Nada aún", "Copiar con apuntes"); return; }
-  copyText("Canción: " + db.currentSong + "\n" +
-    "Versos que ya han pasado la criba, en este orden. ME ENCANTA: intocable. ME GUSTA: consérvalo. " +
-    "NO ME CONVENCE: reescríbelo. Si marco un trozo entre comillas, cambia solo ese trozo.\n" +
-    "Móntame con esto la letra final.\n\n" + body);
-  flashBtn(e.currentTarget, "Copiado ✓", "Copiar con apuntes");
+function p2Scored(){
+  const m1 = marksBag();
+  const marks = marks2Bag();
+  return phase2Lines().map(l => {
+    const m = marks[l.key] || {};
+    const prev = m1[l.key] || {};
+    const lvl = m.mark || prev.mark || "";
+    return {
+      text: m.rewrite || prev.rewrite || l.text,
+      lvl: lvl,
+      bad: (m.bad || []).concat(prev.bad || []),
+      note: m.note || prev.note || ""
+    };
+  });
+}
+
+document.getElementById("p2Inspira").addEventListener("click", (e)=>{
+  const ls = p2Scored();
+  if(!ls.length){ flashBtn(e.currentTarget, "Nada aún", "Prompt de inspiración"); return; }
+  const body = ls.map(x => "- " + x.text + (x.lvl ? "   [" + MARK_LABEL[x.lvl] + "]" : "")).join("\n");
+  copyText(
+    "Canción: " + db.currentSong + "\n\n" +
+    "Estas son líneas sueltas y DESORDENADAS que he ido escribiendo. No son una letra, son material.\n" +
+    "Escríbeme con ellas una letra completa: ordénalas como mejor funcione, añade las líneas nuevas que hagan falta " +
+    "para cerrar versos y estribillo, y mantén el tono y las imágenes que ya hay.\n" +
+    "Las marcadas ME ENCANTA tienen que aparecer sí o sí. Las de NO ME CONVENCE úsalas solo si te sirven, puedes reescribirlas.\n" +
+    "Marca con (nueva) las líneas que añadas tú.\n\n" + body);
+  flashBtn(e.currentTarget, "Copiado ✓", "Prompt de inspiración");
+});
+
+document.getElementById("p2Order").addEventListener("click", (e)=>{
+  const ls = p2Scored();
+  if(!ls.length){ flashBtn(e.currentTarget, "Nada aún", "Reordenar y optimizar"); return; }
+  const body = ls.map(x => {
+    const tags = [];
+    if(x.lvl) tags.push(MARK_LABEL[x.lvl]);
+    if(x.bad.length) tags.push('floja la parte: "' + x.bad.join('" / "') + '"');
+    if(x.note) tags.push(x.note);
+    return "- " + x.text + (tags.length ? "   [" + tags.join(" · ") + "]" : "");
+  }).join("\n");
+  copyText(
+    "Canción: " + db.currentSong + "\n\n" +
+    "Estas líneas ya son mías y me gustan. NO las reescribas ni las sustituyas por otras.\n" +
+    "Tu único trabajo es ORDENARLAS para que la letra fluya y RIMEN entre sí: colócalas en el orden que mejor encaje, " +
+    "agrúpalas en versos y estribillo, y empareja las que rimen.\n" +
+    "Respeta mis puntuaciones: ME ENCANTA va en los sitios de más peso (arranque, estribillo, cierre) y es intocable; " +
+    "ME GUSTA se mantiene tal cual; NO ME CONVENCE solo esas puedes retocarlas, y si marco un trozo entre comillas, " +
+    "cambia únicamente ese trozo.\n" +
+    "Si para cuadrar la rima hace falta alguna línea puente, añádela y márcala con (nueva), pero las mínimas.\n" +
+    "Devuélveme la letra montada y dime qué rima con qué.\n\n" + body);
+  flashBtn(e.currentTarget, "Copiado ✓", "Reordenar y optimizar");
 });
 
 document.getElementById("p2ToVersion").addEventListener("click", (e)=>{
@@ -4151,12 +4195,12 @@ document.getElementById("p2Reset").addEventListener("click", (e)=>{
     delete currentState().phase2Order;
     saveDB();
     renderPhase2();
-    b.dataset.armed = ""; b.textContent = "Reiniciar fase 2";
+    b.dataset.armed = ""; b.textContent = "Reiniciar";
     return;
   }
   b.dataset.armed = "1";
   b.textContent = "¿Seguro?";
-  setTimeout(()=>{ b.dataset.armed = ""; b.textContent = "Reiniciar fase 2"; }, 3000);
+  setTimeout(()=>{ b.dataset.armed = ""; b.textContent = "Reiniciar"; }, 3000);
 });
 
 document.querySelectorAll("#uniSeg .uni-seg-btn").forEach(btn => {

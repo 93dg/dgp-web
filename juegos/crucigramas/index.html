@@ -60,6 +60,14 @@ summary{cursor:pointer;font-weight:600;padding:8px 0}
 .cl b{color:var(--ac);display:inline-block;min-width:1.7em}
 .cl.on{background:var(--s2)}
 .pie{color:var(--mut);font-size:.75rem;text-align:center;margin-top:20px}
+#fin[hidden],#finForm[hidden]{display:none!important}
+#fin{display:grid;gap:8px;margin:8px 0 4px}
+#finForm{display:flex;gap:8px}
+#finForm input{font:inherit;font-size:16px;width:92px;min-height:48px;text-align:center;text-transform:uppercase;letter-spacing:.2em;font-weight:600;color:var(--tx);background:var(--s1);border:1px solid var(--bd);border-radius:10px;-webkit-user-select:text;user-select:text}
+#finForm input:focus{outline:none;border-color:var(--ac)}
+#finForm button{flex:1}
+.rec{min-height:1.3em;margin:0 0 8px;font-size:.85rem;color:var(--mut);font-variant-numeric:tabular-nums}
+.rec b{color:var(--ac);font-weight:600;letter-spacing:.08em}
 #bReinicio{width:100%;margin-top:6px}
 </style>
 </head>
@@ -69,9 +77,17 @@ summary{cursor:pointer;font-weight:600;padding:8px 0}
   <h1>Juegos</h1>
   <nav class="tabs"><a href="../?s=1">Sudoku</a><a class="on" href="./">Crucigramas</a></nav>
   <div class="top"><b id="nom">Crucigrama</b><div class="rl"><span id="reloj">0:00</span><button id="bPausa" aria-label="Pausar"></button></div></div>
+  <div class="rec" id="rec"></div>
   <div id="pista"><button id="bPrev" aria-label="Pista anterior">‹</button><div><small id="pNum"></small><span id="pTxt"></span></div><button id="bNext" aria-label="Pista siguiente">›</button></div>
   <div id="tab" role="grid"></div>
   <div id="msg" role="status" aria-live="polite"></div>
+  <div id="fin" hidden>
+    <div id="finForm">
+      <input id="ini" maxlength="3" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="ABC" aria-label="Tus tres iniciales">
+      <button id="bGuardaMarca">Guardar marca</button>
+    </div>
+    <button id="bOtra">Intentarlo de nuevo</button>
+  </div>
   <div id="teclado"></div>
   <button id="bReinicio">Reiniciar</button>
   <h2>Nuevo crucigrama</h2>
@@ -79,7 +95,7 @@ summary{cursor:pointer;font-weight:600;padding:8px 0}
   <details id="det"><summary>Todas las pistas</summary><div id="lh"></div><div id="lv"></div></details>
   <h2>Mis crucigramas</h2>
   <div class="lista" id="lista"></div>
-  <p class="pie"><span id="version">V1.78</span></p>
+  <p class="pie"><span id="version">V1.79</span></p>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 <script>
@@ -854,7 +870,7 @@ function nueva(n,minimo){
 }
 function limpiar(){
   const ids=Object.keys(S.partidas).sort((a,b)=>S.partidas[b].fecha-S.partidas[a].fecha);
-  ids.slice(12).forEach(i=>{ if(i!==S.actual) delete S.partidas[i]; });
+  ids.slice(12).forEach(i=>{ if(i!==S.actual&&!S.partidas[i].rec) delete S.partidas[i]; });
 }
 function cargar(){ try{ S=JSON.parse(localStorage.getItem(KEY)||'null'); }catch(e){ S=null; } }
 function guardarLocal(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
@@ -916,7 +932,8 @@ function comprobarFin(){
   if(!l.every(i=>P.cur[i])) return;
   const mal=l.filter(i=>P.cur[i]!==P.sol[i]);
   if(mal.length){ P.mal=mal; msg('Está completo pero hay '+mal.length+(mal.length===1?' letra mal, marcada en rojo.':' letras mal, marcadas en rojo.'),'err'); return; }
-  P.fin=true; P.fecha=Date.now(); clearInterval(timer); msg('Resuelto en '+fmtT(P.t)+'.','ok');
+  P.fin=true; P.fecha=Date.now(); P.guardada=false; clearInterval(timer);
+  msg(!P.rec?'Resuelto en '+fmtT(P.t)+'. Pon tus iniciales para guardar la marca.':P.t<P.rec.t?'Nueva mejor marca: '+fmtT(P.t)+'. Pon tus iniciales.':'Resuelto en '+fmtT(P.t)+'. La marca a batir sigue siendo '+fmtT(P.rec.t)+'.','ok');
 }
 function msg(t,k){ const m=$('msg'); m.textContent=t||''; m.className=k||''; }
 /* ---------- pintar ---------- */
@@ -936,6 +953,9 @@ function pintar(){
   $('pTxt').textContent=w?w.clue:'';
   $('nom').textContent=P.nombre+' · '+NIV[P.nivel]+(P.fin?' · resuelto':P.pausa?' · en pausa':'');
   $('teclado').classList.toggle('pausa',!!(P.pausa||P.fin));
+  $('rec').innerHTML=P.rec?'Marca a batir: <b>'+P.rec.ini+'</b> · '+fmtT(P.rec.t):'';
+  $('fin').hidden=!P.fin;
+  if(P.fin){ const mejora=!P.rec||P.t<P.rec.t; $('finForm').hidden=!(mejora&&!P.guardada); if(!$('ini').value) $('ini').value=S.ini||''; }
   $('bPausa').innerHTML=P.pausa?'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>':'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
   $('bPausa').disabled=P.fin; $('reloj').textContent=fmtT(P.t);
   const ls=(d)=>'<h2>'+(d?'Verticales':'Horizontales')+'</h2>'+P.pal.filter(x=>x.d===d).map(x=>'<button class="cl'+(w===x?' on':'')+'" data-k="'+P.pal.indexOf(x)+'"><b>'+x.num+'</b>'+x.clue+' <span style="color:var(--mut)">('+x.len+')</span></button>').join('');
@@ -944,7 +964,7 @@ function pintar(){
 function pintarLista(){
   const ids=Object.keys(S.partidas).sort((a,b)=>S.partidas[b].fecha-S.partidas[a].fecha);
   $('lista').innerHTML=ids.map(id=>{ const p=S.partidas[id], tot=p.sol.filter(x=>x).length, hechas=p.cur.filter(x=>x).length;
-    return '<button data-id="'+id+'" class="'+(id===S.actual?'on':'')+'">'+p.nombre+' · '+NIV[p.nivel]+'<small>'+(p.fin?'Resuelto en '+fmtT(p.t):hechas+' de '+tot+' letras · '+fmtT(p.t))+'</small></button>'; }).join('')||'<p style="color:var(--mut)">Aún no hay ninguno.</p>';
+    return '<button data-id="'+id+'" class="'+(id===S.actual?'on':'')+'">'+p.nombre+' · '+NIV[p.nivel]+'<small>'+(p.fin?'Resuelto en '+fmtT(p.t):hechas+' de '+tot+' letras · '+fmtT(p.t))+(p.rec?' · marca '+p.rec.ini+' '+fmtT(p.rec.t):'')+'</small></button>'; }).join('')||'<p style="color:var(--mut)">Aún no hay ninguno.</p>';
 }
 function abrir(id){
   P=S.partidas[id]; if(!P) return; S.actual=id; P.mal=P.mal||[]; if(P.sel<0||!P.sol[P.sel]) { P.sel=P.sol.findIndex(x=>x); P.dir=P.pal[0]?P.pal[0].d:0; }
@@ -966,14 +986,22 @@ $('bPausa').onclick=()=>{ if(!P||P.fin) return; P.pausa=!P.pausa; guardar(true);
 $('bReinicio').onclick=()=>{
   const b=$('bReinicio');
   if(!tReinicio){ b.textContent='¿Seguro? Toca otra vez para borrar todo'; tReinicio=setTimeout(()=>{ tReinicio=0; b.textContent='Reiniciar'; },4000); return; }
-  clearTimeout(tReinicio); tReinicio=0; b.textContent='Reiniciar';
-  P.cur=P.sol.map(()=>''); P.t=0; P.fin=false; P.pausa=false; P.mal=[]; msg(''); guardar(); pintar(); pintarLista(); arrancar();
+  clearTimeout(tReinicio); tReinicio=0; b.textContent='Reiniciar'; reiniciar();
+};
+function reiniciar(){ P.cur=P.sol.map(()=>''); P.t=0; P.fin=false; P.pausa=false; P.mal=[]; P.guardada=false; msg(''); guardar(); pintar(); pintarLista(); arrancar(); }
+$('bOtra').onclick=reiniciar;
+$('ini').addEventListener('input',e=>{ e.target.value=e.target.value.toUpperCase().replace(/[^A-ZÑ]/g,'').slice(0,3); });
+$('bGuardaMarca').onclick=()=>{
+  const ini=$('ini').value.toUpperCase().replace(/[^A-ZÑ]/g,'');
+  if(ini.length!==3){ msg('Escribe tres letras.','err'); return; }
+  if(P.rec&&P.t>=P.rec.t) return;
+  P.rec={ini,t:P.t,fecha:Date.now()}; P.guardada=true; S.ini=ini; msg('Marca guardada: '+ini+' · '+fmtT(P.t)+'.','ok'); guardar(); pintar(); pintarLista();
 };
 document.querySelector('.niv').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; b.disabled=true; setTimeout(()=>{ nueva(+b.dataset.n,+b.dataset.m); b.disabled=false; window.scrollTo(0,0); },20); });
 $('lista').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b){ guardar(); abrir(b.dataset.id); window.scrollTo(0,0); } });
 ['lh','lv'].forEach(id=>$(id).addEventListener('click',e=>{ const b=e.target.closest('.cl'); if(b&&P&&!P.pausa){ irPalabra(P.pal[+b.dataset.k]); window.scrollTo(0,0); } }));
 document.addEventListener('keydown',e=>{
-  if(!P||e.metaKey||e.ctrlKey||e.altKey) return;
+  if(!P||e.metaKey||e.ctrlKey||e.altKey||(e.target&&e.target.tagName==='INPUT')) return;
   if(e.key==='Backspace'){ e.preventDefault(); borrar(); }
   else if(e.key==='Tab'){ e.preventDefault(); otra(e.shiftKey?-1:1); }
   else if(/^[a-zA-ZñÑ]$/.test(e.key)) letra(e.key.toUpperCase());
@@ -990,7 +1018,7 @@ sincronizar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.78', ROOT='../../';
+  var BUILD='V1.79', ROOT='../../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

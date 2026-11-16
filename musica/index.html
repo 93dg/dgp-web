@@ -715,12 +715,12 @@ if(!window.storage){
   .uni-head{
     display:flex;
     align-items:center;
-    gap:12px;
-    margin-bottom:9px;
+    gap:14px;
+    margin-bottom:12px;
   }
   .uni-progress{
     flex:1;
-    height:5px;
+    height:9px;
     border-radius:99px;
     background:#241f1a;
     display:flex;
@@ -732,17 +732,18 @@ if(!window.storage){
     height:100%;
     transition:width .35s cubic-bezier(.22,1,.36,1);
   }
+  .uni-progress .p-love{background:linear-gradient(90deg,#2f8f6b,#5fe0b0);}
   .uni-progress .p-like{background:linear-gradient(90deg,#4aa663,#7fd992);}
-  .uni-progress .p-edit{background:linear-gradient(90deg,#c99a2e,#e8c56b);}
+  .uni-progress .p-meh{background:linear-gradient(90deg,#c99a2e,#e8c56b);}
   .uni-progress .p-no{background:#5e3630;}
   .uni-stats{
     font-family:var(--font-mono);
-    font-size:10.5px;
+    font-size:12.5px;
     color:var(--muted);
     white-space:nowrap;
     letter-spacing:.3px;
   }
-  .uni-stats b{color:var(--text);font-weight:500;}
+  .uni-stats b{color:var(--amber);font-weight:600;font-size:15px;}
   .unified-bar{
     display:flex;
     gap:6px;
@@ -764,25 +765,32 @@ if(!window.storage){
     border:none;
     color:var(--muted);
     font-family:var(--font-body);
-    font-size:12px;
-    padding:5px 11px;
-    border-radius:7px;
+    font-size:14px;
+    font-weight:500;
+    padding:8px 14px;
+    border-radius:8px;
     cursor:pointer;
-    transition:background .15s, color .15s;
+    transition:background .15s, color .15s, transform .12s;
   }
-  .uni-seg-btn:hover{color:var(--text);}
+  .uni-seg-btn:hover{color:var(--text);background:rgba(255,255,255,.05);}
+  .uni-seg-btn:active{transform:scale(.94);}
   .uni-seg-btn.active{background:var(--amber-dim);color:var(--amber);}
-  .uni-group{margin-bottom:18px;}
+  .uni-seg-btn[data-f="love"].active{background:#133128;color:#8df0cd;}
+  .uni-seg-btn[data-f="like"].active{background:#1c3524;color:#bdf0c8;}
+  .uni-seg-btn[data-f="meh"].active{background:#3a3117;color:#f5e2a3;}
+  .uni-seg-btn[data-f="no"].active{background:#3a231f;color:#f7c6ba;}
+  .uni-group{margin-bottom:22px;}
   .uni-group-head{
     display:flex;
     align-items:center;
-    gap:8px;
+    gap:10px;
     font-family:var(--font-mono);
-    font-size:10px;
-    letter-spacing:1.4px;
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:1.8px;
     color:var(--teal);
-    padding:0 2px 7px;
-    margin-bottom:6px;
+    padding:0 2px 8px;
+    margin-bottom:8px;
   }
   .uni-group-head::after{
     content:"";
@@ -793,9 +801,9 @@ if(!window.storage){
   .uni-line{
     display:flex;
     align-items:flex-start;
-    gap:7px;
-    padding:7px 10px 7px 9px;
-    border-radius:9px;
+    gap:10px;
+    padding:11px 12px 11px 13px;
+    border-radius:11px;
     background:var(--card);
     margin-bottom:4px;
     position:relative;
@@ -806,21 +814,23 @@ if(!window.storage){
     content:"";
     position:absolute;
     left:0; top:0; bottom:0;
-    width:2px;
+    width:3px;
     background:var(--line);
     transition:background .18s ease, width .18s ease;
   }
-  .uni-line:hover{background:var(--card-hover);}
+  .uni-line:hover{background:var(--card-hover);transform:translateX(2px);}
+  .uni-line.love{background:linear-gradient(90deg,rgba(63,200,150,.2),var(--card) 55%);}
+  .uni-line.love::before{background:#5fe0b0;width:5px;}
   .uni-line.like{background:linear-gradient(90deg,rgba(63,145,83,.16),var(--card) 55%);}
-  .uni-line.like::before{background:#7fd992;width:3px;}
-  .uni-line.edit{background:linear-gradient(90deg,rgba(201,154,46,.16),var(--card) 55%);}
-  .uni-line.edit::before{background:#e8c56b;width:3px;}
+  .uni-line.like::before{background:#7fd992;width:4px;}
+  .uni-line.meh{background:linear-gradient(90deg,rgba(201,154,46,.16),var(--card) 55%);}
+  .uni-line.meh::before{background:#e8c56b;width:4px;}
   .uni-line.no{background:var(--bg);opacity:.5;}
   .uni-line.no::before{background:#a84a3a;}
   .uni-text{
     flex:1;
-    font-size:13.5px;
-    line-height:1.55;
+    font-size:16px;
+    line-height:1.6;
     white-space:pre-wrap;
     word-break:break-word;
     cursor:text;
@@ -828,9 +838,20 @@ if(!window.storage){
   }
   .uni-line.no .uni-text{text-decoration:line-through;}
   .uni-text:focus{outline:none;box-shadow:0 1px 0 var(--amber);}
+  .uni-text ::selection{background:rgba(232,163,61,.35);}
+  .uni-bad{
+    background:none;
+    color:inherit;
+    text-decoration:underline wavy #e07a5f;
+    text-underline-offset:3px;
+    text-decoration-thickness:1.5px;
+    cursor:pointer;
+    border-radius:2px;
+  }
+  .uni-bad:hover{background:rgba(224,122,95,.18);}
   .uni-src{
     font-family:var(--font-mono);
-    font-size:9px;
+    font-size:10.5px;
     color:var(--teal);
     background:rgba(79,138,139,.12);
     border:1px solid var(--teal-dim);
@@ -842,39 +863,40 @@ if(!window.storage){
   }
   .uni-marks{
     display:flex;
-    gap:2px;
+    gap:4px;
     flex-shrink:0;
-    opacity:.45;
-    transition:opacity .18s ease;
-    margin-top:-1px;
+    margin-top:1px;
   }
-  .uni-line:hover .uni-marks, .uni-line.like .uni-marks,
-  .uni-line.edit .uni-marks, .uni-line.no .uni-marks{opacity:1;}
+
   .uni-mark{
-    width:25px;
-    height:25px;
-    border-radius:7px;
-    border:1px solid transparent;
-    background:rgba(255,255,255,.035);
-    color:var(--muted);
+    width:34px;
+    height:34px;
+    border-radius:9px;
+    border:1px solid var(--line);
+    background:rgba(255,255,255,.03);
     cursor:pointer;
-    font-size:12px;
+    font-size:16px;
     line-height:1;
     padding:0;
     display:flex;
     align-items:center;
     justify-content:center;
-    transition:transform .14s cubic-bezier(.22,1,.36,1), background .14s, color .14s;
+    transition:transform .14s cubic-bezier(.22,1,.36,1), background .14s, box-shadow .14s;
   }
-  .uni-mark:hover{background:rgba(255,255,255,.09);color:var(--text);transform:translateY(-1px);}
-  .uni-mark:active{transform:scale(.9);}
-  .uni-mark.on-like{background:#1c3524;color:#bdf0c8;box-shadow:0 0 0 1px #4f9c63;}
-  .uni-mark.on-edit{background:#3a3117;color:#f5e2a3;box-shadow:0 0 0 1px #a8832b;}
-  .uni-mark.on-no{background:#3a231f;color:#f7c6ba;box-shadow:0 0 0 1px #9c5447;}
-  @media (hover:none){ .uni-marks{opacity:1;} }
+  .uni-mark[data-k="love"]{color:#3fbd92;}
+  .uni-mark[data-k="like"]{color:#5fa873;}
+  .uni-mark[data-k="meh"]{color:#b8912f;}
+  .uni-mark[data-k="no"]{color:#b05a48;}
+  .uni-mark:hover{background:rgba(255,255,255,.08);transform:translateY(-2px);}
+  .uni-mark:active{transform:scale(.88);}
+  .uni-mark.on-love{background:#133128;color:#8df0cd;border-color:#3fbd92;box-shadow:0 0 14px rgba(63,189,146,.35);}
+  .uni-mark.on-like{background:#1c3524;color:#bdf0c8;border-color:#4f9c63;box-shadow:0 0 12px rgba(79,156,99,.3);}
+  .uni-mark.on-meh{background:#3a3117;color:#f5e2a3;border-color:#a8832b;box-shadow:0 0 12px rgba(168,131,43,.3);}
+  .uni-mark.on-no{background:#3a231f;color:#f7c6ba;border-color:#9c5447;box-shadow:0 0 12px rgba(156,84,71,.3);}
   .uni-note{
     width:100%;
-    margin-top:6px;
+    margin-top:8px;
+    font-size:13.5px;
     background:var(--bg);
     border:1px solid var(--line);
     color:var(--text);
@@ -1210,9 +1232,10 @@ if(!window.storage){
       <div class="unified-bar">
         <div class="uni-seg" id="uniSeg">
           <button class="uni-seg-btn active" data-f="todas">Todos</button>
-          <button class="uni-seg-btn" data-f="like">✓</button>
-          <button class="uni-seg-btn" data-f="edit">✎</button>
-          <button class="uni-seg-btn" data-f="no">✕</button>
+          <button class="uni-seg-btn" data-f="love" title="Me encanta">★</button>
+          <button class="uni-seg-btn" data-f="like" title="Me gusta">✓</button>
+          <button class="uni-seg-btn" data-f="meh" title="No me convence">~</button>
+          <button class="uni-seg-btn" data-f="no" title="Fuera">✕</button>
           <button class="uni-seg-btn" data-f="pend">Sin marcar</button>
         </div>
         <span class="uni-spacer"></span>
@@ -3485,9 +3508,38 @@ function lineKey(t){
     .replace(/\s+/g, " ").trim();
 }
 
+const MARK_LEVELS = [
+  ["love", "★", "Me encanta"],
+  ["like", "✓", "Me gusta"],
+  ["meh",  "~", "No me convence"],
+  ["no",   "✕", "Fuera"]
+];
+const MARK_LABEL = {love:"ME ENCANTA", like:"ME GUSTA", meh:"NO ME CONVENCE", no:"FUERA"};
+
+function escHtml(t){
+  return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function paintLine(el, text, bad){
+  if(!bad || !bad.length){ el.textContent = text; return; }
+  let html = escHtml(text);
+  bad.slice().sort((a,b)=>b.length-a.length).forEach(frag => {
+    const f = escHtml(frag);
+    const i = html.indexOf(f);
+    if(i >= 0 && html.indexOf("<mark", Math.max(0, i - 40)) !== i - 40){
+      html = html.slice(0, i) + '<mark class="uni-bad" title="Toca para quitar la marca">' + f + '</mark>' + html.slice(i + f.length);
+    }
+  });
+  el.innerHTML = html;
+}
+
 function marksBag(){
   const cs = currentState();
   if(!cs.lineMarks) cs.lineMarks = {};
+  if(!cs.lineMarksMigrated){
+    Object.values(cs.lineMarks).forEach(m => { if(m.mark === "edit") m.mark = "meh"; });
+    cs.lineMarksMigrated = true;
+  }
   return cs.lineMarks;
 }
 
@@ -3522,21 +3574,21 @@ function renderUnified(){
   let lines = unifiedLines();
   const total = lines.length;
 
-  if(unifiedFilter === "like") lines = lines.filter(l => (marks[l.key] || {}).mark === "like");
-  else if(unifiedFilter === "edit") lines = lines.filter(l => (marks[l.key] || {}).mark === "edit");
-  else if(unifiedFilter === "no") lines = lines.filter(l => (marks[l.key] || {}).mark === "no");
-  else if(unifiedFilter === "pend") lines = lines.filter(l => !(marks[l.key] || {}).mark);
+  if(unifiedFilter === "pend") lines = lines.filter(l => !(marks[l.key] || {}).mark);
+  else if(unifiedFilter === "keep") lines = lines.filter(l => ["love","like"].includes((marks[l.key] || {}).mark));
+  else if(unifiedFilter !== "todas") lines = lines.filter(l => (marks[l.key] || {}).mark === unifiedFilter);
 
-  const counts = {like:0, edit:0, no:0};
+  const counts = {love:0, like:0, meh:0, no:0};
   unifiedLines().forEach(l => { const m = (marks[l.key] || {}).mark; if(m) counts[m]++; });
   const pct = n => total ? (n / total * 100) : 0;
   const prog = document.getElementById("uniProgress");
   if(prog){
-    prog.innerHTML = '<i class="p-like" style="width:' + pct(counts.like) + '%"></i>' +
-                     '<i class="p-edit" style="width:' + pct(counts.edit) + '%"></i>' +
+    prog.innerHTML = '<i class="p-love" style="width:' + pct(counts.love) + '%"></i>' +
+                     '<i class="p-like" style="width:' + pct(counts.like) + '%"></i>' +
+                     '<i class="p-meh" style="width:' + pct(counts.meh) + '%"></i>' +
                      '<i class="p-no" style="width:' + pct(counts.no) + '%"></i>';
   }
-  const done = counts.like + counts.edit + counts.no;
+  const done = counts.love + counts.like + counts.meh + counts.no;
   document.getElementById("unifiedCount").innerHTML =
     "<b>" + done + "</b>/" + total + " decididos";
 
@@ -3579,17 +3631,42 @@ function renderUnified(){
 
       const txt = document.createElement("div");
       txt.className = "uni-text";
-      txt.textContent = m.rewrite || l.text;
       txt.contentEditable = "true";
       txt.spellcheck = false;
-      txt.title = "Puedes reescribirlo aquí";
+      txt.title = "Selecciona un trozo para marcarlo como que no te convence";
+      paintLine(txt, m.rewrite || l.text, m.bad || []);
       txt.addEventListener("keydown", (e)=>{ if(e.key === "Enter"){ e.preventDefault(); txt.blur(); } });
       txt.addEventListener("blur", ()=>{
         const val = txt.textContent.trim();
         const cur = marks[l.key] || (marks[l.key] = {});
         if(val && val !== l.text) cur.rewrite = val; else delete cur.rewrite;
+        if(cur.bad) cur.bad = cur.bad.filter(b => val.includes(b));
         saveDB();
       });
+      txt.addEventListener("click", (e)=>{
+        if(e.target.classList && e.target.classList.contains("uni-bad")){
+          const cur = marks[l.key] || {};
+          cur.bad = (cur.bad || []).filter(b => b !== e.target.textContent);
+          if(!cur.bad.length) delete cur.bad;
+          saveDB();
+          renderUnified();
+        }
+      });
+      const grab = ()=>{
+        const sel = window.getSelection();
+        if(!sel || sel.isCollapsed) return;
+        if(!txt.contains(sel.anchorNode)) return;
+        const frag = sel.toString().trim();
+        if(frag.length < 2) return;
+        const cur = marks[l.key] || (marks[l.key] = {});
+        cur.bad = cur.bad || [];
+        if(!cur.bad.includes(frag)) cur.bad.push(frag);
+        sel.removeAllRanges();
+        saveDB();
+        renderUnified();
+      };
+      txt.addEventListener("mouseup", ()=>setTimeout(grab, 0));
+      txt.addEventListener("touchend", ()=>setTimeout(grab, 120));
       head.appendChild(txt);
 
       const src = document.createElement("span");
@@ -3600,14 +3677,14 @@ function renderUnified(){
 
       body.appendChild(head);
 
-      if(m.mark === "edit"){
+      if(m.mark === "meh" || m.mark === "no" || (m.bad && m.bad.length)){
         const note = document.createElement("input");
         note.type = "text";
         note.className = "uni-note";
-        note.placeholder = "Qué cambiarías...";
+        note.placeholder = m.bad && m.bad.length ? "Qué le pasa a lo subrayado..." : "Qué cambiarías...";
         note.value = m.note || "";
         note.addEventListener("change", (e)=>{
-          marks[l.key].note = e.target.value;
+          (marks[l.key] || (marks[l.key] = {})).note = e.target.value;
           saveDB();
         });
         body.appendChild(note);
@@ -3615,11 +3692,12 @@ function renderUnified(){
 
       const bar = document.createElement("div");
       bar.className = "uni-marks";
-      [["like","✓"],["edit","✎"],["no","✕"]].forEach(([k, icon]) => {
+      MARK_LEVELS.forEach(([k, icon, label]) => {
         const b = document.createElement("button");
         b.className = "uni-mark" + (m.mark === k ? " on-" + k : "");
+        b.dataset.k = k;
         b.textContent = icon;
-        b.title = k === "like" ? "Me gusta" : k === "edit" ? "Cambiar algo" : "Fuera";
+        b.title = label;
         b.addEventListener("click", ()=>{
           const cur = marks[l.key] || (marks[l.key] = {});
           cur.mark = (cur.mark === k) ? "" : k;
@@ -3646,16 +3724,17 @@ function unifiedText(mode){
   let sec = null;
   lines.forEach(l => {
     const m = marks[l.key] || {};
-    if(mode === "sel" && !m.mark) return;
-    if(mode === "keep" && m.mark !== "like") return;
+    if(mode === "sel" && !m.mark && !(m.bad || []).length) return;
+    if(mode === "keep" && !["love","like"].includes(m.mark)) return;
     if(mode === "all" && m.mark === "no") return;
     if(l.section !== sec){ sec = l.section; out.push((out.length ? "\n" : "") + "[" + sec + "]"); }
     const t = m.rewrite || l.text;
     if(mode === "keep"){ out.push(t); return; }
-    const tag = m.mark === "like" ? "  <-- ME GUSTA"
-      : m.mark === "edit" ? ("  <-- CAMBIAR" + (m.note ? ": " + m.note : ""))
-      : m.mark === "no" ? "  <-- FUERA" : "";
-    out.push(t + tag);
+    const parts = [];
+    if(m.mark) parts.push(MARK_LABEL[m.mark]);
+    if((m.bad || []).length) parts.push('no me convence: "' + m.bad.join('" / "') + '"');
+    if(m.note) parts.push(m.note);
+    out.push(t + (parts.length ? "   <-- " + parts.join(" · ") : ""));
   });
   return out.join("\n");
 }
@@ -3795,7 +3874,8 @@ document.getElementById("unifiedCopyAll").addEventListener("click", (e)=>{
   if(!body){ flashBtn(e.currentTarget, "No hay versos", "Copiar con apuntes"); return; }
   copyText("Canción: " + db.currentSong + "\n" +
     "Estos son todos los versos de mis versiones, sin repetir, con mis apuntes.\n" +
-    "ME GUSTA: consérvalo tal cual. CAMBIAR: reescríbelo siguiendo mi nota. Lo que no lleva apunte, decídelo tú.\n" +
+    "ME ENCANTA: intocable, va sí o sí. ME GUSTA: consérvalo. NO ME CONVENCE: reescríbelo. " +
+    "Si marco un trozo entre comillas como \"no me convence\", cambia solo ese trozo. Lo que no lleva apunte, decídelo tú.\n" +
     "Hazme una versión final con lo mejor de todo.\n\n" + body);
   flashBtn(e.currentTarget, "Copiado ✓", "Copiar con apuntes");
 });

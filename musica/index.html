@@ -1306,7 +1306,7 @@ if(!window.storage){
     </div>
   </div>
 
-  <footer>Se guarda solo, por canción.</footer>
+  <footer>Se guarda solo, por canción. · <span style="opacity:.6">V1.72</span></footer>
 </div>
 
 <script>
@@ -4807,6 +4807,41 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
   reader.readAsText(file);
   e.target.value = "";
 });
+</script>
+<script>
+/* Actualización automática: compara con version.json y recarga si hay versión nueva */
+(function(){
+  var BUILD='V1.72', ROOT='../';
+  if(/[?&]embed=1/.test(location.search)) return;
+  var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
+  function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
+  async function recargar(){
+    intentos(intentos()+1);
+    try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){}
+    location.reload();
+  }
+  function aviso(v){
+    if(document.getElementById('dgpUpd')) return;
+    var d=document.createElement('div'); d.id='dgpUpd'; d.setAttribute('role','status');
+    d.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom,0px));margin:0 auto;max-width:520px;z-index:99999;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-radius:12px;border:1px solid #e8a33d;background:#1b1815;color:#efe7db;font:600 15px/1.3 system-ui,-apple-system,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.4)';
+    d.innerHTML='<span>Hay una versión nueva ('+v+')</span><button style="background:none;border:0;color:#e8a33d;font:inherit;font-weight:700;padding:8px 4px;cursor:pointer">Actualizar</button>';
+    d.querySelector('button').onclick=function(){ intentos(0); recargar(); };
+    document.body.appendChild(d);
+  }
+  async function comprobar(){
+    if(busy) return; busy=true;
+    try{
+      var r=await fetch(VJ+'?t='+Date.now(),{cache:'no-store'}); var j=await r.json();
+      if(j&&j.v&&j.v!==BUILD){
+        if(Date.now()-t0<8000 && intentos()<2) recargar(); else aviso(j.v);
+      } else intentos(0);
+    }catch(e){}
+    busy=false;
+  }
+  comprobar();
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') comprobar(); });
+  setInterval(comprobar,300000);
+})();
 </script>
 </body>
 </html>

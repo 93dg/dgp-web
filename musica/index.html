@@ -752,6 +752,26 @@ if(!window.storage){
     margin-bottom:14px;
   }
   .uni-spacer{flex:1;}
+  .uni-addbar{
+    display:flex;
+    gap:8px;
+    margin-bottom:10px;
+    flex-wrap:wrap;
+  }
+  .uni-addbar input{
+    flex:1 1 240px;
+    min-width:0;
+    background:var(--panel);
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:9px 12px;
+    border-radius:9px;
+    font-size:14px;
+    font-family:var(--font-body);
+    outline:none;
+  }
+  .uni-addbar input:focus{border-color:var(--amber);}
+  .uni-addbar .uni-find{flex:0 1 180px;}
   .uni-sort{
     font-size:14px;
     font-weight:500;
@@ -1096,7 +1116,7 @@ if(!window.storage){
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="verBadge">V1.74</div>
+<div id="verBadge">V1.75</div>
 <div class="wrap">
   <header>
     <div class="song-bar">
@@ -1283,6 +1303,10 @@ if(!window.storage){
         <div class="uni-progress" id="uniProgress"></div>
         <div class="uni-stats" id="unifiedCount"></div>
       </div>
+      <div class="uni-addbar">
+        <input type="text" id="uniAdd" placeholder="Escribe un verso nuevo y pulsa Enter...">
+        <input type="text" id="uniSearch" class="uni-find" placeholder="Buscar...">
+      </div>
       <div class="unified-bar">
         <select id="uniSort" class="uni-sort" title="Cómo agrupar los versos">
           <option value="seccion">⇅ Ordenar: por sección</option>
@@ -1314,6 +1338,10 @@ if(!window.storage){
       <div class="uni-head">
         <div class="uni-progress" id="p2Progress"></div>
         <div class="uni-stats" id="p2Count"></div>
+      </div>
+      <div class="uni-addbar">
+        <input type="text" id="p2Add" placeholder="Escribe un verso nuevo y pulsa Enter...">
+        <input type="text" id="p2Search" class="uni-find" placeholder="Buscar...">
       </div>
       <div class="unified-bar">
         <select id="p2Sort" class="uni-sort" title="Cómo ordenar los versos">
@@ -3602,6 +3630,13 @@ let dragLine = null;
 
 let lyricMode2 = "versiones";
 let unifiedFilter = "todas";
+let uniQuery = "";
+let p2Query = "";
+
+function matchQ(t, q){
+  if(!q) return true;
+  return lineKey(t).includes(lineKey(q));
+}
 
 function lineKey(t){
   return (t || "").toLowerCase()
@@ -3645,6 +3680,23 @@ function marksBag(){
   return cs.lineMarks;
 }
 
+function extraBag(){
+  const cs = currentState();
+  if(!cs.extraLines) cs.extraLines = [];
+  return cs.extraLines;
+}
+
+function addExtraLine(text, section){
+  const t = (text || "").trim();
+  if(!t) return false;
+  const bag = extraBag();
+  const k = lineKey(t);
+  if(bag.some(x => lineKey(x.text) === k)) return false;
+  bag.unshift({text:t, section:section || "AÑADIDAS", ts:Date.now()});
+  saveDB();
+  return true;
+}
+
 function unifiedLines(){
   const cs = currentState();
   const seen = new Map();
@@ -3665,6 +3717,16 @@ function unifiedLines(){
         seen.set(k, {key:k, text:line, srcs:[label], section:section || "SIN SECCIÓN"});
       }
     });
+  });
+  (cs.extraLines || []).forEach(x => {
+    const k = lineKey(x.text);
+    if(!k) return;
+    if(seen.has(k)){
+      const e = seen.get(k);
+      if(!e.srcs.includes("tuya")) e.srcs.push("tuya");
+    } else {
+      seen.set(k, {key:k, text:x.text, srcs:["tuya"], section:x.section || "AÑADIDAS", mine:true});
+    }
   });
   return [...seen.values()];
 }
@@ -3767,6 +3829,7 @@ function renderUnified(){
   let lines = unifiedLines();
   const total = lines.length;
 
+  if(uniQuery) lines = lines.filter(l => matchQ(l.text, uniQuery));
   if(unifiedFilter === "pend") lines = lines.filter(l => !(marks[l.key] || {}).mark);
   else if(unifiedFilter === "keep") lines = lines.filter(l => ["love","like"].includes((marks[l.key] || {}).mark));
   else if(unifiedFilter !== "todas") lines = lines.filter(l => (marks[l.key] || {}).mark === unifiedFilter);
@@ -3861,7 +3924,7 @@ function renderUnified(){
 
       const src = document.createElement("span");
       src.className = "uni-src";
-      src.textContent = l.srcs.length > 1 ? "×" + l.srcs.length : "";
+      src.textContent = l.mine ? "tuya" : (l.srcs.length > 1 ? "×" + l.srcs.length : "");
       src.title = l.srcs.join(" · ");
       head.appendChild(src);
 
@@ -3894,7 +3957,11 @@ function renderUnified(){
         b.addEventListener("click", ()=>{
           const cur = marks[l.key] || (marks[l.key] = {});
           cur.mark = (cur.mark === k) ? "" : k;
-          if(!cur.mark && !cur.note && !cur.rewrite) delete marks[l.key];
+          if(k === "no" && cur.mark === "no" && l.mine && l.srcs.length === 1){
+            currentState().extraLines = extraBag().filter(x => lineKey(x.text) !== l.key);
+            delete marks[l.key];
+          }
+          if(marks[l.key] && !cur.mark && !cur.note && !cur.rewrite) delete marks[l.key];
           saveDB();
           renderUnified();
         });
@@ -3963,6 +4030,7 @@ function renderPhase2(){
   let lines = phase2Lines();
   const total = lines.length;
 
+  if(p2Query) lines = lines.filter(l => matchQ(l.text, p2Query));
   if(phase2Filter === "pend") lines = lines.filter(l => !(marks[l.key] || {}).mark);
   else if(phase2Filter !== "todas") lines = lines.filter(l => (marks[l.key] || {}).mark === phase2Filter);
 
@@ -4379,6 +4447,23 @@ document.getElementById("p2Reset").addEventListener("click", (e)=>{
   b.dataset.armed = "1";
   b.textContent = "¿Seguro?";
   setTimeout(()=>{ b.dataset.armed = ""; b.textContent = "Reiniciar"; }, 3000);
+});
+
+document.getElementById("uniAdd").addEventListener("keydown", (e)=>{
+  if(e.key !== "Enter") return;
+  if(addExtraLine(e.target.value)){ e.target.value = ""; renderUnified(); }
+});
+document.getElementById("uniSearch").addEventListener("input", (e)=>{
+  uniQuery = e.target.value;
+  renderUnified();
+});
+document.getElementById("p2Add").addEventListener("keydown", (e)=>{
+  if(e.key !== "Enter") return;
+  if(addExtraLine(e.target.value)){ e.target.value = ""; renderPhase2(); if(document.getElementById("unifiedList")) renderUnified(); }
+});
+document.getElementById("p2Search").addEventListener("input", (e)=>{
+  p2Query = e.target.value;
+  renderPhase2();
 });
 
 document.getElementById("uniSort").addEventListener("change", (e)=>{
@@ -4869,7 +4954,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.74', ROOT='../';
+  var BUILD='V1.75', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

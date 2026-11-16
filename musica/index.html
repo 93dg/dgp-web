@@ -753,11 +753,21 @@ if(!window.storage){
   }
   .uni-spacer{flex:1;}
   .uni-sort{
-    font-size:13.5px;
-    padding:7px 10px;
+    font-size:14px;
+    font-weight:500;
+    font-family:var(--font-body);
+    padding:8px 12px;
+    border-radius:9px;
+    background:var(--amber-dim);
+    border:1px solid var(--amber);
+    color:var(--amber);
+    cursor:pointer;
+    outline:none;
+    flex:0 1 230px;
     min-width:0;
-    flex:0 1 210px;
   }
+  .uni-sort:hover{background:#6b5322;}
+  .uni-sort option{background:var(--panel);color:var(--text);}
   .uni-seg{
     display:flex;
     gap:2px;
@@ -1086,7 +1096,7 @@ if(!window.storage){
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="verBadge">V1.72</div>
+<div id="verBadge">V1.73</div>
 <div class="wrap">
   <header>
     <div class="song-bar">
@@ -1268,12 +1278,21 @@ if(!window.storage){
     </div>
 
     <div id="lyricUnifiedPane" style="display:none;">
-      <p class="lyric-sub">Todos los versos de todas las versiones, sin repetir. Marca cada uno: ✓ me gusta · ✎ cambiar · ✕ fuera.</p>
+      <p class="lyric-sub">Todos los versos de todas las versiones, sin repetir. Marca cada uno: ★ me encanta · ✓ me gusta · ~ no me convence · ✕ fuera. Selecciona un trozo para subrayar lo que falla.</p>
       <div class="uni-head">
         <div class="uni-progress" id="uniProgress"></div>
         <div class="uni-stats" id="unifiedCount"></div>
       </div>
       <div class="unified-bar">
+        <select id="uniSort" class="uni-sort" title="Cómo agrupar los versos">
+          <option value="seccion">⇅ Ordenar: por sección</option>
+          <option value="parecidas">⇅ Ordenar: frases parecidas</option>
+          <option value="rima">⇅ Ordenar: por rima</option>
+          <option value="repes">⇅ Ordenar: más repetidas</option>
+          <option value="marca">⇅ Ordenar: por marca</option>
+          <option value="metrica">⇅ Ordenar: por métrica</option>
+          <option value="version">⇅ Ordenar: por versión</option>
+        </select>
         <div class="uni-seg" id="uniSeg">
           <button class="uni-seg-btn active" data-f="todas">Todos</button>
           <button class="uni-seg-btn" data-f="love" title="Me encanta">★</button>
@@ -1282,15 +1301,6 @@ if(!window.storage){
           <button class="uni-seg-btn" data-f="no" title="Fuera">✕</button>
           <button class="uni-seg-btn" data-f="pend">Sin marcar</button>
         </div>
-        <select id="uniSort" class="sec-select uni-sort" title="Cómo agrupar los versos">
-          <option value="seccion">Agrupar: por sección</option>
-          <option value="parecidas">Agrupar: frases parecidas</option>
-          <option value="rima">Agrupar: por rima</option>
-          <option value="repes">Agrupar: más repetidas</option>
-          <option value="marca">Agrupar: por marca</option>
-          <option value="metrica">Agrupar: por métrica</option>
-          <option value="version">Agrupar: por versión</option>
-        </select>
         <span class="uni-spacer"></span>
         <button class="tool" id="unifiedCopySel">Copiar marcadas</button>
         <button class="tool" id="unifiedToVersion">Versión con las ✓</button>
@@ -4828,7 +4838,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.72', ROOT='../';
+  var BUILD='V1.73', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

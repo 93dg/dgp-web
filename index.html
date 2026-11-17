@@ -185,7 +185,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[t
   <aside class="side">
     <div class="brand">DGP</div>
     <nav id="nav" aria-label="Secciones"></nav>
-    <div class="foot"><span class="m"><span id="version">V1.83</span></span><button id="out">Salir</button></div>
+    <div class="foot"><span class="m"><span id="version">V1.84</span></span><button id="out">Salir</button></div>
   </aside>
   <div>
   <div class="main">
@@ -823,12 +823,12 @@ function pintarGusto(){
 /* ---- Prompint: prompts aleatorios que no se repiten nunca ---- */
 const PP={
   tipo:{movie:'película',tvSeries:'serie',tvMiniSeries:'miniserie',videoGame:'videojuego',tvMovie:'película para TV',short:'cortometraje',tvEpisode:'episodio'},
-  escena:['la escena más icónica','el personaje principal en un momento decisivo','el lugar emblemático donde transcurre la historia','el momento de mayor tensión','un objeto simbólico en primer plano','el final, con el ambiente de despedida','un paisaje del mundo de la obra sin personajes','el encuentro entre dos personajes clave','la llegada a un lugar nuevo','una escena tranquila y cotidiana de la historia','el villano o la amenaza en su elemento','la huida o persecución, congelada en un instante'],
-  estilo:['animación 2D de largometraje, líneas limpias y sombreado plano','ilustración semirrealista con aire de animación, fondos pintados a mano','cel-shading suave con contornos finos y texturas de gouache','animación clásica pintada a mano, colores densos y planos','ilustración de cuento animado, formas redondeadas y expresivas','estilo de novela gráfica animada, tinta y color plano','animación japonesa de fondos detallados y personajes sencillos','dibujo animado europeo de línea clara','animación de stop-motion pintada, volúmenes suaves','concept art de película animada, pinceladas visibles'],
-  paleta:['ocres, terracotas y azul profundo','verdes bosque con toques de amarillo mostaza','azules fríos y un único acento naranja','rosas atardecer y violetas suaves','rojos intensos sobre fondo casi negro','turquesas y corales de mar tropical','grises azulados con luz dorada','verde oliva, crema y marrón tierra','magentas y cianes de neón sobre noche oscura','amarillos cálidos y sombras violetas','blanco, azul hielo y un toque de rojo','paleta limitada de cuatro colores'],
-  luz:['luz dorada de atardecer','luz de luna con sombras largas','contraluz con halo brillante','niebla suave y luz difusa','luz de tormenta con destellos','amanecer frío y rosado','luz cenital dura','luz de fuego y velas','neblina de mediodía sin sombras duras','luz de farolas en la noche'],
-  plano:['plano general amplio','plano medio centrado','vista cenital','contrapicado dramático','plano detalle con fondo desenfocado','composición simétrica','composición en diagonal','vista desde lejos con figuras pequeñas','encuadre a través de una ventana o arco','perspectiva baja a ras de suelo'],
-  pintura:['pocas formas grandes de color, fácil de pintar por capas','bordes definidos y zonas planas ideales para acrílico','contrastes marcados entre luces y sombras','detalles solo en el centro y fondo más sencillo','texturas de pincel visibles en el cielo y el suelo','siluetas claras y pocos elementos','formato apaisado pensado para un lienzo','formato vertical pensado para un lienzo']
+  escena:['el lugar emblemático donde transcurre la historia, visto desde lejos','el paisaje del mundo de la obra, sin personajes o con una silueta diminuta','la silueta del personaje principal frente a un gran cielo','la escena más icónica reducida a formas simples y atmósfera','el momento de despedida del final, con ambiente de calma','la llegada a un lugar nuevo al caer la tarde','un camino, río o mar que recorre la historia','el refugio o casa de la historia rodeado de naturaleza','la amenaza apenas insinuada entre la niebla','un objeto simbólico flotando en un entorno suave','un encuentro entre dos siluetas en la distancia','el escenario más tranquilo de la historia, de noche'],
+  estilo:['pintura al óleo suave y difuminada, casi acuarela, sin contornos duros','gouache con degradados mezclados sobre el lienzo, bordes blandos','óleo diluido con aire de acuarela, colores que se funden entre sí','pinceladas anchas y horizontales en el cielo, mezcla húmeda sobre húmedo','paisaje atmosférico de formas simples y bordes desdibujados','pintura de principiante expresiva: manchas de color mezcladas, poca definición','acuarela sobre papel, lavados suaves y transparencias','pastel difuminado con las transiciones de color muy suaves'],
+  paleta:['violeta y azul noche con nubes de coral y salmón','verdes musgo, azul profundo y un reflejo naranja','rosa atardecer, lila y siluetas azul marino','ocres cálidos que se funden en un cielo turquesa','azules fríos con un único reflejo de color cálido','verdes bosque, amarillo suave y sombras violetas','coral, morado y negro azulado, con estrellas pequeñas','tierra, miel y gris azulado en degradado','magenta apagado y azul petróleo','paleta limitada de cuatro colores que se mezclan'],
+  luz:['luz de crepúsculo con el cielo todavía encendido','luz de luna reflejada en el agua','amanecer rosado con neblina baja','contraluz suave con el sol casi oculto','luz dorada difusa de final de tarde','noche estrellada con un resplandor en el horizonte','niebla que suaviza todas las formas','tormenta lejana con un claro de luz'],
+  plano:['plano general amplio con mucho cielo','composición simétrica con un camino de agua al centro','vista con montañas como siluetas planas al fondo','horizonte bajo y cielo protagonista','encuadre vertical con la luz reflejada abajo','composición en V con dos laderas que llevan al centro','primer plano de hierba con detalles pequeños y fondo suave','vista desde lejos con elementos muy pequeños'],
+  pintura:['cielo con pinceladas horizontales y degradados mezclados','siluetas oscuras y planas para montañas o edificios','reflejo en el agua con el color del cielo','detalles solo con puntitos a punta de pincel (estrellas, flores)','pocas formas grandes y fáciles de pintar por capas','mezclar los colores directamente en el lienzo sin definir bordes','zonas de color plano y zonas difuminadas alternadas','dejar el centro más luminoso y los bordes más oscuros']
 };
 const hash=t=>{let h=5381;for(let i=0;i<t.length;i++)h=((h<<5)+h+t.charCodeAt(i))>>>0;return h.toString(36)};
 const elige=a=>a[Math.floor(Math.random()*a.length)];
@@ -843,12 +843,13 @@ function nuevoPrompt(){
     const c=E.bolsa[0],t=base.find(x=>x.const===c);
     const p={escena:elige(PP.escena),estilo:elige(PP.estilo),paleta:elige(PP.paleta),luz:elige(PP.luz),plano:elige(PP.plano),pintura:elige(PP.pintura)};
     const tp=PP.tipo[t.title_type]||(t.title_type||'obra').toLowerCase();
-    txt=`Ilustración casi de animación para pintar como cuadro: ${p.escena} de «${t.title}»${t.year?' ('+t.year+')':''}, ${tp}.
-Estilo: ${p.estilo}.
+    txt=`Cuadro suave y difuminado, con aire de animación pero pintado, inspirado en «${t.title}»${t.year?' ('+t.year+')':''}, ${tp}: ${p.escena}.
+Técnica: ${p.estilo}.
 Paleta: ${p.paleta}.
 Luz: ${p.luz}.
 Encuadre: ${p.plano}.
-Para pintar: ${p.pintura}.`;
+Para pintar: ${p.pintura}.
+Sin contornos marcados ni detalles finos; formas simples y colores mezclados.`;
     meta=`Tu nota: ${t.your_rating}${t.genres?' · '+t.genres:''}`;
     if(!usados.has(hash(txt))){E.usados.push(hash(txt));E.bolsa.shift();break}
     if(++intentos>40){E.bolsa.push(E.bolsa.shift())}
@@ -920,7 +921,7 @@ iniciar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.83', ROOT='';
+  var BUILD='V1.84', ROOT='';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

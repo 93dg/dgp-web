@@ -1261,7 +1261,7 @@ if(!window.storage){
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="verBadge">V2.12</div>
+<div id="verBadge">V2.13</div>
 <div class="wrap">
   <header>
     <div class="song-bar">
@@ -4110,7 +4110,7 @@ function layoutFor(lines){
   const live = {};
   lines.forEach(l => { live[l.key] = l; });
 
-  if(lay && lay.sort === unifiedSort){
+  if(lay && lay.sort === unifiedSort && lay.algo === "v2"){
     const order = [], map = {}, puestas = {};
     lay.order.forEach(sec => {
       const arr = (lay.items[sec] || []).filter(k => live[k]).map(k => { puestas[k] = 1; return live[k]; });
@@ -4124,13 +4124,13 @@ function layoutFor(lines){
         map[sec] = map[sec].concat(g.map[sec]);
       });
     }
-    cs.uniLayout = {sort: unifiedSort, order: order, items: {}};
+    cs.uniLayout = {sort: unifiedSort, algo: "v2", order: order, items: {}};
     order.forEach(sec => { cs.uniLayout.items[sec] = map[sec].map(x => x.key); });
     return {order, map};
   }
 
   const g = groupUnified(lines);
-  cs.uniLayout = {sort: unifiedSort, order: g.order.slice(), items: {}};
+  cs.uniLayout = {sort: unifiedSort, algo: "v2", order: g.order.slice(), items: {}};
   g.order.forEach(sec => { cs.uniLayout.items[sec] = g.map[sec].map(x => x.key); });
   return g;
 }
@@ -4169,14 +4169,16 @@ function groupUnified(lines){
   });
   if(unifiedSort === "repes") order.sort((a, b) => (map[b][0].srcs.length) - (map[a][0].srcs.length));
   if(unifiedSort === "metrica") order.sort((a, b) => parseInt(a) - parseInt(b));
+  if(unifiedSort === "ultima" || unifiedSort === "rima"){
+    order.forEach(k => map[k].sort((x, y) => x.text.localeCompare(y.text, "es")));
+  }
   if(unifiedSort === "marca"){
     const rank = ["ME ENCANTA","ME GUSTA","NO ME CONVENCE","SIN MARCAR","FUERA"];
     order.sort((a, b) => rank.indexOf(a) - rank.indexOf(b));
   }
-  if(unifiedSort === "rima" || unifiedSort === "ultima") order.sort((a, b) => {
-    const d = map[b].length - map[a].length;
-    return d !== 0 ? d : a.localeCompare(b, "es");
-  });
+  if(unifiedSort === "ultima") order.sort((a, b) =>
+    ultimaPalabra(map[a][0].text).localeCompare(ultimaPalabra(map[b][0].text), "es"));
+  if(unifiedSort === "rima") order.sort((a, b) => a.localeCompare(b, "es"));
   return {order, map};
 }
 
@@ -5623,7 +5625,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V2.12', ROOT='../';
+  var BUILD='V2.13', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

@@ -845,13 +845,13 @@ if(!window.storage){
     100%{box-shadow:0 0 0 0 transparent;}
   }
   .alt-box{
-    border:1px solid transparent;
-    border-left:2px solid #4a6b6c;
+    border:none;
     border-radius:11px;
     padding:0;
-    margin-bottom:4px;
+    margin:0;
     background:none;
   }
+  .alt-box > .uni-line:first-child{box-shadow:inset 3px 0 0 #4a6b6c;}
   .alt-box.open{
     border-color:#4a6b6c;
     padding:5px;
@@ -1261,7 +1261,7 @@ if(!window.storage){
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="verBadge">V2.08</div>
+<div id="verBadge">V2.09</div>
 <div class="wrap">
   <header>
     <div class="song-bar">
@@ -3938,9 +3938,6 @@ function focusAlt(leadKey){
   setTimeout(()=>{
     const box = document.querySelector('.alt-box[data-lead="' + leadKey + '"]');
     if(!box) return;
-    const r = box.getBoundingClientRect();
-    const fuera = r.bottom < 60 || r.top > (window.innerHeight - 60);
-    if(fuera) box.scrollIntoView({behavior:"smooth", block:"center"});
     box.classList.add("flash");
     setTimeout(()=>box.classList.remove("flash"), 1400);
     const n = box.querySelectorAll(".uni-line").length;
@@ -4324,6 +4321,23 @@ function buildUniRow(l, marks, opts){
   return row;
 }
 
+function anchorGet(sel){
+  const rows = document.querySelectorAll(sel + " [data-k]");
+  for(const r of rows){
+    const b = r.getBoundingClientRect();
+    if(b.bottom > 0) return {k: r.dataset.k, top: b.top};
+  }
+  return null;
+}
+
+function anchorSet(sel, a){
+  if(!a) return;
+  const el = document.querySelector(sel + ' [data-k="' + a.k + '"]');
+  if(!el) return;
+  const d = el.getBoundingClientRect().top - a.top;
+  if(Math.abs(d) > 0.5) window.scrollBy(0, d);
+}
+
 function keepScroll(fn){
   const y = window.scrollY;
   fn();
@@ -4332,6 +4346,7 @@ function keepScroll(fn){
 
 function renderUnified(){
   const _y = window.scrollY;
+  const _anchor = anchorGet("#unifiedList");
   const list = document.getElementById("unifiedList");
   const marks = marksBag();
   const groupsAlt = altBag();
@@ -4374,7 +4389,7 @@ function renderUnified(){
   }
   if(lines.length === 0){
     list.innerHTML = '<p class="scope-empty">Ningún verso con ese filtro.</p>';
-    requestAnimationFrame(()=>window.scrollTo(0, _y));
+    if(window.scrollY !== _y) window.scrollTo(0, _y);
     return;
   }
 
@@ -4426,7 +4441,9 @@ function renderUnified(){
 
     list.appendChild(g);
   });
-  requestAnimationFrame(()=>window.scrollTo(0, _y));
+  if(window.scrollY !== _y) window.scrollTo(0, _y);
+  anchorSet("#unifiedList", _anchor);
+  requestAnimationFrame(()=>anchorSet("#unifiedList", _anchor));
 }
 
 
@@ -4476,6 +4493,7 @@ function renderPhase2(){
   const list = document.getElementById("phase2List");
   if(!list) return;
   const _y2 = window.scrollY;
+  const _anchor2 = anchorGet("#phase2List");
   const sortSel = document.getElementById("p2Sort");
   if(sortSel) sortSel.value = currentState().phase2Sort || "manual";
   const m1 = marksBag();
@@ -4726,7 +4744,9 @@ function renderPhase2(){
 
     list.appendChild(row);
   });
-  requestAnimationFrame(()=>window.scrollTo(0, _y2));
+  if(window.scrollY !== _y2) window.scrollTo(0, _y2);
+  anchorSet("#phase2List", _anchor2);
+  requestAnimationFrame(()=>anchorSet("#phase2List", _anchor2));
 }
 
 function phase2Text(withNotes){
@@ -5540,7 +5560,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V2.08', ROOT='../';
+  var BUILD='V2.09', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

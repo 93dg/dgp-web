@@ -185,7 +185,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[t
   <aside class="side">
     <div class="brand">DGP</div>
     <nav id="nav" aria-label="Secciones"></nav>
-    <div class="foot"><span class="m"><span id="version">V1.85</span></span><button id="out">Salir</button></div>
+    <div class="foot"><span class="m"><span id="version">V1.86</span></span><button id="out">Salir</button></div>
   </aside>
   <div>
   <div class="main">
@@ -843,14 +843,17 @@ function nuevoPrompt(){
     const c=E.bolsa[0],t=base.find(x=>x.const===c);
     const p={escena:elige(PP.escena),estilo:elige(PP.estilo),paleta:elige(PP.paleta),luz:elige(PP.luz),plano:elige(PP.plano),pintura:elige(PP.pintura)};
     const tp=PP.tipo[t.title_type]||(t.title_type||'obra').toLowerCase();
-    txt=`Cuadro de pincelada suave y difuminada, con aire de animación, inspirado en «${t.title}»${t.year?' ('+t.year+')':''}, ${tp}: ${p.escena}.
+    let t2=null;if(Math.random()<.3&&base.length>1){do{t2=elige(base)}while(t2.const===t.const)}
+    if(t2)do{p.escena2=elige(PP.escena)}while(p.escena2===p.escena);
+    const ref=x=>`«${x.title}»${x.year?' ('+x.year+')':''}`;
+    txt=`Cuadro de pincelada suave y difuminada, con aire de animación, ${t2?`una sola imagen que fusiona dos escenas de obras distintas: de ${ref(t)} (${tp}), ${p.escena}; y de ${ref(t2)} (${PP.tipo[t2.title_type]||(t2.title_type||'obra').toLowerCase()}), ${p.escena2}. Que convivan en el mismo cuadro`:`inspirado en ${ref(t)}, ${tp}: ${p.escena}`}.
 Técnica: ${p.estilo}.
 Paleta: ${p.paleta}.
 Luz: ${p.luz}.
 Encuadre: ${p.plano}.
 Para pintar: ${p.pintura}.
 Sin contornos marcados ni detalles finos; formas simples y colores mezclados.`;
-    meta=`Tu nota: ${t.your_rating}${t.genres?' · '+t.genres:''}`;
+    meta=t2?`Tus notas: ${t.your_rating} y ${t2.your_rating} · dos escenas`:`Tu nota: ${t.your_rating}${t.genres?' · '+t.genres:''}`;
     if(!usados.has(hash(txt))){E.usados.push(hash(txt));E.bolsa.shift();break}
     if(++intentos>40){E.bolsa.push(E.bolsa.shift())}
   }while(intentos<400);
@@ -921,7 +924,7 @@ iniciar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.85', ROOT='';
+  var BUILD='V1.86', ROOT='';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

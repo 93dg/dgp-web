@@ -77,7 +77,6 @@ input[type=range]{width:100%}
   <div class="fila"><button id="calM">−</button><button id="calP">+</button><button id="calOk" class="on" style="flex:1">Guardar calibrado</button></div>
 </section>
 <div id="vista"><div id="lienzo"><div id="marco" class="cubrir"><img id="img" alt=""><div id="rej"></div></div></div><div id="vacio">Elige una foto y pon las medidas<br>de donde la vas a pintar.</div></div>
-<div id="info"></div>
 <button id="bLock" aria-label="Bloquear pantalla">🔓</button>
 <script>
 (function(){
@@ -133,7 +132,7 @@ function pintar(){
   $('bProp').textContent='Proporción de la foto: '+(S.lock?'sí':'no'); $('bProp').classList.toggle('on',S.lock);
   $('ajuste').value=S.ajuste; $('ajuste').disabled=S.lock; $('rejaT').value=String(S.rej);
   $('bSueno').textContent='Pantalla encendida: '+(S.sueno?'sí':'no'); $('bVer').classList.toggle('on',!!S.ver); $('bVer').setAttribute('aria-pressed',String(!!S.ver));
-  $('info').innerHTML=S.w+' × '+S.h+' cm · '+(f<1?'escala 1:'+(1/f).toFixed(1).replace('.',','):'<span class="ok">tamaño real</span>')+(S.ppm?'':' · sin calibrar');
+  if($('info')) $('info').innerHTML=S.w+' × '+S.h+' cm · '+(f<1?'escala 1:'+(1/f).toFixed(1).replace('.',','):'<span class="ok">tamaño real</span>')+(S.ppm?'':' · sin calibrar');
   $('calAviso').textContent=S.ppm?'Calibrado guardado.':'Sin calibrar: las medidas son aproximadas.';
 }
 /* ---------- menú (lápiz) ---------- */
@@ -156,7 +155,7 @@ idbGet().then(b=>{ if(b) ponerImg(b); });
 <script>
 /* Actualización automática */
 (function(){
-  var BUILD='V1.89', ROOT='../';
+  var BUILD='V1.90', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

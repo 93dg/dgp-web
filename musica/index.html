@@ -1218,7 +1218,7 @@ if(!window.storage){
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="verBadge">V2.03</div>
+<div id="verBadge">V2.04</div>
 <div class="wrap">
   <header>
     <div class="song-bar">
@@ -1417,6 +1417,7 @@ if(!window.storage){
           <option value="seccion">⇅ Ordenar: por sección</option>
           <option value="parecidas">⇅ Ordenar: frases parecidas</option>
           <option value="rima">⇅ Ordenar: por rima</option>
+          <option value="ultima">⇅ Ordenar: por última palabra</option>
           <option value="repes">⇅ Ordenar: más repetidas</option>
           <option value="marca">⇅ Ordenar: por marca</option>
           <option value="metrica">⇅ Ordenar: por métrica</option>
@@ -1454,6 +1455,7 @@ if(!window.storage){
           <option value="manual">⇅ Ordenar: manual</option>
           <option value="parecidas">⇅ Ordenar: frases parecidas</option>
           <option value="rima">⇅ Ordenar: por rima</option>
+          <option value="ultima">⇅ Ordenar: por última palabra</option>
           <option value="metrica">⇅ Ordenar: por métrica</option>
           <option value="marca">⇅ Ordenar: por marca</option>
           <option value="seccion">⇅ Ordenar: por sección</option>
@@ -3945,6 +3947,12 @@ function rimaDe(t){
   return (v[v.length - 2] + "-" + v[v.length - 1]).toUpperCase();
 }
 
+function ultimaPalabra(t){
+  const ws = (t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-z0-9ñ ]/g," ").trim().split(/\s+/);
+  return (ws[ws.length - 1] || "?").toUpperCase();
+}
+
 function finalDe(t){
   const ws = (t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"")
     .replace(/[^a-z0-9ñ ]/g," ").trim().split(/\s+/);
@@ -3997,6 +4005,7 @@ function groupUnified(lines){
   const keyOf = {
     seccion: l => l.section,
     rima:    l => "RIMA " + rimaDe(l.text),
+    ultima:  l => "ACABA EN «" + ultimaPalabra(l.text) + "»",
     repes:   l => l.srcs.length > 1 ? "EN " + l.srcs.length + " VERSIONES" : "EN UNA SOLA VERSIÓN",
     marca:   l => { const m = (marksBag()[l.key] || {}).mark; return m ? MARK_LABEL[m] : "SIN MARCAR"; },
     metrica: l => { const n = silabasDe(l.text); const lo = Math.floor(n / 3) * 3; return lo + "-" + (lo + 2) + " SÍLABAS"; },
@@ -4015,7 +4024,10 @@ function groupUnified(lines){
     const rank = ["ME ENCANTA","ME GUSTA","NO ME CONVENCE","SIN MARCAR","FUERA"];
     order.sort((a, b) => rank.indexOf(a) - rank.indexOf(b));
   }
-  if(unifiedSort === "rima") order.sort((a, b) => map[b].length - map[a].length);
+  if(unifiedSort === "rima" || unifiedSort === "ultima") order.sort((a, b) => {
+    const d = map[b].length - map[a].length;
+    return d !== 0 ? d : a.localeCompare(b, "es");
+  });
   return {order, map};
 }
 
@@ -4123,6 +4135,7 @@ function buildUniRow(l, marks, opts){
   const src = document.createElement("span");
   src.className = "uni-src";
   src.textContent = unifiedSort === "rima" ? "-" + finalDe(l.text)
+    : unifiedSort === "ultima" ? ultimaPalabra(l.text).toLowerCase()
     : (l.mine ? "tuya" : (l.srcs.length > 1 ? "×" + l.srcs.length : ""));
   src.title = (l.mine ? "añadida por ti · " : "") + l.srcs.join(" · ");
   head.appendChild(src);
@@ -5339,7 +5352,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V2.03', ROOT='../';
+  var BUILD='V2.04', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

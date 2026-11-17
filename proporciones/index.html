@@ -110,7 +110,7 @@ $('al').onchange=()=>{ const v=num($('al').value); if(!v) return pintar(); S.h=v
 $('bGira').onclick=()=>{ const t=S.w; S.w=S.h; S.h=t; S.lock=false; guardar(); pintar(); };
 $('bProp').onclick=()=>{ S.lock=!S.lock; if(S.lock&&ratio) S.h=Math.round(S.w*ratio*10)/10; guardar(); pintar(); };
 $('ajuste').onchange=()=>{ S.ajuste=$('ajuste').value; guardar(); pintar(); };
-$('rejaT').onchange=()=>{ S.rej=+$('rejaT').value; guardar(); pintar(); };
+$('rejaT').onchange=()=>{ S.rej=+$('rejaT').value; guardar(); pintar(); $('pMed').hidden=true; $('bMed').classList.remove('on'); };
 $('bSueno').onclick=()=>{ S.sueno=!S.sueno; guardar(); sueno(); pintar(); };
 $('bVer').onclick=()=>{ S.ver=!S.ver; guardar(); pintar(); };
 /* ---------- calibrado ---------- */
@@ -127,8 +127,8 @@ function pintar(){
   if(S.ver){ const v=$('vista'); f=Math.min(1,(v.clientWidth-56)/(mw*base),(v.clientHeight-56)/(mh*base)); if(!(f>0)) f=1; }
   const p=base*f, m=$('marco');
   m.style.width=(mw*p)+'px'; m.style.height=(mh*p)+'px'; m.className=S.ajuste;
-  const r=S.rej; $('rej').style.backgroundImage=r?'linear-gradient(to right,rgba(255,255,255,.75) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.75) 1px,transparent 1px),linear-gradient(to right,rgba(0,0,0,.45) 1px,transparent 1px),linear-gradient(to bottom,rgba(0,0,0,.45) 1px,transparent 1px)':'none';
-  if(r){ const s=r*10*p+'px'; $('rej').style.backgroundSize=s+' '+s+','+s+' '+s+','+s+' '+s+','+s+' '+s; $('rej').style.backgroundPosition='0 0,0 0,1px 1px,1px 1px'; }
+  const r=S.rej; $('rej').style.backgroundImage=r?'linear-gradient(to right,rgba(255,255,255,.95) 2px,transparent 2px),linear-gradient(to bottom,rgba(255,255,255,.95) 2px,transparent 2px),linear-gradient(to right,rgba(0,0,0,.8) 1px,transparent 1px),linear-gradient(to bottom,rgba(0,0,0,.8) 1px,transparent 1px)':'none';
+  if(r){ const s=r*10*p+'px'; $('rej').style.backgroundSize=s+' '+s+','+s+' '+s+','+s+' '+s+','+s+' '+s; $('rej').style.backgroundPosition='0 0,0 0,2px 2px,2px 2px'; }
   $('an').value=S.w; $('al').value=S.h;
   $('bProp').textContent='Proporción de la foto: '+(S.lock?'sí':'no'); $('bProp').classList.toggle('on',S.lock);
   $('ajuste').value=S.ajuste; $('ajuste').disabled=S.lock; $('rejaT').value=String(S.rej);
@@ -157,7 +157,7 @@ idbGet().then(b=>{ if(b) ponerImg(b); });
 <script>
 /* Actualización automática */
 (function(){
-  var BUILD='V1.94', ROOT='../';
+  var BUILD='V1.95', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

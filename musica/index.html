@@ -1262,7 +1262,7 @@ if(!window.storage){
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="verBadge">V2.22</div>
+<div id="verBadge">V2.23</div>
 <div class="wrap">
   <header>
     <div class="song-bar">
@@ -5065,7 +5065,7 @@ document.getElementById("p2Order").addEventListener("click", (e)=>{
     "- Excepción: las marcadas NO ME CONVENCE puedes retocarlas, y si te marco un trozo entre comillas, cambia solo ese trozo.\n" +
     "- Una línea con (o, si encaja mejor: ...) o (= misma frase: ...) es UNA sola con varias versiones: elige una, la que mejor cuadre con rima y métrica. " +
     "Si pone (o, si encaja mejor), mi preferida es la de fuera del paréntesis.\n\n" +
-    "TRABAJO: ordénalas en bloques ([Verso], [Estribillo], [Puente]...) y empareja las que rimen.\n\n" +
+    "TRABAJO: ordénalas en bloques ([Verso], [Estribillo], [Puente]...) o simplemente línea por línea, como mejor suene, y empareja las que rimen.\n\n" +
     "RIMA: vale la ASONANTE: coinciden las vocales desde la última acentuada, aunque cambien las consonantes. " +
     "tiempo/momento (e-o), cielo/muero/bueno (e-o), casa/mañana/alma (a-a). Con ese criterio casi todo rima, así que búscale pareja a cada línea.\n\n" +
     "PESO: ME ENCANTA es lo más fuerte, colócalas donde más luzcan. El arranque lo eliges tú por lo que mejor suene.\n\n" +
@@ -5632,7 +5632,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V2.22', ROOT='../';
+  var BUILD='V2.23', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

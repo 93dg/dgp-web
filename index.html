@@ -185,7 +185,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[t
   <aside class="side">
     <div class="brand">DGP</div>
     <nav id="nav" aria-label="Secciones"></nav>
-    <div class="foot"><span class="m"><span id="version">V1.86</span></span><button id="out">Salir</button></div>
+    <div class="foot"><span class="m"><span id="version">V1.87</span></span><button id="out">Salir</button></div>
   </aside>
   <div>
   <div class="main">
@@ -823,13 +823,38 @@ function pintarGusto(){
 /* ---- Prompint: prompts aleatorios que no se repiten nunca ---- */
 const PP={
   tipo:{movie:'película',tvSeries:'serie',tvMiniSeries:'miniserie',videoGame:'videojuego',tvMovie:'película para TV',short:'cortometraje',tvEpisode:'episodio'},
-  escena:['la escena más icónica','el personaje principal en un momento decisivo','el lugar emblemático donde transcurre la historia','el momento de mayor tensión','un objeto simbólico en primer plano','el final, con el ambiente de despedida','un retrato del personaje más querido','el encuentro entre dos personajes clave','la llegada a un lugar nuevo','una escena tranquila y cotidiana de la historia','el villano o la amenaza en su elemento','la huida o persecución, congelada en un instante','un momento de risa o de emoción entre personajes','la criatura, vehículo o arma más reconocible','el interior de una habitación o edificio importante','una escena de acción en pleno movimiento'],
+  sujeto:['una figura solitaria','dos personas conversando','un grupo de amigos riendo','un niño con su mascota','una criatura enorme y amable','un viajero con mochila','una pareja bailando','una persona mayor sentada','alguien corriendo','un perro o un gato observando','un guerrero cansado','una familia reunida','dos rivales frente a frente','una persona leyendo a la luz de una lámpara'],
+  momento:['en un instante de calma','justo antes de actuar','al final del viaje','en plena risa','en un momento de duda','durante una despedida','en una llegada inesperada','a medio camino','en una pausa tranquila'],
+  gen:{
+    'Drama':['una cocina de casa con luz cálida','un banco de parque en otoño','una estación de tren vacía','una habitación pequeña junto a la ventana'],
+    'Comedia':['una terraza de bar llena de gente','una calle de barrio con vecinos','una cocina desordenada','una fiesta improvisada en un salón'],
+    'Acción':['una azotea de ciudad al anochecer','un puente con coches en movimiento','un puerto industrial','un callejón bajo la lluvia'],
+    'Aventura':['un sendero en plena selva','una cueva con algo brillante al fondo','la cubierta de un barco en alta mar','un desierto con ruinas'],
+    'Crimen':['una calle mojada de noche con neón','un despacho oscuro con una sola lámpara','un aparcamiento vacío','un callejón con humo'],
+    'Fantasía':['un bosque con luces flotando','un castillo entre nubes','una torre torcida junto a un lago','un mercado de criaturas extrañas'],
+    'Suspense':['un pasillo largo con una puerta entreabierta','una carretera nocturna con niebla','una casa aislada con una luz encendida','un tren en marcha de noche'],
+    'Familiar':['un jardín soleado con juguetes','una mesa de cumpleaños','un salón con manta y chimenea','un parque con globos'],
+    'Ciencia ficción':['una ciudad futurista con luces','una nave con una ventana al espacio','un planeta con dos lunas','un laboratorio con pantallas'],
+    'Misterio':['una biblioteca antigua','un faro entre la niebla','una mansión con ventanas iluminadas','un pueblo a medianoche'],
+    'Romance':['un puente sobre un río al atardecer','una azotea con luces colgadas','una playa al amanecer','una calle adoquinada bajo la lluvia'],
+    'Animación':['un mundo de colinas redondeadas','una casa torcida en un árbol','un mar con islas pequeñas','un pueblo de juguete'],
+    'Bélico':['un campo con humo en el horizonte','una trinchera al amanecer','un puerto con barcos grises','una carretera de campo en ruinas'],
+    'Biografía':['un taller o estudio de trabajo','una calle de otra época','un escenario vacío','una habitación llena de papeles'],
+    'Historia':['una plaza antigua con gente','un castillo en una colina','una calle medieval','un puerto antiguo'],
+    'Terror':['una casa vieja entre la niebla','un bosque oscuro con una luz lejana','un sótano con una vela','un pasillo de hospital abandonado'],
+    'Del oeste':['un pueblo del desierto con un saloon','un cañón al atardecer','una llanura con un caballo','una vía de tren en mitad de la nada'],
+    'Musical':['un escenario con focos','una calle donde todos bailan','un teatro vacío','una plaza con músicos'],
+    'Documental':['una ciudad vista desde lejos','un paisaje natural enorme','un taller de artesanía','un mercado concurrido'],
+    'Deporte':['un estadio al atardecer','una pista vacía','un vestuario con luz fría','una cancha con niños jugando']
+  },
+  genGen:['una calle de ciudad al atardecer','un paisaje natural tranquilo','una habitación con luz de lámpara','un puerto con barcos'],
   estilo:['pintura al óleo suave y difuminada, casi acuarela, sin contornos duros','gouache con degradados mezclados sobre el lienzo, bordes blandos','óleo diluido con aire de acuarela, colores que se funden entre sí','pinceladas anchas y sueltas, mezcla húmeda sobre húmedo','formas simples de bordes desdibujados, como pintadas con prisa','pintura de principiante expresiva: manchas de color mezcladas, poca definición','acuarela sobre papel, lavados suaves y transparencias','pastel difuminado con las transiciones de color muy suaves'],
   paleta:['violeta y azul noche con toques de coral y salmón','verdes musgo, azul profundo y un acento naranja','rosa, lila y azul marino','ocres cálidos y turquesa','azules fríos con un único acento cálido','verdes bosque, amarillo suave y sombras violetas','coral, morado y negro azulado','tierra, miel y gris azulado en degradado','magenta apagado y azul petróleo','rojos intensos sobre fondo oscuro','blanco, azul hielo y un toque de rojo','paleta limitada de cuatro colores que se mezclan'],
   luz:['luz dorada de atardecer','luz de luna con sombras suaves','contraluz con halo brillante','niebla suave y luz difusa','luz de tormenta con destellos','amanecer frío y rosado','luz de fuego y velas','luz de farolas en la noche','luz de mediodía sin sombras duras','luz de neón sobre fondo oscuro'],
   plano:['plano general amplio','plano medio centrado','vista cenital','contrapicado dramático','primer plano con fondo desenfocado','composición simétrica','composición en diagonal','vista desde lejos con figuras pequeñas','encuadre a través de una ventana o arco','perspectiva baja a ras de suelo'],
   pintura:['pocas formas grandes de color, fáciles de pintar por capas','mezclar los colores directamente en el lienzo sin definir bordes','zonas de color plano y zonas difuminadas alternadas','dejar el centro más luminoso y los bordes más oscuros','detalles solo en el centro y el resto más sencillo','pinceladas visibles y sin perfilar','degradados suaves entre colores vecinos','formato apaisado pensado para un lienzo','formato vertical pensado para un lienzo']
 };
+const escenaDe=t=>{const g=(t.genres||'').split(/,\s*/).filter(x=>PP.gen[x]);const lug=elige(g.length?PP.gen[elige(g)]:PP.genGen);return elige(PP.sujeto)+' '+elige(PP.momento)+', en '+lug};
 const hash=t=>{let h=5381;for(let i=0;i<t.length;i++)h=((h<<5)+h+t.charCodeAt(i))>>>0;return h.toString(36)};
 const elige=a=>a[Math.floor(Math.random()*a.length)];
 function nuevoPrompt(){
@@ -841,19 +866,19 @@ function nuevoPrompt(){
   const usados=new Set(E.usados);let intentos=0,txt,meta;
   do{
     const c=E.bolsa[0],t=base.find(x=>x.const===c);
-    const p={escena:elige(PP.escena),estilo:elige(PP.estilo),paleta:elige(PP.paleta),luz:elige(PP.luz),plano:elige(PP.plano),pintura:elige(PP.pintura)};
+    const p={estilo:elige(PP.estilo),paleta:elige(PP.paleta),luz:elige(PP.luz),plano:elige(PP.plano),pintura:elige(PP.pintura)};
     const tp=PP.tipo[t.title_type]||(t.title_type||'obra').toLowerCase();
     let t2=null;if(Math.random()<.3&&base.length>1){do{t2=elige(base)}while(t2.const===t.const)}
-    if(t2)do{p.escena2=elige(PP.escena)}while(p.escena2===p.escena);
     const ref=x=>`«${x.title}»${x.year?' ('+x.year+')':''}`;
-    txt=`Cuadro de pincelada suave y difuminada, con aire de animación, ${t2?`una sola imagen que fusiona dos escenas de obras distintas: de ${ref(t)} (${tp}), ${p.escena}; y de ${ref(t2)} (${PP.tipo[t2.title_type]||(t2.title_type||'obra').toLowerCase()}), ${p.escena2}. Que convivan en el mismo cuadro`:`inspirado en ${ref(t)}, ${tp}: ${p.escena}`}.
+    const e1=escenaDe(t),e2=t2?escenaDe(t2):'';
+    txt=`Cuadro de pincelada suave y difuminada, con aire de animación. ${t2?`Una sola imagen que combina dos escenas distintas: ${e1}; y ${e2}. Que convivan en el mismo cuadro`:`Escena: ${e1}`}.
 Técnica: ${p.estilo}.
 Paleta: ${p.paleta}.
 Luz: ${p.luz}.
 Encuadre: ${p.plano}.
 Para pintar: ${p.pintura}.
 Sin contornos marcados ni detalles finos; formas simples y colores mezclados.`;
-    meta=t2?`Tus notas: ${t.your_rating} y ${t2.your_rating} · dos escenas`:`Tu nota: ${t.your_rating}${t.genres?' · '+t.genres:''}`;
+    meta=t2?`Inspiración (no pegar): ${ref(t)} + ${ref(t2)} · tus notas ${t.your_rating} y ${t2.your_rating}`:`Inspiración (no pegar): ${ref(t)} · tu nota ${t.your_rating}${t.genres?' · '+t.genres:''}`;
     if(!usados.has(hash(txt))){E.usados.push(hash(txt));E.bolsa.shift();break}
     if(++intentos>40){E.bolsa.push(E.bolsa.shift())}
   }while(intentos<400);
@@ -924,7 +949,7 @@ iniciar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.86', ROOT='';
+  var BUILD='V1.87', ROOT='';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

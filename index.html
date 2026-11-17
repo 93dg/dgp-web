@@ -185,7 +185,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[t
   <aside class="side">
     <div class="brand">DGP</div>
     <nav id="nav" aria-label="Secciones"></nav>
-    <div class="foot"><span class="m"><span id="version">V1.81</span></span><button id="out">Salir</button></div>
+    <div class="foot"><span class="m"><span id="version">V1.82</span></span><button id="out">Salir</button></div>
   </aside>
   <div>
   <div class="main">
@@ -216,6 +216,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[t
         <input id="q" class="grow" type="search" placeholder="Buscar título, director o género" aria-label="Buscar título, director o género">
         <div id="ifil" class="tools" style="margin:0"></div>
         <button id="gustob">Mi gusto</button>
+        <button id="promptb">Prompint</button>
         <button id="addb">Añadir valoración</button>
       </div>
       <div id="add" class="form" hidden>
@@ -226,6 +227,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[t
       </div>
       <div id="stats" class="m" style="margin-bottom:8px"></div>
       <div id="gusto" class="form" hidden></div>
+      <div id="prompint" class="form" hidden>
+        <div id="pptxt" style="white-space:pre-wrap;line-height:1.5"></div>
+        <div class="m" id="ppmeta" style="margin:8px 0"></div>
+        <div class="tools" style="margin:0"><button id="ppotro">Otro prompt</button><button id="ppcopia">Copiar</button></div>
+      </div>
       <div id="msg" class="vacio">Cargando</div>
       <div id="list"></div>
     </section>
@@ -814,6 +820,46 @@ function pintarGusto(){
    +sec('Por década',lista(dec,12))+sec('Por tipo',lista(tip,6))
    +(con.length?sec('Más por encima de IMDb',desac.slice(0,6).map(it).join(''))+sec('Más por debajo de IMDb',desac.slice(-6).reverse().map(it).join('')):'');
 }
+/* ---- Prompint: prompts aleatorios que no se repiten nunca ---- */
+const PP={
+  tipo:{movie:'película',tvSeries:'serie',tvMiniSeries:'miniserie',videoGame:'videojuego',tvMovie:'película para TV',short:'cortometraje',tvEpisode:'episodio'},
+  escena:['la escena más icónica','el personaje principal en un momento decisivo','el lugar emblemático donde transcurre la historia','el momento de mayor tensión','un objeto simbólico en primer plano','el final, con el ambiente de despedida','un paisaje del mundo de la obra sin personajes','el encuentro entre dos personajes clave','la llegada a un lugar nuevo','una escena tranquila y cotidiana de la historia','el villano o la amenaza en su elemento','la huida o persecución, congelada en un instante'],
+  estilo:['animación 2D de largometraje, líneas limpias y sombreado plano','ilustración semirrealista con aire de animación, fondos pintados a mano','cel-shading suave con contornos finos y texturas de gouache','animación clásica pintada a mano, colores densos y planos','ilustración de cuento animado, formas redondeadas y expresivas','estilo de novela gráfica animada, tinta y color plano','animación japonesa de fondos detallados y personajes sencillos','dibujo animado europeo de línea clara','animación de stop-motion pintada, volúmenes suaves','concept art de película animada, pinceladas visibles'],
+  paleta:['ocres, terracotas y azul profundo','verdes bosque con toques de amarillo mostaza','azules fríos y un único acento naranja','rosas atardecer y violetas suaves','rojos intensos sobre fondo casi negro','turquesas y corales de mar tropical','grises azulados con luz dorada','verde oliva, crema y marrón tierra','magentas y cianes de neón sobre noche oscura','amarillos cálidos y sombras violetas','blanco, azul hielo y un toque de rojo','paleta limitada de cuatro colores'],
+  luz:['luz dorada de atardecer','luz de luna con sombras largas','contraluz con halo brillante','niebla suave y luz difusa','luz de tormenta con destellos','amanecer frío y rosado','luz cenital dura','luz de fuego y velas','neblina de mediodía sin sombras duras','luz de farolas en la noche'],
+  plano:['plano general amplio','plano medio centrado','vista cenital','contrapicado dramático','plano detalle con fondo desenfocado','composición simétrica','composición en diagonal','vista desde lejos con figuras pequeñas','encuadre a través de una ventana o arco','perspectiva baja a ras de suelo'],
+  pintura:['pocas formas grandes de color, fácil de pintar por capas','bordes definidos y zonas planas ideales para acrílico','contrastes marcados entre luces y sombras','detalles solo en el centro y fondo más sencillo','texturas de pincel visibles en el cielo y el suelo','siluetas claras y pocos elementos','formato apaisado pensado para un lienzo','formato vertical pensado para un lienzo']
+};
+const hash=t=>{let h=5381;for(let i=0;i<t.length;i++)h=((h<<5)+h+t.charCodeAt(i))>>>0;return h.toString(36)};
+const elige=a=>a[Math.floor(Math.random()*a.length)];
+function nuevoPrompt(){
+  const E=UI.prompint||{usados:[],bolsa:[]};E.usados=E.usados||[];E.bolsa=E.bolsa||[];
+  let base=data.filter(x=>x.your_rating>=8);if(base.length<20)base=data.filter(x=>x.your_rating>=7);if(!base.length)return null;
+  const ids=new Set(base.map(x=>x.const));
+  E.bolsa=E.bolsa.filter(c=>ids.has(c));
+  if(!E.bolsa.length)E.bolsa=base.map(x=>x.const).sort(()=>Math.random()-.5);
+  const usados=new Set(E.usados);let intentos=0,txt,meta;
+  do{
+    const c=E.bolsa[0],t=base.find(x=>x.const===c);
+    const p={escena:elige(PP.escena),estilo:elige(PP.estilo),paleta:elige(PP.paleta),luz:elige(PP.luz),plano:elige(PP.plano),pintura:elige(PP.pintura)};
+    const tp=PP.tipo[t.title_type]||(t.title_type||'obra').toLowerCase();
+    txt=`Ilustración casi de animación para pintar como cuadro: ${p.escena} de «${t.title}»${t.year?' ('+t.year+')':''}, ${tp}.
+Estilo: ${p.estilo}.
+Paleta: ${p.paleta}.
+Luz: ${p.luz}.
+Encuadre: ${p.plano}.
+Para pintar: ${p.pintura}.`;
+    meta=`Tu nota: ${t.your_rating}${t.genres?' · '+t.genres:''}`;
+    if(!usados.has(hash(txt))){E.usados.push(hash(txt));E.bolsa.shift();break}
+    if(++intentos>40){E.bolsa.push(E.bolsa.shift())}
+  }while(intentos<400);
+  if(E.usados.length>20000)E.usados=E.usados.slice(-20000);
+  setUI('prompint',E);return {txt,meta,n:E.usados.length};
+}
+function pintarPrompt(){const r=nuevoPrompt();if(!r){$('pptxt').textContent='Aún no hay valoraciones altas.';return}$('pptxt').textContent=r.txt;$('ppmeta').textContent=r.meta+' · prompt n.º '+r.n+' (no se repite)'}
+$('promptb').addEventListener('click',()=>{const g=$('prompint');g.hidden=!g.hidden;$('promptb').setAttribute('aria-pressed',String(!g.hidden));if(!g.hidden)pintarPrompt()});
+$('ppotro').addEventListener('click',pintarPrompt);
+$('ppcopia').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('pptxt').textContent);$('ppcopia').textContent='Copiado';setTimeout(()=>$('ppcopia').textContent='Copiar',1500)}catch(e){const r=document.createRange();r.selectNodeContents($('pptxt'));const s=getSelection();s.removeAllRanges();s.addRange(r)}});
 $('gustob').addEventListener('click',()=>{const g=$('gusto');g.hidden=!g.hidden;$('gustob').setAttribute('aria-pressed',String(!g.hidden));if(!g.hidden)pintarGusto()});
 let elegido=null;
 $('addb').addEventListener('click',()=>{$('add').hidden=!$('add').hidden;if(!$('add').hidden)$('tq2').focus()});
@@ -874,7 +920,7 @@ iniciar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V1.81', ROOT='';
+  var BUILD='V1.82', ROOT='';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

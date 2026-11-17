@@ -1262,7 +1262,7 @@ if(!window.storage){
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="verBadge">V2.17</div>
+<div id="verBadge">V2.18</div>
 <div class="wrap">
   <header>
     <div class="song-bar">
@@ -5046,7 +5046,7 @@ document.getElementById("p2Inspira").addEventListener("click", (e)=>{
     "Si una línea trae alternativas entre paréntesis, es la misma línea escrita de varias formas: usa solo una.\n" +
     "Las mías cópialas tal cual, sin retocarlas. Marca con (nueva) TODAS las líneas que escribas tú, sin excepción, " +
     "para que yo sepa de un vistazo qué es mío y qué es tuyo.\n" +
-    "NO USES TODO el material: elige solo lo mejor y descarta las líneas redundantes (misma idea o mismo tema que otra). Sin temas repetidos. Un solo estribillo.\n" + tagRule() + "\n" + body);
+    "No hace falta usar todo el material: quédate con lo mejor y evita repetir temas.\n" + tagRule() + "\n" + body);
   flashBtn(e.currentTarget, "Copiado ✓", "Prompt de inspiración");
 });
 
@@ -5057,12 +5057,8 @@ document.getElementById("p2Order").addEventListener("click", (e)=>{
   
   copyText(
     "Canción: " + db.currentSong + "\n" +
-    "Te paso " + ls.length + " líneas MÍAS, numeradas. Es material de sobra: NO hay que usarlas todas.\n\n" +
-    "NO USES TODAS. Es material de sobra y la mayoría sobra. Quédate solo con las mejores. " +
-    "Descarta sin piedad las REDUNDANTES: si varias líneas dicen la misma idea o tocan el mismo tema (el tiempo, la noche, soltar, el verano...), " +
-    "deja solo la mejor de cada idea y tira las demás. Cada línea de la canción tiene que aportar algo que no haya dicho otra. " +
-    "Una canción corta y sin repeticiones de tema es mejor que una larga. El estribillo, una vez.\n\n"
-    + "REGLA ABSOLUTA: no puedes escribir NI UNA SOLA palabra tuya.\n" +
+    "Te paso " + ls.length + " líneas MÍAS, numeradas. No hace falta usarlas todas: quédate con las mejores y evita repetir el mismo tema.\n\n" +
+    "REGLA ABSOLUTA: no puedes escribir NI UNA SOLA palabra tuya.\n" +
     "- Prohibido añadir líneas nuevas. Cero. Ni puentes, ni intros, ni cierres, ni rellenos.\n" +
     "- Prohibido cambiar, acortar, alargar o reescribir una línea. Ni una palabra, ni una coma.\n" +
     "- Cópialas literalmente, carácter por carácter, tal como te las doy.\n" +
@@ -5081,8 +5077,7 @@ document.getElementById("p2Order").addEventListener("click", (e)=>{
     "no tiene rima, no la descartes por eso y no inventes nada para rimarla.\n\n" +
     "PESO: las marcadas ME ENCANTA son las más fuertes, colócalas donde más luzcan. No tienen que ir al " +
     "principio: cada canción empieza como le pide el texto, así que el arranque lo eliges tú por lo que mejor suene.\n\n" +
-    "CONTROL: las que descartes (por sobrar o repetir tema) ponlas al final bajo [DESCARTADAS], sin tocarlas. " +
-    "Si usas casi todas, lo has hecho mal: vuelve a descartar.\n" +
+    "Las que dejes fuera, ponlas al final bajo [DESCARTADAS].\n" +
     "Después, la lista de parejas de rima con su vocal (ejemplo: tiempo / momento -> e-o).\n" + tagRule() +
     "\n" +
     "LÍNEAS:\n" + ls.map((x, i) => (i + 1) + ". " + x.text + (x.alt || "") + (() => {
@@ -5646,7 +5641,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V2.17', ROOT='../';
+  var BUILD='V2.18', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Proporciones">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0c11">
+<title>Proporciones</title>
+<style>
+:root{--bg:#0a0c11;--s1:#11141b;--s2:#181c26;--bd:rgba(255,255,255,.16);--tx:#eef0f5;--mut:#98a1b5;--ac:#ffb81c;--pos:#35d39a;--neg:#ff7070}
+@media(prefers-color-scheme:light){:root{--bg:#f3f4f8;--s1:#fff;--s2:#eef0f6;--bd:rgba(15,20,35,.18);--tx:#10131a;--mut:#58627a;--ac:#946100;--pos:#0e7c57;--neg:#c42b2b}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none}
+body{background:var(--bg);color:var(--tx);font:16px/1.4 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;-webkit-user-select:none;user-select:none;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
+header{display:flex;gap:6px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--bd);background:var(--s1)}
+header h1{font-size:1rem;margin:0 6px 0 2px;font-weight:700;flex:0 0 auto}
+button,select,input{font:inherit;color:var(--tx)}
+button{background:var(--s2);border:1px solid var(--bd);border-radius:10px;min-height:44px;padding:0 12px;cursor:pointer}
+button.on{border-color:var(--ac)}
+header button{flex:1;padding:0 6px;font-size:.9rem}
+.panel{padding:10px 12px;border-bottom:1px solid var(--bd);background:var(--s1);display:grid;gap:10px;max-height:46vh;overflow:auto}
+.panel[hidden]{display:none}
+.fila{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.fila label{color:var(--mut);font-size:.85rem}
+.num{width:86px;min-height:44px;text-align:center;font-size:18px;background:var(--bg);border:1px solid var(--bd);border-radius:10px;-webkit-user-select:text;user-select:text}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips button{min-height:38px;padding:0 10px;font-size:.85rem}
+select{min-height:44px;background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:0 8px}
+input[type=range]{width:100%}
+#tarjeta{background:linear-gradient(135deg,#3a4468,#1d2238);border:2px solid #8f9bc8;border-radius:12px;margin:2px auto;display:flex;align-items:flex-end;justify-content:flex-end;padding:8px;color:#d7dcf2;font-size:.75rem}
+#vista{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;background:var(--bg);position:relative}
+#lienzo{padding:28px;display:inline-block;min-width:100%;min-height:100%}
+#marco{position:relative;background:#fff;outline:1px solid var(--ac);box-shadow:0 0 0 1px #000 inset}
+#marco img{display:block;width:100%;height:100%;pointer-events:none}
+#marco.cubrir img{object-fit:cover}#marco.contener img{object-fit:contain}#marco.estirar img{object-fit:fill}
+#rej{position:absolute;inset:0;pointer-events:none}
+#info{position:fixed;left:10px;bottom:calc(10px + env(safe-area-inset-bottom));background:rgba(10,12,17,.82);color:#eef0f5;border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:6px 10px;font-size:.8rem;pointer-events:none;font-variant-numeric:tabular-nums}
+#vacio{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--mut);padding:24px}
+#bLock{position:fixed;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));min-height:40px;width:40px;padding:0;border-radius:50%;font-size:1.1rem;z-index:5;background:rgba(10,12,17,.82);color:#eef0f5;border-color:rgba(255,255,255,.3)}#bLock.on{border-color:var(--ac);background:var(--ac);color:#000}body.bloq #vista{overflow:hidden;touch-action:none}.ok{color:var(--pos)}.aviso{color:var(--ac);font-size:.85rem}
+</style>
+</head>
+<body>
+<header>
+  <h1>Proporciones</h1>
+  <button id="bFoto">Foto</button>
+  <button id="bMed">Medidas</button>
+  <button id="bCal">Calibrar</button>
+  <button id="bVer" aria-pressed="false">Ver entera</button>
+</header>
+<input type="file" id="archivo" accept="image/*" hidden>
+<section class="panel" id="pMed" hidden>
+  <div class="chips" id="chips"></div>
+  <div class="fila">
+    <label>Ancho</label><input class="num" id="an" type="number" inputmode="decimal" step="0.5" min="1"><label>cm</label>
+    <label>Alto</label><input class="num" id="al" type="number" inputmode="decimal" step="0.5" min="1"><label>cm</label>
+    <button id="bGira" aria-label="Girar orientación">⇄</button>
+  </div>
+  <div class="fila">
+    <button id="bProp" class="on">Proporción de la foto: sí</button>
+    <select id="ajuste" aria-label="Cómo ajustar la foto"><option value="cubrir">Cubrir (recorta)</option><option value="contener">Contener (con bordes)</option><option value="estirar">Estirar</option></select>
+  </div>
+  <div class="fila"><label>Cuadrícula</label>
+    <select id="rejaT"><option value="0">Sin cuadrícula</option><option value="1">Cada 1 cm</option><option value="2">Cada 2 cm</option><option value="5">Cada 5 cm</option><option value="10">Cada 10 cm</option></select>
+    <button id="bSueno">Pantalla encendida: sí</button>
+  </div>
+</section>
+<section class="panel" id="pCal" hidden>
+  <div class="aviso" id="calAviso"></div>
+  <div>Pon una <b>tarjeta bancaria</b> sobre la pantalla y ajusta hasta que coincida con el rectángulo (la tarjeta mide 85,6 mm de ancho).</div>
+  <div id="tarjeta"><span>85,6 × 54 mm</span></div>
+  <input type="range" id="calR" min="180" max="520" step="0.5">
+  <div class="fila"><button id="calM">−</button><button id="calP">+</button><button id="calOk" class="on" style="flex:1">Guardar calibrado</button></div>
+</section>
+<div id="vista"><div id="lienzo"><div id="marco" class="cubrir"><img id="img" alt=""><div id="rej"></div></div></div><div id="vacio">Elige una foto y pon las medidas<br>de donde la vas a pintar.</div></div>
+<div id="info"></div>
+<button id="bLock" aria-label="Bloquear pantalla">🔓</button>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const K='dgp-prop';
+const D={w:30,h:40,lock:true,ajuste:'cubrir',rej:0,ppm:0,sueno:true,ver:false};
+let S=Object.assign({},D), url=null, ratio=null, cal=0;
+try{ Object.assign(S,JSON.parse(localStorage.getItem(K)||'{}')); }catch(e){}
+function guardar(){ try{ localStorage.setItem(K,JSON.stringify(S)); }catch(e){} }
+const TARJ=85.6;
+function ppmBase(){ if(S.ppm) return S.ppm; return Math.min(screen.width,screen.height)<700?6.0:5.2; }
+/* ---------- imagen (IndexedDB) ---------- */
+function idb(){ return new Promise((ok,ko)=>{ try{ const r=indexedDB.open('dgp-prop',1); r.onupgradeneeded=()=>r.result.createObjectStore('f'); r.onsuccess=()=>ok(r.result); r.onerror=()=>ko(); }catch(e){ ko(); } }); }
+async function idbSet(b){ try{ const d=await idb(); d.transaction('f','readwrite').objectStore('f').put(b,'img'); }catch(e){} }
+async function idbGet(){ try{ const d=await idb(); return await new Promise(ok=>{ const q=d.transaction('f').objectStore('f').get('img'); q.onsuccess=()=>ok(q.result||null); q.onerror=()=>ok(null); }); }catch(e){ return null; } }
+function ponerImg(blob){
+  if(url) URL.revokeObjectURL(url); url=URL.createObjectURL(blob);
+  const im=$('img'); im.onload=()=>{ ratio=im.naturalHeight/im.naturalWidth; if(S.lock&&!S._nuevo0){ } pintar(); }; im.src=url; $('vacio').style.display='none';
+}
+$('bFoto').onclick=()=>$('archivo').click();
+$('archivo').onchange=e=>{ const f=e.target.files[0]; if(!f) return; idbSet(f); const u=URL.createObjectURL(f), t=new Image(); t.onload=()=>{ ratio=t.naturalHeight/t.naturalWidth; if(S.lock) S.h=Math.round(S.w*ratio*10)/10; guardar(); ponerImg(f); URL.revokeObjectURL(u); }; t.src=u; };
+/* ---------- medidas ---------- */
+const PRE=[[20,30],[24,30],[30,40],[40,50],[50,70],[60,80],[70,100],[100,120]];
+$('chips').innerHTML=PRE.map(p=>'<button data-w="'+p[0]+'" data-h="'+p[1]+'">'+p[0]+'×'+p[1]+'</button>').join('');
+$('chips').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; S.w=+b.dataset.w; S.h=+b.dataset.h; S.lock=false; guardar(); pintar(); };
+const num=v=>{ v=parseFloat(String(v).replace(',','.')); return isFinite(v)&&v>0?v:null; };
+$('an').onchange=()=>{ const v=num($('an').value); if(!v) return pintar(); S.w=v; if(S.lock&&ratio) S.h=Math.round(v*ratio*10)/10; guardar(); pintar(); };
+$('al').onchange=()=>{ const v=num($('al').value); if(!v) return pintar(); S.h=v; if(S.lock&&ratio) S.w=Math.round(v/ratio*10)/10; guardar(); pintar(); };
+$('bGira').onclick=()=>{ const t=S.w; S.w=S.h; S.h=t; S.lock=false; guardar(); pintar(); };
+$('bProp').onclick=()=>{ S.lock=!S.lock; if(S.lock&&ratio) S.h=Math.round(S.w*ratio*10)/10; guardar(); pintar(); };
+$('ajuste').onchange=()=>{ S.ajuste=$('ajuste').value; guardar(); pintar(); };
+$('rejaT').onchange=()=>{ S.rej=+$('rejaT').value; guardar(); pintar(); };
+$('bSueno').onclick=()=>{ S.sueno=!S.sueno; guardar(); sueno(); pintar(); };
+$('bVer').onclick=()=>{ S.ver=!S.ver; guardar(); pintar(); };
+/* ---------- calibrado ---------- */
+function abrirCal(){ cal=ppmBase()*TARJ; $('calR').value=cal; pintaCal(); }
+function pintaCal(){ const w=+$('calR').value; $('tarjeta').style.width=w+'px'; $('tarjeta').style.height=(w*53.98/TARJ)+'px'; cal=w; }
+$('calR').oninput=pintaCal; $('calM').onclick=()=>{ $('calR').value=+$('calR').value-1; pintaCal(); }; $('calP').onclick=()=>{ $('calR').value=+$('calR').value+1; pintaCal(); };
+$('calOk').onclick=()=>{ S.ppm=cal/TARJ; guardar(); $('pCal').hidden=true; $('bCal').classList.remove('on'); pintar(); };
+function panel(id,b){ const p=$(id), v=p.hidden; $('pMed').hidden=true; $('pCal').hidden=true; $('bMed').classList.remove('on'); $('bCal').classList.remove('on'); if(v){ p.hidden=false; $(b).classList.add('on'); if(id==='pCal') abrirCal(); } }
+$('bMed').onclick=()=>panel('pMed','bMed'); $('bCal').onclick=()=>panel('pCal','bCal');
+/* ---------- pintar ---------- */
+function pintar(){
+  const base=ppmBase(), mw=S.w*10, mh=S.h*10;
+  let f=1;
+  if(S.ver){ const v=$('vista'); f=Math.min(1,(v.clientWidth-56)/(mw*base),(v.clientHeight-56)/(mh*base)); if(!(f>0)) f=1; }
+  const p=base*f, m=$('marco');
+  m.style.width=(mw*p)+'px'; m.style.height=(mh*p)+'px'; m.className=S.ajuste;
+  const r=S.rej; $('rej').style.backgroundImage=r?'linear-gradient(to right,rgba(255,255,255,.75) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.75) 1px,transparent 1px),linear-gradient(to right,rgba(0,0,0,.45) 1px,transparent 1px),linear-gradient(to bottom,rgba(0,0,0,.45) 1px,transparent 1px)':'none';
+  if(r){ const s=r*10*p+'px'; $('rej').style.backgroundSize=s+' '+s+','+s+' '+s+','+s+' '+s+','+s+' '+s; $('rej').style.backgroundPosition='0 0,0 0,1px 1px,1px 1px'; }
+  $('an').value=S.w; $('al').value=S.h;
+  $('bProp').textContent='Proporción de la foto: '+(S.lock?'sí':'no'); $('bProp').classList.toggle('on',S.lock);
+  $('ajuste').value=S.ajuste; $('ajuste').disabled=S.lock; $('rejaT').value=String(S.rej);
+  $('bSueno').textContent='Pantalla encendida: '+(S.sueno?'sí':'no'); $('bVer').classList.toggle('on',!!S.ver); $('bVer').setAttribute('aria-pressed',String(!!S.ver));
+  $('info').innerHTML=S.w+' × '+S.h+' cm · '+(f<1?'escala 1:'+(1/f).toFixed(1).replace('.',','):'<span class="ok">tamaño real</span>')+(S.ppm?'':' · sin calibrar');
+  $('calAviso').textContent=S.ppm?'Calibrado guardado.':'Sin calibrar: las medidas son aproximadas.';
+}
+/* ---------- bloqueo ---------- */
+function bloq(){ document.body.classList.toggle('bloq',!!S.bloq); const b=$('bLock'); b.textContent=S.bloq?'🔒':'🔓'; b.classList.toggle('on',!!S.bloq); }
+$('bLock').onclick=()=>{ S.bloq=!S.bloq; if(S.bloq){ $('pMed').hidden=true; $('pCal').hidden=true; $('bMed').classList.remove('on'); $('bCal').classList.remove('on'); } guardar(); bloq(); };
+$('vista').addEventListener('touchmove',e=>{ if(S.bloq) e.preventDefault(); },{passive:false});
+$('vista').addEventListener('wheel',e=>{ if(S.bloq) e.preventDefault(); },{passive:false});
+/* ---------- pantalla encendida ---------- */
+let wl=null;
+async function sueno(){ try{ if(S.sueno&&'wakeLock' in navigator&&!document.hidden){ wl=await navigator.wakeLock.request('screen'); } else if(wl){ await wl.release(); wl=null; } }catch(e){} }
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) sueno(); });
+addEventListener('resize',pintar); addEventListener('orientationchange',()=>setTimeout(pintar,200));
+/* ---------- inicio ---------- */
+bloq(); pintar(); sueno();
+idbGet().then(b=>{ if(b) ponerImg(b); });
+})();
+</script>
+<script>
+/* Actualización automática */
+(function(){
+  var BUILD='V1.88', ROOT='../';
+  var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
+  function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
+  async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }
+  function aviso(v){
+    if(document.getElementById('dgpUpd')) return;
+    var d=document.createElement('div'); d.id='dgpUpd'; d.setAttribute('role','status');
+    d.style.cssText='position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));margin:0 auto;max-width:520px;z-index:99999;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;background:#1b1f2a;color:#eef0f5;border:1px solid rgba(255,255,255,.2);border-radius:12px;font:14px system-ui';
+    d.innerHTML='<span>Hay una versión nueva ('+v+')</span><button style="background:none;border:0;color:#e8a33d;font:inherit;font-weight:700;padding:8px 4px;cursor:pointer">Actualizar</button>';
+    d.querySelector('button').onclick=function(){ intentos(0); recargar(); };
+    document.body.appendChild(d);
+  }
+  async function comprobar(){
+    if(busy) return; busy=true;
+    try{ var r=await fetch(VJ+'?t='+Date.now(),{cache:'no-store'}); var j=await r.json();
+      if(j&&j.v&&j.v!==BUILD){ if(Date.now()-t0<8000 && intentos()<2) recargar(); else aviso(j.v); } else intentos(0);
+    }catch(e){}
+    busy=false;
+  }
+  comprobar();
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden) comprobar(); });
+})();
+</script>
+</body>
+</html>

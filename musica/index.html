@@ -845,17 +845,41 @@ if(!window.storage){
     100%{box-shadow:0 0 0 0 transparent;}
   }
   .alt-box{
-    border:1px solid #4a6b6c;
-    border-radius:12px;
-    padding:6px;
-    margin-bottom:6px;
-    background:rgba(79,138,139,.06);
+    border:1px solid transparent;
+    border-left:2px solid #4a6b6c;
+    border-radius:11px;
+    padding:0;
+    margin-bottom:4px;
+    background:none;
   }
+  .alt-box.open{
+    border-color:#4a6b6c;
+    padding:5px;
+    background:rgba(79,138,139,.07);
+  }
+  .alt-box .uni-line{margin-bottom:0;}
+  .alt-box.open .uni-line{margin-bottom:3px;}
+  .alt-chip{
+    flex-shrink:0;
+    align-self:flex-start;
+    margin-top:3px;
+    background:rgba(79,138,139,.14);
+    border:1px solid var(--teal-dim);
+    color:var(--teal);
+    font-family:var(--font-mono);
+    font-size:11px;
+    padding:3px 9px;
+    border-radius:99px;
+    cursor:pointer;
+  }
+  .alt-chip:hover{border-color:var(--teal);color:#8df0cd;}
+  .alt-chip.on{background:var(--teal-dim);color:#8df0cd;border-color:var(--teal);}
   .alt-bar{
     display:flex;
     align-items:center;
+    justify-content:flex-end;
     gap:8px;
-    padding:2px 6px 6px;
+    padding:2px 6px 5px;
     font-size:11px;
     color:var(--teal);
     font-family:var(--font-mono);
@@ -1237,7 +1261,7 @@ if(!window.storage){
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="verBadge">V2.05</div>
+<div id="verBadge">V2.06</div>
 <div class="wrap">
   <header>
     <div class="song-bar">
@@ -3835,10 +3859,21 @@ function altIndex(){
   return idx;
 }
 
+function visualOrder(){
+  const o = {};
+  document.querySelectorAll("[data-k]").forEach((el, i) => { if(o[el.dataset.k] === undefined) o[el.dataset.k] = i; });
+  return o;
+}
+
 function nestAlt(dragKey, targetKey){
   if(!dragKey || !targetKey || dragKey === targetKey) return;
   const g = altBag(), idx = altIndex();
-  const lead = idx[targetKey] || targetKey;
+  let lead = idx[targetKey] || targetKey;
+  const ord = visualOrder();
+  const a = ord[lead], b = ord[idx[dragKey] || dragKey];
+  if(a !== undefined && b !== undefined && b < a) lead = idx[dragKey] || dragKey;
+  const other = (lead === (idx[targetKey] || targetKey)) ? dragKey : targetKey;
+  dragKey = other;
   if(lead === dragKey) return;
   const moving = [dragKey].concat((g[dragKey] && g[dragKey].members) || []);
   delete g[dragKey];
@@ -3883,10 +3918,28 @@ function toast(msg){
   t._h = setTimeout(()=>t.classList.remove("show"), 2600);
 }
 
+const openAlts = new Set();
+
+function altChip(leadKey, n, rerender){
+  const chip = document.createElement("button");
+  chip.className = "alt-chip" + (openAlts.has(leadKey) ? " on" : "");
+  chip.textContent = "⧉ " + n;
+  chip.title = openAlts.has(leadKey) ? "Ocultar las alternativas" : "Ver las " + n + " alternativas";
+  chip.addEventListener("click", (e)=>{
+    e.stopPropagation();
+    if(openAlts.has(leadKey)) openAlts.delete(leadKey); else openAlts.add(leadKey);
+    rerender();
+  });
+  return chip;
+}
+
 function focusAlt(leadKey){
   setTimeout(()=>{
     const box = document.querySelector('.alt-box[data-lead="' + leadKey + '"]');
     if(!box) return;
+    const r = box.getBoundingClientRect();
+    const fuera = r.bottom < 60 || r.top > (window.innerHeight - 60);
+    if(fuera) box.scrollIntoView({behavior:"smooth", block:"center"});
     box.classList.add("flash");
     setTimeout(()=>box.classList.remove("flash"), 1400);
     const n = box.querySelectorAll(".uni-line").length;
@@ -4222,6 +4275,7 @@ function buildUniRow(l, marks, opts){
     const lead = altIndex()[l.key] || l.key;
     nestAlt(dragLineKey, l.key);
     dragLineKey = null;
+    openAlts.add(lead);
     renderUnified();
     focusAlt(lead);
   };
@@ -4312,27 +4366,29 @@ function renderUnified(){
         return;
       }
       const grp = groupsAlt[l.key];
+      const open = openAlts.has(l.key);
       const box = document.createElement("div");
-      box.className = "alt-box";
+      box.className = "alt-box" + (open ? " open" : "");
       box.dataset.lead = l.key;
 
-      const bar = document.createElement("div");
-      bar.className = "alt-bar";
-      const lbl = document.createElement("span");
-      lbl.textContent = (alts.length + 1) + " alternativas · cuentan como un verso";
-      bar.appendChild(lbl);
-      const tog = document.createElement("button");
-      tog.className = "alt-toggle" + (grp.ranked ? " on" : "");
-      tog.textContent = grp.ranked ? "con preferencia" : "sin preferencia";
-      tog.title = "Cambia entre orden de preferencia y todas iguales";
-      tog.addEventListener("click", ()=>{ grp.ranked = !grp.ranked; saveDB(); renderUnified(); });
-      bar.appendChild(tog);
-      box.appendChild(bar);
+      const leadRow = buildUniRow(l, marks, {isAlt:false});
+      leadRow.appendChild(altChip(l.key, alts.length + 1, renderUnified));
+      box.appendChild(leadRow);
 
-      box.appendChild(buildUniRow(l, marks, {isAlt:false}));
-      alts.forEach((a, i) => {
-        box.appendChild(buildUniRow(a, marks, {isAlt:true, n:i + 2, ranked:grp.ranked, lead:l.key}));
-      });
+      if(open){
+        const bar = document.createElement("div");
+        bar.className = "alt-bar";
+        const tog = document.createElement("button");
+        tog.className = "alt-toggle" + (grp.ranked ? " on" : "");
+        tog.textContent = grp.ranked ? "con preferencia" : "sin preferencia";
+        tog.title = "Cambia entre orden de preferencia y todas iguales";
+        tog.addEventListener("click", ()=>{ grp.ranked = !grp.ranked; saveDB(); renderUnified(); });
+        bar.appendChild(tog);
+        box.appendChild(bar);
+        alts.forEach((a, i) => {
+          box.appendChild(buildUniRow(a, marks, {isAlt:true, n:i + 2, ranked:grp.ranked, lead:l.key}));
+        });
+      }
       g.appendChild(box);
     });
 
@@ -4458,6 +4514,7 @@ function renderPhase2(){
         const lead = altIndex()[l.key] || l.key;
         nestAlt(dragP2, l.key);
         dragP2 = null;
+        openAlts.add(lead);
         renderPhase2();
         if(document.getElementById("unifiedList")) renderUnified();
         focusAlt(lead);
@@ -4590,21 +4647,21 @@ function renderPhase2(){
     const altsP2 = altsOf(l.key, byKeyP2);
     if(altsP2.length){
       const grpP2 = altBag()[l.key];
+      const openP2 = openAlts.has(l.key);
       const box = document.createElement("div");
-      box.className = "alt-box";
+      box.className = "alt-box" + (openP2 ? " open" : "");
       box.dataset.lead = l.key;
+      row.appendChild(altChip(l.key, altsP2.length + 1, renderPhase2));
+      box.appendChild(row);
+      if(openP2){
       const bar2 = document.createElement("div");
       bar2.className = "alt-bar";
-      const lbl2 = document.createElement("span");
-      lbl2.textContent = (altsP2.length + 1) + " alternativas · cuentan como un verso";
-      bar2.appendChild(lbl2);
       const tog2 = document.createElement("button");
       tog2.className = "alt-toggle" + (grpP2.ranked ? " on" : "");
       tog2.textContent = grpP2.ranked ? "con preferencia" : "sin preferencia";
       tog2.addEventListener("click", ()=>{ grpP2.ranked = !grpP2.ranked; saveDB(); renderPhase2(); });
       bar2.appendChild(tog2);
       box.appendChild(bar2);
-      box.appendChild(row);
       altsP2.forEach((a, i) => {
         const ar = document.createElement("div");
         ar.className = "uni-line alt-row";
@@ -4630,6 +4687,7 @@ function renderPhase2(){
         ar.appendChild(outb);
         box.appendChild(ar);
       });
+      }
       list.appendChild(box);
       return;
     }
@@ -5442,7 +5500,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V2.05', ROOT='../';
+  var BUILD='V2.06', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

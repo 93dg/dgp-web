@@ -1262,7 +1262,7 @@ if(!window.storage){
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="verBadge">V2.25</div>
+<div id="verBadge">V2.26</div>
 <div class="wrap">
   <header>
     <div class="song-bar">
@@ -5012,6 +5012,8 @@ document.querySelectorAll("#p2Seg .uni-seg-btn").forEach(btn => {
 function p2Scored(){
   const m1 = marksBag();
   const marks = marks2Bag();
+  const byKey = {};
+  unifiedLines().forEach(l => { byKey[l.key] = l; });
   return phase2Lines().map(l => {
     const m = marks[l.key] || {};
     const prev = m1[l.key] || {};
@@ -5020,7 +5022,8 @@ function p2Scored(){
       text: m.rewrite || prev.rewrite || l.text,
       lvl: lvl,
       bad: (m.bad || []).concat(prev.bad || []),
-      note: m.note || prev.note || ""
+      note: m.note || prev.note || "",
+      alt: altSuffix(l.key, byKey)
     };
   });
 }
@@ -5632,7 +5635,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V2.25', ROOT='../';
+  var BUILD='V2.26', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

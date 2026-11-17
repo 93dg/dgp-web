@@ -1037,6 +1037,26 @@ if(!window.storage){
   .uni-note::placeholder{color:var(--muted);opacity:.5;}
   @media (hover:none){ .uni-note{opacity:1;flex-basis:110px;width:110px;} }
   .uni-body{flex:1;min-width:0;}
+  .tag-wrap{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    font-size:12.5px;
+    color:var(--muted);
+    margin-right:10px;
+  }
+  .tag-wrap input{
+    width:120px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    color:var(--amber);
+    font-family:var(--font-mono);
+    font-size:13px;
+    padding:6px 9px;
+    border-radius:8px;
+    outline:none;
+  }
+  .tag-wrap input:focus{border-color:var(--amber);}
   .lyric-pick{
     width:15px;
     height:15px;
@@ -1189,7 +1209,7 @@ if(!window.storage){
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="verBadge">V2.01</div>
+<div id="verBadge">V2.02</div>
 <div class="wrap">
   <header>
     <div class="song-bar">
@@ -1366,6 +1386,9 @@ if(!window.storage){
     <div id="lyricVersionsPane">
       <p class="lyric-sub">Toca Expandir para editar. Duplicar crea una versión nueva.</p>
       <button class="tool primary" id="newLyricBtn">Nueva letra</button>
+      <span class="tag-wrap">Tag del artista:
+        <input type="text" id="artistTag" placeholder="nielooo" title="Se pide en todos los prompts de letra">
+      </span>
       <button class="tool" id="copyAllLyricsBtn" title="Copia todas las versiones para pegarlas en un prompt">Copiar todas</button>
       <div id="lyricVersions"></div>
     </div>
@@ -1729,6 +1752,8 @@ async function loadDB(){
   const _cs = db.songs[db.currentSong] || {};
   const _p2 = document.getElementById("p2Sort");
   if(_p2 && _cs.phase2Sort) _p2.value = _cs.phase2Sort;
+  const _tag = document.getElementById("artistTag");
+  if(_tag) _tag.value = artistTag();
   if(db.lastUniSort){
     unifiedSort = db.lastUniSort;
     const sel = document.getElementById("uniSort");
@@ -3744,6 +3769,19 @@ function paintLine(el, text, bad){
   el.innerHTML = html;
 }
 
+function artistTag(){
+  if(db.artistTag === undefined) db.artistTag = "nielooo";
+  return (db.artistTag || "").trim();
+}
+
+function tagRule(){
+  const t = artistTag();
+  if(!t) return "";
+  return "\nFIRMA: la canción es de " + t + ". Su nombre tiene que decirse en la letra, suelto, como tag de artista: " +
+    "al principio antes de arrancar, en el sitio donde mejor pegue, o al final. Escríbelo tal cual: " + t + ". " +
+    "No es un verso: no cuenta como línea, no tiene que rimar y no ocupa el lugar de ninguna de las mías.\n";
+}
+
 function marksBag(){
   const cs = currentState();
   if(!cs.lineMarks) cs.lineMarks = {};
@@ -4626,6 +4664,16 @@ document.getElementById("viewRefsBtn").addEventListener("click", ()=>switchView(
 document.getElementById("viewAntiBtn").addEventListener("click", ()=>switchView("anti"));
 document.getElementById("newLyricBtn").addEventListener("click", ()=>addLyricVersion(""));
 
+(function(){
+  const el = document.getElementById("artistTag");
+  if(!el) return;
+  el.value = artistTag();
+  el.addEventListener("change", (e)=>{
+    db.artistTag = e.target.value.trim();
+    saveDB();
+  });
+})();
+
 function setLyricMode(m){
   lyricMode2 = m;
   db.lastLyricMode = m;
@@ -4686,7 +4734,7 @@ document.getElementById("p2Inspira").addEventListener("click", (e)=>{
     "Las marcadas ME ENCANTA tienen que aparecer sí o sí. Las de NO ME CONVENCE úsalas solo si te sirven, puedes reescribirlas.\n" +
     "Si una línea trae alternativas entre paréntesis, es la misma línea escrita de varias formas: usa solo una.\n" +
     "Las mías cópialas tal cual, sin retocarlas. Marca con (nueva) TODAS las líneas que escribas tú, sin excepción, " +
-    "para que yo sepa de un vistazo qué es mío y qué es tuyo.\n\n" + body);
+    "para que yo sepa de un vistazo qué es mío y qué es tuyo.\n" + tagRule() + "\n" + body);
   flashBtn(e.currentTarget, "Copiado ✓", "Prompt de inspiración");
 });
 
@@ -4718,7 +4766,8 @@ document.getElementById("p2Order").addEventListener("click", (e)=>{
     "CONTROL: al terminar cuenta las líneas de tu respuesta. Tienen que ser exactamente " + ls.length +
     ", las mismas que te he dado, sin ninguna añadida. Si te sobra alguna que no encaja en ningún sitio, " +
     "NO la tires: ponla al final bajo [SUELTAS].\n" +
-    "Después, la lista de parejas de rima con su vocal (ejemplo: tiempo / momento -> e-o).\n\n" +
+    "Después, la lista de parejas de rima con su vocal (ejemplo: tiempo / momento -> e-o).\n" + tagRule() +
+    "\n" +
     "LÍNEAS:\n" + ls.map((x, i) => (i + 1) + ". " + x.text + (x.alt || "") + (() => {
       const t = [];
       if(x.lvl) t.push(MARK_LABEL[x.lvl]);
@@ -4795,7 +4844,7 @@ document.getElementById("unifiedCopyAll").addEventListener("click", (e)=>{
     "Estos son todos los versos de mis versiones, sin repetir, con mis apuntes.\n" +
     "ME ENCANTA: intocable, va sí o sí. ME GUSTA: consérvalo. NO ME CONVENCE: reescríbelo. " +
     "Si marco un trozo entre comillas como \"no me convence\", cambia solo ese trozo. Lo que no lleva apunte, decídelo tú.\n" +
-    "Hazme una versión final con lo mejor de todo.\n\n" + body);
+    "Hazme una versión final con lo mejor de todo.\n" + tagRule() + "\n" + body);
   flashBtn(e.currentTarget, "Copiado ✓", "Copiar con apuntes");
 });
 
@@ -4824,7 +4873,8 @@ document.getElementById("copyAllLyricsBtn").addEventListener("click", ()=>{
     return;
   }
   const txt = "Canción: " + db.currentSong + "\n" +
-    "Tengo " + vs.length + (vs.length === 1 ? " versión" : " versiones") + " de la letra. Hazme una versión nueva cogiendo lo mejor de todas.\n\n" +
+    "Tengo " + vs.length + (vs.length === 1 ? " versión" : " versiones") + " de la letra. Hazme una versión nueva cogiendo lo mejor de todas.\n" +
+    tagRule() + "\n" +
     vs.map((v, i) => "=== " + (v.title || ("Versión " + (i + 1))) + " ===\n" + (v.text || "").trim()).join("\n\n");
   copyText(txt);
   btn.textContent = "Copiadas " + vs.length + " ✓";
@@ -5256,7 +5306,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V2.01', ROOT='../';
+  var BUILD='V2.02', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

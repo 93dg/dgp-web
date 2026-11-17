@@ -1262,7 +1262,7 @@ if(!window.storage){
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="verBadge">V2.26</div>
+<div id="verBadge">V2.27</div>
 <div class="wrap">
   <header>
     <div class="song-bar">
@@ -5049,7 +5049,7 @@ document.getElementById("p2Inspira").addEventListener("click", (e)=>{
     "Si una línea trae alternativas entre paréntesis, es la misma línea escrita de varias formas: usa solo una.\n" +
     "Las mías cópialas tal cual, sin retocarlas. Marca con (nueva) TODAS las líneas que escribas tú, sin excepción, " +
     "para que yo sepa de un vistazo qué es mío y qué es tuyo.\n" +
-    "No hace falta usar todo el material.\n" + tagRule() + "\n" + body);
+    "Usa casi todo el material; deja fuera solo lo que sea casi igual a otra línea.\n" + tagRule() + "\n" + body);
   flashBtn(e.currentTarget, "Copiado ✓", "Prompt de inspiración");
 });
 
@@ -5060,7 +5060,7 @@ document.getElementById("p2Order").addEventListener("click", (e)=>{
   
   copyText(
     "Canción: " + db.currentSong + "\n" +
-    "Te paso " + ls.length + " líneas MÍAS, numeradas. No hace falta usarlas todas.\n\n" +
+    "Te paso " + ls.length + " líneas MÍAS, numeradas. Úsalas casi todas; deja fuera solo las que sean casi iguales a otra.\n\n" +
     "REGLAS:\n" +
     "- No escribas nada tuyo: ni líneas nuevas, ni puentes, ni rellenos.\n" +
     "- Copia cada línea literal, sin cambiar ni una palabra.\n" +
@@ -5635,7 +5635,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V2.26', ROOT='../';
+  var BUILD='V2.27', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

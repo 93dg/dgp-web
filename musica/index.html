@@ -1262,7 +1262,7 @@ if(!window.storage){
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="verBadge">V2.19</div>
+<div id="verBadge">V2.20</div>
 <div class="wrap">
   <header>
     <div class="song-bar">
@@ -5058,25 +5058,17 @@ document.getElementById("p2Order").addEventListener("click", (e)=>{
   copyText(
     "Canción: " + db.currentSong + "\n" +
     "Te paso " + ls.length + " líneas MÍAS, numeradas. No hace falta usarlas todas.\n\n" +
-    "REGLA ABSOLUTA: no puedes escribir NI UNA SOLA palabra tuya.\n" +
-    "- Prohibido añadir líneas nuevas. Cero. Ni puentes, ni intros, ni cierres, ni rellenos.\n" +
-    "- Prohibido cambiar, acortar, alargar o reescribir una línea. Ni una palabra, ni una coma.\n" +
-    "- Cópialas literalmente, carácter por carácter, tal como te las doy.\n" +
-    "- Prohibido repetir una línea en dos sitios, salvo que yo te la haya dado repetida.\n" +
-    "- Única excepción: las marcadas NO ME CONVENCE sí puedes retocarlas, y si te marco un trozo " +
-    "entre comillas, cambias solo ese trozo y nada más.\n" +
-    "- ALTERNATIVAS: una línea con paréntesis que diga (o, si encaja mejor: ...) o (= misma frase: ...) " +
-    "es UNA sola línea con varias versiones. Elige UNA, la que mejor cuadre con la rima y la métrica, " +
-    "y escribe solo esa. Si pone (o, si encaja mejor), mi preferida es la de fuera del paréntesis.\n\n" +
-    "TU TRABAJO: ordenarlas. Nada más. Colócalas en el orden que mejor suene, agrúpalas en bloques " +
-    "([Verso], [Estribillo], [Puente]...) y empareja las que rimen entre sí.\n\n" +
-    "RIMA: en español vale la ASONANTE, que es la de la canción popular: basta con que coincidan las " +
-    "vocales desde la última acentuada, aunque cambien las consonantes. tiempo/momento riman (e-o). " +
-    "cielo/muero/bueno riman (e-o). casa/mañana/alma riman (a-a). Con ese criterio casi todo rima, " +
-    "así que busca la pareja de cada línea entre las que te doy y encuéntrala. No digas que una línea " +
-    "no tiene rima, no la descartes por eso y no inventes nada para rimarla.\n\n" +
-    "PESO: las marcadas ME ENCANTA son las más fuertes, colócalas donde más luzcan. No tienen que ir al " +
-    "principio: cada canción empieza como le pide el texto, así que el arranque lo eliges tú por lo que mejor suene.\n\n" +
+    "REGLAS:\n" +
+    "- No escribas nada tuyo: ni líneas nuevas, ni puentes, ni rellenos.\n" +
+    "- Copia cada línea literal, sin cambiar ni una palabra.\n" +
+    "- No repitas una línea, salvo que yo te la dé repetida.\n" +
+    "- Excepción: las marcadas NO ME CONVENCE puedes retocarlas, y si te marco un trozo entre comillas, cambia solo ese trozo.\n" +
+    "- Una línea con (o, si encaja mejor: ...) o (= misma frase: ...) es UNA sola con varias versiones: elige una, la que mejor cuadre con rima y métrica. " +
+    "Si pone (o, si encaja mejor), mi preferida es la de fuera del paréntesis.\n\n" +
+    "TRABAJO: ordénalas en bloques ([Verso], [Estribillo], [Puente]...) y empareja las que rimen.\n\n" +
+    "RIMA: vale la ASONANTE: coinciden las vocales desde la última acentuada, aunque cambien las consonantes. " +
+    "tiempo/momento (e-o), cielo/muero/bueno (e-o), casa/mañana/alma (a-a). Con ese criterio casi todo rima, así que búscale pareja a cada línea.\n\n" +
+    "PESO: ME ENCANTA es lo más fuerte, colócalas donde más luzcan. El arranque lo eliges tú por lo que mejor suene.\n\n" +
     "Después, la lista de parejas de rima con su vocal (ejemplo: tiempo / momento -> e-o).\n" + tagRule() +
     "\n" +
     "LÍNEAS:\n" + ls.map((x, i) => (i + 1) + ". " + x.text + (x.alt || "") + (() => {
@@ -5640,7 +5632,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V2.19', ROOT='../';
+  var BUILD='V2.20', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

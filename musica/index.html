@@ -818,6 +818,25 @@ if(!window.storage){
   .uni-group{margin-bottom:22px;}
   .uni-group-head.head-alt{color:#8df0cd;}
   .uni-group-head.head-alt::after{background:linear-gradient(90deg,#2f6b58,transparent);}
+  #uniToast{
+    position:fixed;
+    left:50%;
+    bottom:26px;
+    transform:translate(-50%, 14px);
+    z-index:9999;
+    background:#14332b;
+    border:1px solid #3fbd92;
+    color:#bdf0d8;
+    font-family:var(--font-body);
+    font-size:13.5px;
+    padding:10px 18px;
+    border-radius:99px;
+    box-shadow:0 8px 28px rgba(0,0,0,.5);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .22s ease, transform .22s ease;
+  }
+  #uniToast.show{opacity:1;transform:translate(-50%, 0);}
   .alt-box.flash{
     animation:altFlash 1.4s ease;
   }
@@ -1218,7 +1237,7 @@ if(!window.storage){
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="verBadge">V2.04</div>
+<div id="verBadge">V2.05</div>
 <div class="wrap">
   <header>
     <div class="song-bar">
@@ -3851,13 +3870,27 @@ function makeLead(leadKey, newLeadKey){
   saveDB();
 }
 
+function toast(msg){
+  let t = document.getElementById("uniToast");
+  if(!t){
+    t = document.createElement("div");
+    t.id = "uniToast";
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(t._h);
+  t._h = setTimeout(()=>t.classList.remove("show"), 2600);
+}
+
 function focusAlt(leadKey){
   setTimeout(()=>{
     const box = document.querySelector('.alt-box[data-lead="' + leadKey + '"]');
     if(!box) return;
-    box.scrollIntoView({behavior:"smooth", block:"center"});
     box.classList.add("flash");
     setTimeout(()=>box.classList.remove("flash"), 1400);
+    const n = box.querySelectorAll(".uni-line").length;
+    toast("Agrupadas · " + n + " alternativas de la misma línea");
   }, 30);
 }
 
@@ -3983,7 +4016,8 @@ function clusterParecidas(lines){
     }
     groups.push(g);
   }
-  groups.sort((a, b) => b.length - a.length);
+  const peso = g => g.reduce((n, l) => n + 1 + ((altBag()[l.key] || {}).members || []).length, 0);
+  groups.sort((a, b) => peso(b) - peso(a));
   return groups;
 }
 
@@ -3992,8 +4026,9 @@ function groupUnified(lines){
     const gs = clusterParecidas(lines);
     const order = [], map = {};
     gs.forEach(g => {
-      const name = g.length > 1
-        ? g.length + " PARECIDAS · " + g[0].text.split(/\s+/).slice(0, 4).join(" ").toUpperCase() + "…"
+      const tot = g.reduce((n, l) => n + 1 + ((altBag()[l.key] || {}).members || []).length, 0);
+      const name = tot > 1
+        ? tot + " PARECIDAS · " + g[0].text.split(/\s+/).slice(0, 4).join(" ").toUpperCase() + "…"
         : "SIN PARECIDAS";
       let key = name, n = 2;
       while(map[key] && key !== "SIN PARECIDAS"){ key = name + " (" + (n++) + ")"; }
@@ -4203,7 +4238,14 @@ function buildUniRow(l, marks, opts){
   return row;
 }
 
+function keepScroll(fn){
+  const y = window.scrollY;
+  fn();
+  requestAnimationFrame(()=>window.scrollTo(0, y));
+}
+
 function renderUnified(){
+  const _y = window.scrollY;
   const list = document.getElementById("unifiedList");
   const marks = marksBag();
   const groupsAlt = altBag();
@@ -4246,26 +4288,21 @@ function renderUnified(){
   }
   if(lines.length === 0){
     list.innerHTML = '<p class="scope-empty">Ningún verso con ese filtro.</p>';
+    requestAnimationFrame(()=>window.scrollTo(0, _y));
     return;
   }
 
-  const withAlts = lines.filter(l => groupsAlt[l.key]);
-  const rest = lines.filter(l => !groupsAlt[l.key]);
-  const grouped = groupUnified(rest);
+  const grouped = groupUnified(lines);
   const groups = grouped.map;
   const order = grouped.order;
-  if(withAlts.length){
-    const k = "AGRUPADAS";
-    groups[k] = withAlts;
-    order.unshift(k);
-  }
 
   order.forEach(sec => {
     const g = document.createElement("div");
     g.className = "uni-group";
     const h = document.createElement("div");
-    h.className = "uni-group-head" + (sec === "AGRUPADAS" ? " head-alt" : "");
-    h.textContent = sec + "  ·  " + groups[sec].length;
+    h.className = "uni-group-head";
+    const tot = groups[sec].reduce((n, x) => n + 1 + ((groupsAlt[x.key] || {}).members || []).length, 0);
+    h.textContent = sec + "  ·  " + tot;
     g.appendChild(h);
 
     groups[sec].forEach(l => {
@@ -4301,6 +4338,7 @@ function renderUnified(){
 
     list.appendChild(g);
   });
+  requestAnimationFrame(()=>window.scrollTo(0, _y));
 }
 
 
@@ -4349,6 +4387,7 @@ function savePhase2Order(keys){
 function renderPhase2(){
   const list = document.getElementById("phase2List");
   if(!list) return;
+  const _y2 = window.scrollY;
   const sortSel = document.getElementById("p2Sort");
   if(sortSel) sortSel.value = currentState().phase2Sort || "manual";
   const m1 = marksBag();
@@ -4545,8 +4584,59 @@ function renderPhase2(){
     body.appendChild(head);
 
     row.appendChild(body);
+
+    const byKeyP2 = {};
+    unifiedLines().forEach(x => { byKeyP2[x.key] = x; });
+    const altsP2 = altsOf(l.key, byKeyP2);
+    if(altsP2.length){
+      const grpP2 = altBag()[l.key];
+      const box = document.createElement("div");
+      box.className = "alt-box";
+      box.dataset.lead = l.key;
+      const bar2 = document.createElement("div");
+      bar2.className = "alt-bar";
+      const lbl2 = document.createElement("span");
+      lbl2.textContent = (altsP2.length + 1) + " alternativas · cuentan como un verso";
+      bar2.appendChild(lbl2);
+      const tog2 = document.createElement("button");
+      tog2.className = "alt-toggle" + (grpP2.ranked ? " on" : "");
+      tog2.textContent = grpP2.ranked ? "con preferencia" : "sin preferencia";
+      tog2.addEventListener("click", ()=>{ grpP2.ranked = !grpP2.ranked; saveDB(); renderPhase2(); });
+      bar2.appendChild(tog2);
+      box.appendChild(bar2);
+      box.appendChild(row);
+      altsP2.forEach((a, i) => {
+        const ar = document.createElement("div");
+        ar.className = "uni-line alt-row";
+        const tag = document.createElement("span");
+        tag.className = "alt-tag" + (grpP2.ranked ? "" : " eq");
+        tag.textContent = grpP2.ranked ? ("alt " + (i + 2)) : "=";
+        ar.appendChild(tag);
+        const at = document.createElement("div");
+        at.className = "uni-text";
+        at.textContent = (marksBag()[a.key] || {}).rewrite || a.text;
+        ar.appendChild(at);
+        const up = document.createElement("button");
+        up.className = "alt-act";
+        up.textContent = "↑";
+        up.title = "Hacerla la principal";
+        up.addEventListener("click", ()=>{ makeLead(l.key, a.key); renderPhase2(); if(document.getElementById("unifiedList")) renderUnified(); });
+        const outb = document.createElement("button");
+        outb.className = "alt-act";
+        outb.textContent = "⤴";
+        outb.title = "Sacarla del grupo";
+        outb.addEventListener("click", ()=>{ unlinkAlt(a.key); renderPhase2(); if(document.getElementById("unifiedList")) renderUnified(); });
+        ar.appendChild(up);
+        ar.appendChild(outb);
+        box.appendChild(ar);
+      });
+      list.appendChild(box);
+      return;
+    }
+
     list.appendChild(row);
   });
+  requestAnimationFrame(()=>window.scrollTo(0, _y2));
 }
 
 function phase2Text(withNotes){
@@ -5352,7 +5442,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V2.04', ROOT='../';
+  var BUILD='V2.05', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

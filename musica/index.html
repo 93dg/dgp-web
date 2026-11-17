@@ -1261,7 +1261,7 @@ if(!window.storage){
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="verBadge">V2.06</div>
+<div id="verBadge">V2.07</div>
 <div class="wrap">
   <header>
     <div class="song-bar">
@@ -1456,6 +1456,7 @@ if(!window.storage){
         <input type="text" id="uniSearch" class="uni-find" placeholder="Buscar...">
       </div>
       <div class="unified-bar">
+        <button class="tool" id="uniReorder" title="Rehacer el orden ahora (la lista no se reordena sola)">↻</button>
         <select id="uniSort" class="uni-sort" title="Cómo agrupar los versos">
           <option value="seccion">⇅ Ordenar: por sección</option>
           <option value="parecidas">⇅ Ordenar: frases parecidas</option>
@@ -4074,6 +4075,37 @@ function clusterParecidas(lines){
   return groups;
 }
 
+function layoutFor(lines){
+  const cs = currentState();
+  const lay = cs.uniLayout;
+  const live = {};
+  lines.forEach(l => { live[l.key] = l; });
+
+  if(lay && lay.sort === unifiedSort){
+    const order = [], map = {}, puestas = {};
+    lay.order.forEach(sec => {
+      const arr = (lay.items[sec] || []).filter(k => live[k]).map(k => { puestas[k] = 1; return live[k]; });
+      if(arr.length){ order.push(sec); map[sec] = arr; }
+    });
+    const nuevas = lines.filter(l => !puestas[l.key]);
+    if(nuevas.length){
+      const g = groupUnified(nuevas);
+      g.order.forEach(sec => {
+        if(!map[sec]){ map[sec] = []; order.push(sec); }
+        map[sec] = map[sec].concat(g.map[sec]);
+      });
+    }
+    cs.uniLayout = {sort: unifiedSort, order: order, items: {}};
+    order.forEach(sec => { cs.uniLayout.items[sec] = map[sec].map(x => x.key); });
+    return {order, map};
+  }
+
+  const g = groupUnified(lines);
+  cs.uniLayout = {sort: unifiedSort, order: g.order.slice(), items: {}};
+  g.order.forEach(sec => { cs.uniLayout.items[sec] = g.map[sec].map(x => x.key); });
+  return g;
+}
+
 function groupUnified(lines){
   if(unifiedSort === "parecidas"){
     const gs = clusterParecidas(lines);
@@ -4346,7 +4378,7 @@ function renderUnified(){
     return;
   }
 
-  const grouped = groupUnified(lines);
+  const grouped = layoutFor(lines);
   const groups = grouped.map;
   const order = grouped.order;
 
@@ -5014,8 +5046,16 @@ document.getElementById("p2Search").addEventListener("input", (e)=>{
 document.getElementById("uniSort").addEventListener("change", (e)=>{
   unifiedSort = e.target.value;
   db.lastUniSort = unifiedSort;
+  delete currentState().uniLayout;
   saveDB();
   renderUnified();
+});
+
+document.getElementById("uniReorder").addEventListener("click", (e)=>{
+  delete currentState().uniLayout;
+  saveDB();
+  renderUnified();
+  flashBtn(e.currentTarget, "Reordenado ✓", "↻");
 });
 
 document.querySelectorAll("#uniSeg .uni-seg-btn").forEach(btn => {
@@ -5500,7 +5540,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V2.06', ROOT='../';
+  var BUILD='V2.07', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

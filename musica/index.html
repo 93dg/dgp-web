@@ -816,6 +816,15 @@ if(!window.storage){
   .uni-seg-btn[data-f="meh"].active{background:#3a3117;color:#f5e2a3;}
   .uni-seg-btn[data-f="no"].active{background:#3a231f;color:#f7c6ba;}
   .uni-group{margin-bottom:22px;}
+  .uni-group-head.head-alt{color:#8df0cd;}
+  .uni-group-head.head-alt::after{background:linear-gradient(90deg,#2f6b58,transparent);}
+  .alt-box.flash{
+    animation:altFlash 1.4s ease;
+  }
+  @keyframes altFlash{
+    0%{box-shadow:0 0 0 3px var(--teal);}
+    100%{box-shadow:0 0 0 0 transparent;}
+  }
   .alt-box{
     border:1px solid #4a6b6c;
     border-radius:12px;
@@ -1209,7 +1218,7 @@ if(!window.storage){
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="verBadge">V2.02</div>
+<div id="verBadge">V2.03</div>
 <div class="wrap">
   <header>
     <div class="song-bar">
@@ -1420,6 +1429,7 @@ if(!window.storage){
           <button class="uni-seg-btn" data-f="meh" title="No me convence">~</button>
           <button class="uni-seg-btn" data-f="no" title="Fuera">✕</button>
           <button class="uni-seg-btn" data-f="pend">Sin marcar</button>
+          <button class="uni-seg-btn" data-f="alts" title="Solo los versos con alternativas">⧉</button>
         </div>
         <span class="uni-spacer"></span>
         <button class="tool" id="unifiedCopySel">Copiar marcadas</button>
@@ -3839,6 +3849,16 @@ function makeLead(leadKey, newLeadKey){
   saveDB();
 }
 
+function focusAlt(leadKey){
+  setTimeout(()=>{
+    const box = document.querySelector('.alt-box[data-lead="' + leadKey + '"]');
+    if(!box) return;
+    box.scrollIntoView({behavior:"smooth", block:"center"});
+    box.classList.add("flash");
+    setTimeout(()=>box.classList.remove("flash"), 1400);
+  }, 30);
+}
+
 function altsOf(key, byKey){
   const g = altBag()[key];
   if(!g) return [];
@@ -3965,10 +3985,10 @@ function groupUnified(lines){
     const order = [], map = {};
     gs.forEach(g => {
       const name = g.length > 1
-        ? g.length + " VARIANTES · " + g[0].text.split(/\s+/).slice(0, 4).join(" ").toUpperCase() + "…"
-        : "SIN PAREJA";
+        ? g.length + " PARECIDAS · " + g[0].text.split(/\s+/).slice(0, 4).join(" ").toUpperCase() + "…"
+        : "SIN PARECIDAS";
       let key = name, n = 2;
-      while(map[key] && key !== "SIN PAREJA"){ key = name + " (" + (n++) + ")"; }
+      while(map[key] && key !== "SIN PARECIDAS"){ key = name + " (" + (n++) + ")"; }
       if(!map[key]){ map[key] = []; order.push(key); }
       map[key] = map[key].concat(g);
     });
@@ -4151,9 +4171,11 @@ function buildUniRow(l, marks, opts){
     e.stopPropagation();
     row.classList.remove("nest");
     if(!dragLineKey || dragLineKey === l.key) return;
+    const lead = altIndex()[l.key] || l.key;
     nestAlt(dragLineKey, l.key);
     dragLineKey = null;
     renderUnified();
+    focusAlt(lead);
   };
   row.addEventListener("dragover", onOver);
   row.addEventListener("dragenter", onOver);
@@ -4185,7 +4207,8 @@ function renderUnified(){
 
   if(uniQuery) lines = lines.filter(l => matchQ(l.text, uniQuery) ||
     altsOf(l.key, byKey).some(a => matchQ(a.text, uniQuery)));
-  if(unifiedFilter === "pend") lines = lines.filter(l => !(marks[l.key] || {}).mark);
+  if(unifiedFilter === "alts") lines = lines.filter(l => groupsAlt[l.key]);
+  else if(unifiedFilter === "pend") lines = lines.filter(l => !(marks[l.key] || {}).mark);
   else if(unifiedFilter === "keep") lines = lines.filter(l => ["love","like"].includes((marks[l.key] || {}).mark));
   else if(unifiedFilter !== "todas") lines = lines.filter(l => (marks[l.key] || {}).mark === unifiedFilter);
 
@@ -4213,15 +4236,22 @@ function renderUnified(){
     return;
   }
 
-  const grouped = groupUnified(lines);
+  const withAlts = lines.filter(l => groupsAlt[l.key]);
+  const rest = lines.filter(l => !groupsAlt[l.key]);
+  const grouped = groupUnified(rest);
   const groups = grouped.map;
   const order = grouped.order;
+  if(withAlts.length){
+    const k = "AGRUPADAS";
+    groups[k] = withAlts;
+    order.unshift(k);
+  }
 
   order.forEach(sec => {
     const g = document.createElement("div");
     g.className = "uni-group";
     const h = document.createElement("div");
-    h.className = "uni-group-head";
+    h.className = "uni-group-head" + (sec === "AGRUPADAS" ? " head-alt" : "");
     h.textContent = sec + "  ·  " + groups[sec].length;
     g.appendChild(h);
 
@@ -4234,6 +4264,7 @@ function renderUnified(){
       const grp = groupsAlt[l.key];
       const box = document.createElement("div");
       box.className = "alt-box";
+      box.dataset.lead = l.key;
 
       const bar = document.createElement("div");
       bar.className = "alt-bar";
@@ -4372,10 +4403,12 @@ function renderPhase2(){
       row.classList.remove("over"); row.classList.remove("nest");
       if(!dragP2 || dragP2 === l.key) return;
       if(z === "nest"){
+        const lead = altIndex()[l.key] || l.key;
         nestAlt(dragP2, l.key);
         dragP2 = null;
         renderPhase2();
         if(document.getElementById("unifiedList")) renderUnified();
+        focusAlt(lead);
         return;
       }
       const keys = phase2Lines().map(x => x.key);
@@ -5306,7 +5339,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V2.02', ROOT='../';
+  var BUILD='V2.03', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

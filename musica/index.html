@@ -817,6 +817,7 @@ if(!window.storage){
   .uni-seg-btn[data-f="no"].active{background:#3a231f;color:#f7c6ba;}
   .uni-group{margin-bottom:22px;}
   .uni-group-head.head-alt{color:#8df0cd;}
+  .uni-group:has(.uni-group-head) .uni-group-head:not(:empty){}
   .uni-group-head.head-alt::after{background:linear-gradient(90deg,#2f6b58,transparent);}
   #uniToast{
     position:fixed;
@@ -1261,7 +1262,7 @@ if(!window.storage){
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="verBadge">V2.13</div>
+<div id="verBadge">V2.14</div>
 <div class="wrap">
   <header>
     <div class="song-bar">
@@ -3972,8 +3973,11 @@ function focusAlt(leadKey){
     if(!box) return;
     box.classList.add("flash");
     setTimeout(()=>box.classList.remove("flash"), 1400);
-    const n = box.querySelectorAll(".uni-line").length;
-    toast("Agrupadas · " + n + " alternativas de la misma línea");
+    const chip = box.querySelector(".alt-chip");
+    const n = chip ? parseInt(chip.textContent.replace(/\D/g, ""), 10) : 2;
+    const t = box.querySelector(".uni-text");
+    const frase = t ? t.textContent.trim().slice(0, 38) : "";
+    toast("Agrupadas (" + n + ") dentro de: " + frase + (frase.length >= 38 ? "…" : ""));
   }, 30);
 }
 
@@ -4439,6 +4443,16 @@ function renderUnified(){
   const groups = grouped.map;
   const order = grouped.order;
 
+  // nada puede quedar fuera: lo que no esté en ningún grupo del layout, al final
+  const pintadas = {};
+  order.forEach(sec => (groups[sec] || []).forEach(x => { pintadas[x.key] = 1; }));
+  const perdidas = lines.filter(l => !pintadas[l.key]);
+  if(perdidas.length){
+    const k = "RECUPERADAS";
+    groups[k] = (groups[k] || []).concat(perdidas);
+    if(!order.includes(k)) order.push(k);
+  }
+
   order.forEach(sec => {
     const g = document.createElement("div");
     g.className = "uni-group";
@@ -4610,6 +4624,7 @@ function renderPhase2(){
         dragP2 = null;
         openAlts.delete(lead);
         renderPhase2();
+        focusAlt(lead);
         const again = document.querySelector('#phase2List [data-k="' + lead + '"]');
         if(again){
           const d = again.getBoundingClientRect().top - keepTop;
@@ -5625,7 +5640,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V2.13', ROOT='../';
+  var BUILD='V2.14', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

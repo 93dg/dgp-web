@@ -862,7 +862,7 @@ if(!window.storage){
   .alt-chip{
     flex-shrink:0;
     align-self:flex-start;
-    margin-top:3px;
+    margin-top:4px;
     background:rgba(79,138,139,.14);
     border:1px solid var(--teal-dim);
     color:var(--teal);
@@ -1261,7 +1261,7 @@ if(!window.storage){
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="verBadge">V2.11</div>
+<div id="verBadge">V2.12</div>
 <div class="wrap">
   <header>
     <div class="song-bar">
@@ -4317,8 +4317,8 @@ function buildUniRow(l, marks, opts){
     out.textContent = "⤴";
     out.title = "Sacarla del grupo";
     out.addEventListener("click", ()=>{ unlinkAlt(l.key); renderUnified(); });
-    row.appendChild(up);
-    row.appendChild(out);
+    row.insertBefore(out, row.querySelector(".uni-body"));
+    row.insertBefore(up, out);
   }
 
   const onOver = (e)=>{
@@ -4459,7 +4459,8 @@ function renderUnified(){
       box.dataset.lead = l.key;
 
       const leadRow = buildUniRow(l, marks, {isAlt:false});
-      leadRow.appendChild(altChip(l.key, alts.length + 1, renderUnified));
+      leadRow.insertBefore(altChip(l.key, alts.length + 1, renderUnified),
+                           leadRow.querySelector(".uni-body"));
       box.appendChild(leadRow);
 
       if(open){
@@ -4747,7 +4748,8 @@ function renderPhase2(){
       const box = document.createElement("div");
       box.className = "alt-box" + (openP2 ? " open" : "");
       box.dataset.lead = l.key;
-      row.appendChild(altChip(l.key, altsP2.length + 1, renderPhase2));
+      row.insertBefore(altChip(l.key, altsP2.length + 1, renderPhase2),
+                       row.querySelector(".uni-body"));
       box.appendChild(row);
       if(openP2){
       const bar2 = document.createElement("div");
@@ -4779,8 +4781,8 @@ function renderPhase2(){
         outb.textContent = "⤴";
         outb.title = "Sacarla del grupo";
         outb.addEventListener("click", ()=>{ unlinkAlt(a.key); renderPhase2(); if(document.getElementById("unifiedList")) renderUnified(); });
-        ar.appendChild(up);
-        ar.appendChild(outb);
+        ar.insertBefore(up, at);
+        ar.insertBefore(outb, at);
         box.appendChild(ar);
       });
       }
@@ -5621,7 +5623,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V2.11', ROOT='../';
+  var BUILD='V2.12', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

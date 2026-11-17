@@ -872,7 +872,23 @@ if(!window.storage){
     margin-top:3px;
   }
   .alt-act:hover{border-color:var(--amber);color:var(--text);}
-  .uni-line.nest{box-shadow:0 0 0 2px var(--teal);background:rgba(79,138,139,.15);}
+  .uni-line.nest{box-shadow:0 0 0 2px var(--teal);background:rgba(79,138,139,.18);}
+  .uni-line.nest::after{
+    content:"agrupar como alternativa";
+    position:absolute;
+    right:10px;
+    top:50%;
+    transform:translateY(-50%);
+    font-family:var(--font-mono);
+    font-size:10px;
+    color:var(--teal);
+    background:var(--bg);
+    padding:2px 8px;
+    border-radius:99px;
+    border:1px solid var(--teal);
+    pointer-events:none;
+  }
+  .uni-line.over{box-shadow:0 -3px 0 var(--amber);}
   .p2-line{cursor:grab;}
   .p2-line.dragging{opacity:.35;}
   .p2-line.over{box-shadow:0 -2px 0 var(--amber);}
@@ -1173,7 +1189,7 @@ if(!window.storage){
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="verBadge">V2.00</div>
+<div id="verBadge">V2.01</div>
 <div class="wrap">
   <header>
     <div class="song-bar">
@@ -4085,21 +4101,31 @@ function buildUniRow(l, marks, opts){
     row.appendChild(out);
   }
 
-  row.addEventListener("dragover", (e)=>{
+  const onOver = (e)=>{
     if(!dragLineKey || dragLineKey === l.key) return;
     e.preventDefault();
+    e.stopPropagation();
+    if(e.dataTransfer) e.dataTransfer.dropEffect = "move";
     row.classList.add("nest");
-  });
-  row.addEventListener("dragleave", ()=>row.classList.remove("nest"));
-  row.addEventListener("drop", (e)=>{
+  };
+  const onDrop = (e)=>{
     e.preventDefault();
     e.stopPropagation();
     row.classList.remove("nest");
-    if(!dragLineKey) return;
+    if(!dragLineKey || dragLineKey === l.key) return;
     nestAlt(dragLineKey, l.key);
     dragLineKey = null;
     renderUnified();
-  });
+  };
+  row.addEventListener("dragover", onOver);
+  row.addEventListener("dragenter", onOver);
+  row.addEventListener("dragleave", ()=>row.classList.remove("nest"));
+  row.addEventListener("drop", onDrop);
+  txt.addEventListener("dragover", onOver);
+  txt.addEventListener("dragenter", onOver);
+  txt.addEventListener("drop", onDrop);
+  body.addEventListener("dragover", onOver);
+  body.addEventListener("drop", onDrop);
 
   return row;
 }
@@ -4289,12 +4315,31 @@ function renderPhase2(){
       try{ e.dataTransfer.setData("text/plain", l.key); }catch(err){}
     });
     row.addEventListener("dragend", ()=>{ row.classList.remove("dragging"); dragP2 = null; });
-    row.addEventListener("dragover", (e)=>{ if(dragP2){ e.preventDefault(); row.classList.add("over"); } });
-    row.addEventListener("dragleave", ()=>row.classList.remove("over"));
+    function zoneOf(e){
+      const r = row.getBoundingClientRect();
+      return (e.clientY - r.top) < r.height * 0.35 ? "before" : "nest";
+    }
+    row.addEventListener("dragover", (e)=>{
+      if(!dragP2 || dragP2 === l.key) return;
+      e.preventDefault();
+      const z = zoneOf(e);
+      row.classList.toggle("over", z === "before");
+      row.classList.toggle("nest", z === "nest");
+    });
+    row.addEventListener("dragleave", ()=>{ row.classList.remove("over"); row.classList.remove("nest"); });
     row.addEventListener("drop", (e)=>{
       e.preventDefault();
-      row.classList.remove("over");
+      e.stopPropagation();
+      const z = zoneOf(e);
+      row.classList.remove("over"); row.classList.remove("nest");
       if(!dragP2 || dragP2 === l.key) return;
+      if(z === "nest"){
+        nestAlt(dragP2, l.key);
+        dragP2 = null;
+        renderPhase2();
+        if(document.getElementById("unifiedList")) renderUnified();
+        return;
+      }
       const keys = phase2Lines().map(x => x.key);
       const from = keys.indexOf(dragP2);
       if(from >= 0) keys.splice(from, 1);
@@ -4308,6 +4353,7 @@ function renderPhase2(){
     const grip = document.createElement("span");
     grip.className = "p2-grip";
     grip.textContent = "⠿";
+    grip.title = "Arrastra: suelta arriba del todo para reordenar, en el centro para agrupar como alternativa";
     row.appendChild(grip);
 
     const bar = document.createElement("div");
@@ -5210,7 +5256,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V2.00', ROOT='../';
+  var BUILD='V2.01', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

@@ -113,7 +113,7 @@ $('bProp').onclick=()=>{ S.lock=!S.lock; if(S.lock&&ratio) S.h=Math.round(S.w*ra
 $('ajuste').onchange=()=>{ S.ajuste=$('ajuste').value; guardar(); pintar(); };
 $('rejaT').onchange=()=>{ S.rej=+$('rejaT').value; guardar(); pintar(); $('pMed').hidden=true; $('bMed').classList.remove('on'); };
 $('bSueno').onclick=()=>{ S.sueno=!S.sueno; guardar(); sueno(); pintar(); };
-$('bVer').onclick=()=>{ S.ver=!S.ver; guardar(); pintar(); };
+$('bVer').onclick=()=>{ const v=$('vista'); if(!S.ver){ S.sx=v.scrollLeft; S.sy=v.scrollTop; } S.ver=!S.ver; guardar(); pintar(); if(S.ver){ v.scrollLeft=0; v.scrollTop=0; } else { v.scrollLeft=S.sx||0; v.scrollTop=S.sy||0; } };
 /* ---------- calibrado ---------- */
 function abrirCal(){ cal=ppmBase()*TARJ; $('calR').value=cal; pintaCal(); }
 function pintaCal(){ const w=+$('calR').value; $('tarjeta').style.width=w+'px'; $('tarjeta').style.height=(w*53.98/TARJ)+'px'; cal=w; }
@@ -158,7 +158,7 @@ idbGet().then(b=>{ if(b) ponerImg(b); });
 <script>
 /* Actualización automática */
 (function(){
-  var BUILD='V1.96', ROOT='../';
+  var BUILD='V1.97', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

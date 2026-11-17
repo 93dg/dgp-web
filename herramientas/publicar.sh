@@ -34,13 +34,13 @@ fi
 python3 - "$VERSION" <<'PY'
 import re, sys, os
 v = sys.argv[1]
-for f in ['index.html', 'musica/index.html', 'media/index.html', 'juegos/index.html', 'juegos/crucigramas/index.html', 'proporciones/index.html']:
+for f in ['index.html', 'musica/index.html', 'media/index.html', 'juegos/index.html', 'juegos/crucigramas/index.html', 'proporciones/index.html', 'cocina/index.html']:
     if not os.path.exists(f): continue
     s = open(f, encoding='utf-8').read()
     s = re.sub(r'(id="version"[^>]*>)V[\d.]+(<)', r'\g<1>' + v + r'\2', s)
     open(f, 'w', encoding='utf-8').write(s)
 # Comprobador de versión de la app instalada: BUILD en cada página y version.json en la raíz
-for f in ['index.html', 'musica/index.html', 'media/index.html', 'juegos/index.html', 'juegos/crucigramas/index.html', 'proporciones/index.html']:
+for f in ['index.html', 'musica/index.html', 'media/index.html', 'juegos/index.html', 'juegos/crucigramas/index.html', 'proporciones/index.html', 'cocina/index.html']:
     if not os.path.exists(f): continue
     s = open(f, encoding='utf-8').read()
     s = re.sub(r"(var BUILD=')V[\d.]+(')", r'\g<1>' + v + r'\2', s)

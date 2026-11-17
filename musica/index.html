@@ -1261,7 +1261,7 @@ if(!window.storage){
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="verBadge">V2.10</div>
+<div id="verBadge">V2.11</div>
 <div class="wrap">
   <header>
     <div class="song-bar">
@@ -1456,6 +1456,7 @@ if(!window.storage){
         <input type="text" id="uniSearch" class="uni-find" placeholder="Buscar...">
       </div>
       <div class="unified-bar">
+        <button class="tool" id="uniUngroup" title="Deshacer todas las agrupaciones de esta canción">Desagrupar todo</button>
         <button class="tool" id="uniReorder" title="Rehacer el orden ahora (la lista no se reordena sola)">↻</button>
         <select id="uniSort" class="uni-sort" title="Cómo agrupar los versos">
           <option value="seccion">⇅ Ordenar: por sección</option>
@@ -3854,8 +3855,43 @@ function altBag(){
   return cs.altGroups;
 }
 
+function sanitizeAlts(){
+  const g = altBag();
+  let cambios = true, vueltas = 0;
+  while(cambios && vueltas++ < 20){
+    cambios = false;
+    const owner = {};
+    Object.keys(g).forEach(lead => {
+      (g[lead].members || []).forEach(k => { if(!owner[k]) owner[k] = lead; });
+    });
+    Object.keys(g).forEach(lead => {
+      // un lead no puede ser a la vez alternativa de otro: se aplana
+      if(owner[lead] && owner[lead] !== lead){
+        const dueno = owner[lead];
+        if(g[dueno]){
+          (g[lead].members || []).forEach(k => {
+            if(k !== dueno && !g[dueno].members.includes(k)) g[dueno].members.push(k);
+          });
+        }
+        delete g[lead];
+        cambios = true;
+        return;
+      }
+      // sin auto-referencias ni duplicados
+      const limpio = [];
+      (g[lead].members || []).forEach(k => {
+        if(k !== lead && !limpio.includes(k)) limpio.push(k);
+      });
+      if(limpio.length !== (g[lead].members || []).length){ cambios = true; }
+      g[lead].members = limpio;
+      if(!limpio.length){ delete g[lead]; cambios = true; }
+    });
+  }
+  return g;
+}
+
 function altIndex(){
-  const g = altBag(), idx = {};
+  const g = sanitizeAlts(), idx = {};
   Object.keys(g).forEach(lead => (g[lead].members || []).forEach(k => { idx[k] = lead; }));
   return idx;
 }
@@ -3868,7 +3904,7 @@ function visualOrder(){
 
 function nestAlt(dragKey, targetKey){
   if(!dragKey || !targetKey || dragKey === targetKey) return;
-  const g = altBag(), idx = altIndex();
+  const g = sanitizeAlts(), idx = altIndex();
   const lead = idx[targetKey] || targetKey;
   if(lead === dragKey) return;
   const moving = [dragKey].concat((g[dragKey] && g[dragKey].members) || []);
@@ -3879,6 +3915,7 @@ function nestAlt(dragKey, targetKey){
   });
   if(!g[lead]) g[lead] = {members:[], ranked:false};
   moving.forEach(k => { if(k !== lead && !g[lead].members.includes(k)) g[lead].members.push(k); });
+  sanitizeAlts();
   saveDB();
 }
 
@@ -4357,7 +4394,9 @@ function renderUnified(){
   const all = unifiedLines();
   const byKey = {};
   all.forEach(l => { byKey[l.key] = l; });
-  Object.keys(idx).forEach(k => { if(!byKey[k]) unlinkAlt(k); });
+  Object.keys(idx).forEach(k => {
+    if(!byKey[k] || !byKey[idx[k]]) unlinkAlt(k);
+  });
 
   let lines = all.filter(l => !idx[l.key]);
   const total = lines.length;
@@ -5078,6 +5117,21 @@ document.getElementById("uniSort").addEventListener("change", (e)=>{
   renderUnified();
 });
 
+document.getElementById("uniUngroup").addEventListener("click", (e)=>{
+  const b = e.currentTarget;
+  if(b.dataset.armed === "1"){
+    currentState().altGroups = {};
+    openAlts.clear();
+    saveDB();
+    renderUnified();
+    b.dataset.armed = ""; b.textContent = "Desagrupar todo";
+    return;
+  }
+  b.dataset.armed = "1";
+  b.textContent = "¿Seguro?";
+  setTimeout(()=>{ b.dataset.armed = ""; b.textContent = "Desagrupar todo"; }, 3000);
+});
+
 document.getElementById("uniReorder").addEventListener("click", (e)=>{
   delete currentState().uniLayout;
   saveDB();
@@ -5567,7 +5621,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V2.10', ROOT='../';
+  var BUILD='V2.11', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

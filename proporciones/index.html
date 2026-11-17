@@ -21,7 +21,7 @@ header h1{font-size:1rem;margin:0 6px 0 2px;font-weight:700;flex:0 0 auto}
 button,select,input{font:inherit;color:var(--tx)}
 button{background:var(--s2);border:1px solid var(--bd);border-radius:10px;min-height:44px;padding:0 12px;cursor:pointer}
 button.on{border-color:var(--ac)}
-header button{flex:1;padding:0 6px;font-size:.9rem}
+header button,header .btn{flex:1;padding:0 6px;display:flex;align-items:center;justify-content:center;background:var(--s2);border:1px solid var(--bd);border-radius:10px;min-height:44px;cursor:pointer;color:var(--tx)}#bLap,#bLock{display:flex;align-items:center;justify-content:center}
 .panel{padding:10px 12px;border-bottom:1px solid var(--bd);background:var(--s1);display:grid;gap:10px;max-height:46vh;overflow:auto}
 .panel[hidden]{display:none}
 .fila{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -44,15 +44,15 @@ input[type=range]{width:100%}
 </style>
 </head>
 <body>
-<button id="bLap" aria-label="Menú">✏️</button>
+<button id="bLap" aria-label="Menú"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button>
 <header hidden>
   <h1>Proporciones</h1>
-  <button id="bFoto">Foto</button>
-  <button id="bMed">Medidas</button>
-  <button id="bCal">Calibrar</button>
-  <button id="bVer" aria-pressed="false">Ver entera</button>
+  <label id="bFoto" class="btn" for="archivo" aria-label="Foto"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-8 9"/></svg></label>
+  <button id="bMed" aria-label="Medidas"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg></button>
+  <button id="bCal" aria-label="Calibrar"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg></button>
+  <button id="bVer" aria-pressed="false" aria-label="Ver entera"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
 </header>
-<input type="file" id="archivo" accept="image/*" hidden>
+<input type="file" id="archivo" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
 <section class="panel" id="pMed" hidden>
   <div class="chips" id="chips"></div>
   <div class="fila">
@@ -77,7 +77,7 @@ input[type=range]{width:100%}
   <div class="fila"><button id="calM">−</button><button id="calP">+</button><button id="calOk" class="on" style="flex:1">Guardar calibrado</button></div>
 </section>
 <div id="vista"><div id="lienzo"><div id="marco" class="cubrir"><img id="img" alt=""><div id="rej"></div></div></div><div id="vacio">Elige una foto y pon las medidas<br>de donde la vas a pintar.</div></div>
-<button id="bLock" aria-label="Bloquear pantalla">🔓</button>
+<button id="bLock" aria-label="Bloquear pantalla"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 017.5-2"/></svg></button>
 <script>
 (function(){
 'use strict';
@@ -95,10 +95,10 @@ async function idbSet(b){ try{ const d=await idb(); d.transaction('f','readwrite
 async function idbGet(){ try{ const d=await idb(); return await new Promise(ok=>{ const q=d.transaction('f').objectStore('f').get('img'); q.onsuccess=()=>ok(q.result||null); q.onerror=()=>ok(null); }); }catch(e){ return null; } }
 function ponerImg(blob){
   if(url) URL.revokeObjectURL(url); url=URL.createObjectURL(blob);
-  const im=$('img'); im.onload=()=>{ ratio=im.naturalHeight/im.naturalWidth; if(S.lock&&!S._nuevo0){ } pintar(); }; im.src=url; $('vacio').style.display='none';
+  const im=$('img'); im.onload=()=>{ ratio=im.naturalHeight/im.naturalWidth; if(nuevo&&S.lock){ S.h=Math.round(S.w*ratio*10)/10; guardar(); } nuevo=false; pintar(); }; im.onerror=()=>{ $('vacio').style.display='flex'; $('vacio').textContent='No he podido abrir esa imagen.'; }; im.src=url; $('vacio').style.display='none';
 }
-$('bFoto').onclick=()=>$('archivo').click();
-$('archivo').onchange=e=>{ const f=e.target.files[0]; if(!f) return; idbSet(f); const u=URL.createObjectURL(f), t=new Image(); t.onload=()=>{ ratio=t.naturalHeight/t.naturalWidth; if(S.lock) S.h=Math.round(S.w*ratio*10)/10; guardar(); ponerImg(f); URL.revokeObjectURL(u); }; t.src=u; };
+let nuevo=false;
+$('archivo').onchange=e=>{ const f=e.target.files[0]; if(!f) return; nuevo=true; idbSet(f); ponerImg(f); e.target.value=''; };
 /* ---------- medidas ---------- */
 const PRE=[[20,30],[24,30],[30,40],[40,50],[50,70],[60,80],[70,100],[100,120]];
 $('chips').innerHTML=PRE.map(p=>'<button data-w="'+p[0]+'" data-h="'+p[1]+'">'+p[0]+'×'+p[1]+'</button>').join('');
@@ -138,7 +138,8 @@ function pintar(){
 /* ---------- menú (lápiz) ---------- */
 $('bLap').onclick=()=>{ if(S.bloq) return; const h=document.querySelector('header'); h.hidden=!h.hidden; $('bLap').classList.toggle('on',!h.hidden); if(h.hidden){ $('pMed').hidden=true; $('pCal').hidden=true; $('bMed').classList.remove('on'); $('bCal').classList.remove('on'); } };
 /* ---------- bloqueo ---------- */
-function bloq(){ document.body.classList.toggle('bloq',!!S.bloq); const b=$('bLock'); b.textContent=S.bloq?'🔒':'🔓'; b.classList.toggle('on',!!S.bloq); }
+const IC_ON='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>', IC_OFF='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 017.5-2"/></svg>';
+function bloq(){ document.body.classList.toggle('bloq',!!S.bloq); const b=$('bLock'); b.innerHTML=S.bloq?IC_ON:IC_OFF; b.classList.toggle('on',!!S.bloq); }
 $('bLock').onclick=()=>{ S.bloq=!S.bloq; if(S.bloq){ document.querySelector('header').hidden=true; $('bLap').classList.remove('on'); $('pMed').hidden=true; $('pCal').hidden=true; $('bMed').classList.remove('on'); $('bCal').classList.remove('on'); } guardar(); bloq(); };
 $('vista').addEventListener('touchmove',e=>{ if(S.bloq) e.preventDefault(); },{passive:false});
 $('vista').addEventListener('wheel',e=>{ if(S.bloq) e.preventDefault(); },{passive:false});
@@ -155,7 +156,7 @@ idbGet().then(b=>{ if(b) ponerImg(b); });
 <script>
 /* Actualización automática */
 (function(){
-  var BUILD='V1.90', ROOT='../';
+  var BUILD='V1.91', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

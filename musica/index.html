@@ -1261,7 +1261,7 @@ if(!window.storage){
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="verBadge">V2.09</div>
+<div id="verBadge">V2.10</div>
 <div class="wrap">
   <header>
     <div class="song-bar">
@@ -3869,12 +3869,7 @@ function visualOrder(){
 function nestAlt(dragKey, targetKey){
   if(!dragKey || !targetKey || dragKey === targetKey) return;
   const g = altBag(), idx = altIndex();
-  let lead = idx[targetKey] || targetKey;
-  const ord = visualOrder();
-  const a = ord[lead], b = ord[idx[dragKey] || dragKey];
-  if(a !== undefined && b !== undefined && b < a) lead = idx[dragKey] || dragKey;
-  const other = (lead === (idx[targetKey] || targetKey)) ? dragKey : targetKey;
-  dragKey = other;
+  const lead = idx[targetKey] || targetKey;
   if(lead === dragKey) return;
   const moving = [dragKey].concat((g[dragKey] && g[dragKey].members) || []);
   delete g[dragKey];
@@ -4302,10 +4297,16 @@ function buildUniRow(l, marks, opts){
     row.classList.remove("nest");
     if(!dragLineKey || dragLineKey === l.key) return;
     const lead = altIndex()[l.key] || l.key;
+    const keepTop = row.getBoundingClientRect().top;
     nestAlt(dragLineKey, l.key);
     dragLineKey = null;
     openAlts.delete(lead);
     renderUnified();
+    const again = document.querySelector('[data-k="' + lead + '"]');
+    if(again){
+      const d = again.getBoundingClientRect().top - keepTop;
+      if(Math.abs(d) > 0.5) window.scrollBy(0, d);
+    }
     focusAlt(lead);
   };
   row.addEventListener("dragover", onOver);
@@ -4562,10 +4563,16 @@ function renderPhase2(){
       if(!dragP2 || dragP2 === l.key) return;
       if(z === "nest"){
         const lead = altIndex()[l.key] || l.key;
+        const keepTop = row.getBoundingClientRect().top;
         nestAlt(dragP2, l.key);
         dragP2 = null;
         openAlts.delete(lead);
         renderPhase2();
+        const again = document.querySelector('#phase2List [data-k="' + lead + '"]');
+        if(again){
+          const d = again.getBoundingClientRect().top - keepTop;
+          if(Math.abs(d) > 0.5) window.scrollBy(0, d);
+        }
         if(document.getElementById("unifiedList")) renderUnified();
         focusAlt(lead);
         return;
@@ -5560,7 +5567,7 @@ document.getElementById("importFile").addEventListener("change", (e)=>{
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V2.09', ROOT='../';
+  var BUILD='V2.10', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

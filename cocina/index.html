@@ -103,7 +103,7 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;',
 const URL0='https://qtnqupcfgooazjzkpmtx.supabase.co', KEY='sb_publishable_brvDWgh8e_IrS8NWDvt7xg_rbL2dqcd';
 const sbc=window.supabase?window.supabase.createClient(URL0,KEY):null;
 async function cab(){ try{ if(!sbc) return null; const {data:{session}}=await sbc.auth.getSession(); return session?{apikey:KEY,Authorization:'Bearer '+session.access_token}:null; }catch(e){ return null; } }
-let R=[], U={compra:[],desp:[],menu:{},top:[],pzc:[]}, V='rec', Q='', TAG='', conSesion=true, cargado=false;
+let R=[], U={compra:[],desp:[],menu:{},top:[],pzc:[],txt:{}}, V='rec', Q='', TAG='', conSesion=true, cargado=false;
 try{ R=JSON.parse(localStorage.getItem('dgp-cocina')||'[]'); U=Object.assign(U,JSON.parse(localStorage.getItem('dgp-cocina-u')||'{}')); V=localStorage.getItem('dgp-cocina-v')||'rec'; }catch(e){}
 function cache(){ try{ localStorage.setItem('dgp-cocina',JSON.stringify(R)); localStorage.setItem('dgp-cocina-u',JSON.stringify(U)); }catch(e){} }
 /* ---------- servidor ---------- */
@@ -114,10 +114,10 @@ let haySrvPz=false;
 function syncPZC(){ U.pzc=PZC; guardaU('pzc'); }
 async function cargar(){
   const a=await api('recetas?select=*&order=titulo.asc'); if(a){ R=a; conSesion=true; }
-  const u=await api('ui_estado?clave=in.(cocina_compra,cocina_despensa,cocina_menu,cocina_toppings,cocina_pizzas)&select=clave,valor');
-  if(u){ u.forEach(x=>{ if(x.clave==='cocina_compra') U.compra=x.valor||[]; if(x.clave==='cocina_despensa') U.desp=x.valor||[]; if(x.clave==='cocina_menu') U.menu=x.valor||{}; if(x.clave==='cocina_toppings') U.top=x.valor||[]; if(x.clave==='cocina_pizzas'){ PZC=x.valor||[]; haySrvPz=true; } }); if(!haySrvPz&&PZC.length) syncPZC(); if(!(u.some(x=>x.clave==='cocina_toppings'))&&(U.top||[]).length) guardaU('top'); }
+  const u=await api('ui_estado?clave=in.(cocina_compra,cocina_despensa,cocina_menu,cocina_toppings,cocina_pizzas,cocina_textos)&select=clave,valor');
+  if(u){ u.forEach(x=>{ if(x.clave==='cocina_compra') U.compra=x.valor||[]; if(x.clave==='cocina_despensa') U.desp=x.valor||[]; if(x.clave==='cocina_menu') U.menu=x.valor||{}; if(x.clave==='cocina_toppings') U.top=x.valor||[]; if(x.clave==='cocina_textos') U.txt=x.valor||{}; if(x.clave==='cocina_pizzas'){ PZC=x.valor||[]; haySrvPz=true; } }); if(!haySrvPz&&PZC.length) syncPZC(); if(!(u.some(x=>x.clave==='cocina_toppings'))&&(U.top||[]).length) guardaU('top'); }
   cargado=true; cache(); pintar(); }
-const tU={}; function guardaU(k){ cache(); clearTimeout(tU[k]); tU[k]=setTimeout(()=>{ const clave={compra:'cocina_compra',desp:'cocina_despensa',menu:'cocina_menu',top:'cocina_toppings',pzc:'cocina_pizzas'}[k];
+const tU={}; function guardaU(k){ cache(); clearTimeout(tU[k]); tU[k]=setTimeout(()=>{ const clave={compra:'cocina_compra',desp:'cocina_despensa',menu:'cocina_menu',top:'cocina_toppings',pzc:'cocina_pizzas',txt:'cocina_textos'}[k];
   api('ui_estado?on_conflict=clave',{m:'POST',h:{Prefer:'resolution=merge-duplicates,return=minimal'},b:{clave,valor:U[k],actualizado:new Date().toISOString()}}); },500); }
 async function guardaR(r){ r.actualizado=new Date().toISOString(); const cuerpo={tipo:r.tipo,titulo:r.titulo,etiquetas:r.etiquetas,raciones:r.raciones,tiempo:r.tiempo,ingredientes:r.ingredientes,pasos:r.pasos,notas:r.notas,fav:!!r.fav,actualizado:r.actualizado};
   if(r.id){ const i=R.findIndex(x=>x.id===r.id); if(i>=0) R[i]=r; cache(); await api('recetas?id=eq.'+r.id,{m:'PATCH',b:cuerpo,h:{Prefer:'return=minimal'}}); return r; }
@@ -195,28 +195,40 @@ try{ Object.assign(EL,JSON.parse(localStorage.getItem('dgp-cocina-pz-el')||'{}')
 function guardaEL(){ try{ localStorage.setItem('dgp-cocina-pz-el',JSON.stringify(EL)); }catch(e){} }
 const DUR={1:300,2:600,3:900,4:180,5:1200,6:300};
 function mmss(s){ s=Math.max(0,Math.ceil(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
-function pasosEL(){ const c=pzCalc(), p10=c.harina*0.1;
- return [
- {t:'Mezclado',d:'3-5 minutos',l:['Introducir <b>'+f0(c.agua)+' g</b> de agua en un recipiente.','Disolver <b>'+f1(c.sal)+' g</b> de sal.','Añadir aproximadamente el 10 % de la harina (<b>'+f0(p10)+' g</b>).','Incorporar <b>'+f2(c.lev)+' g</b> de levadura seca.','Añadir progresivamente el resto de la harina (<b>'+f0(c.harina-p10)+' g</b>, hasta '+f0(c.harina)+' g en total).','Mezclar hasta integrar todos los ingredientes.']},
- {t:'Primer amasado',d:'8-10 minutos',l:['Amasar manualmente, estirando y plegando la masa.','Trabajar hasta conseguir una masa homogénea y elástica.','Evitar añadir harina innecesariamente.','Temperatura final de la masa: <b>23-25 °C</b>.','Si está pegajosa, reposar 15 minutos y amasar 2-3 minutos.']},
- {t:'Primer reposo',d:'15 minutos',l:['Dejar la masa tapada a temperatura ambiente.','Permitir que el gluten se relaje.']},
- {t:'Segundo amasado',d:'2-3 minutos',l:['Amasar brevemente para mejorar la estructura.','Si la masa ya está lisa y elástica, omitir este amasado.']},
- {t:'Segundo reposo',d:'15-20 minutos',l:['Dejar reposar la masa tapada a temperatura ambiente.']},
- {t:'División y boleado',d:'3-5 minutos',l:['Dividir la masa en <b>'+PZ.n+' bolas de '+PZ.g+' g</b> (total '+f0(c.total)+' g).','Formar bolas individuales con la superficie ligeramente tensada.','Evitar tensar demasiado las bolas.','Introducirlas en recipientes individuales tapados.']},
- {t:'Fermentación en frigorífico',d:PZ.t+' horas',l:['Introducir los recipientes en el frigorífico a 3-4 °C.','Fermentar durante <b>'+PZ.t+' horas</b>.','No volver a amasar ni desgasificar durante la fermentación.'],fr:1}]; }
+const DEFS={
+'tx-e0':['Agua: {agua} g','Sal: {sal} g (disolver)','Harina: {h10} g','Levadura: {lev} g','Resto de harina: {hr} g, poco a poco','Mezclar hasta integrar'],
+'tx-e1':['Estirar y plegar','Masa lisa y elástica','Sin añadir harina','Masa a 23-25 °C','Si está pegajosa: reposo 15 min y amasar 2-3 min'],
+'tx-e2':['Tapada, a temperatura ambiente'],
+'tx-e3':['Amasar brevemente','Si ya está lisa y elástica, omitir'],
+'tx-e4':['Tapada, a temperatura ambiente'],
+'tx-e5':['{n} bolas de {g} g','Sin tensar demasiado','Cada una en recipiente tapado'],
+'tx-e6':['Frigorífico a 3-4 °C, {t} h','No amasar ni desgasificar'],
+'tx-ecg':['# Congelación','12 h en frigorífico a 3-4 °C','Un recipiente hermético aceitado por bola','Congelar a -18 °C, hasta 3 meses','# Descongelación','Frigorífico 12-24 h','Tapadas a temperatura ambiente 2-4 h','Estirar cuando estén aireadas y relajadas','Al descongelar en el frigorífico sigue fermentando: 12-24 h más las 12 h previas'],
+'tx-m0':['Sacar del frigorífico 2-3 h antes de hornear','Tapadas hasta que estén relajadas'],
+'tx-m1':['Poca sémola fina o harina de maíz granulada, como Domino’s','Estirar desde el centro, sin rodillo','Conservar el aire del borde','Quitar el exceso de harina'],
+'tx-m3':['Ariete 3901: 430 °C, ambas resistencias','Precalentar 15-20 min','Piedra: 380-430 °C','Cocer 2 min, ajustar al dorado','Esperar a que la piedra recupere entre pizzas']};
+const TOKS=[['agua','agua'],['sal','sal'],['lev','levadura'],['harina','harina total'],['h10','10 % harina'],['hr','resto harina'],['n','nº bolas'],['g','peso bola'],['pt','masa total'],['t','h fermentación']];
+function tokens(){ const c=pzCalc(), h10=c.harina*0.1; return {agua:f0(c.agua),sal:f1(c.sal),lev:f2(c.lev),harina:f0(c.harina),h10:f0(h10),hr:f0(c.harina-h10),n:PZ.n,g:PZ.g,pt:f0(c.total),t:PZ.t}; }
+function lineasTxt(key){ const tk=tokens(), raw=(U.txt&&U.txt[key]!=null)?U.txt[key]:DEFS[key].join('\n'); return lineas(raw).map(l=>({h:/^#\s*/.test(l),t:esc(l.replace(/^#\s*/,'')).replace(/\{(\w+)\}/g,(m,k)=>tk[k]!=null?'<b>'+tk[k]+'</b>':m)})); }
+function lineasHtml(key){ return lineasTxt(key).map(x=>x.h?'<div class="meta" style="margin:10px 0 4px">'+x.t+'</div>':'<div>'+x.t+'</div>').join('')+'<button class="sm" data-te="'+key+'" style="margin:8px 8px 0 0">Editar texto</button>'; }
+function editTxt(key){ const sh=$('sheet'); sh.hidden=false; document.body.style.overflow='hidden'; const cur=(U.txt&&U.txt[key]!=null)?U.txt[key]:DEFS[key].join('\n');
+  sh.innerHTML='<div class="barra"><button id="x">←</button><b style="flex:1">Editar texto</b><button class="pri" id="ok">Guardar</button></div><div class="meta" style="margin-bottom:6px">Una frase por línea. Lo que va entre llaves se rellena solo con la calculadora. Una línea que empieza por # es un subtítulo.</div><textarea id="tx_t" style="min-height:220px">'+esc(cur)+'</textarea><div class="meta" style="margin-top:10px">Insertar valor:</div><div class="chips" style="flex-wrap:wrap">'+TOKS.map(x=>'<button class="chip" data-tok="'+x[0]+'">'+x[1]+'</button>').join('')+'</div><div class="fila" style="margin-top:10px"><button class="sm" id="rst">Restaurar original</button></div>';
+  sh.onclick=e=>{ const b=e.target.closest('button'); if(!b) return; if(b.id==='x') cerrar2();
+    else if(b.id==='ok'){ U.txt=U.txt||{}; U.txt[key]=$('tx_t').value; guardaU('txt'); cerrar2(); }
+    else if(b.id==='rst'){ if(U.txt) delete U.txt[key]; guardaU('txt'); cerrar2(); }
+    else if(b.dataset.tok){ const t=$('tx_t'), a=t.selectionStart||0, z=t.selectionEnd||0, v='{'+b.dataset.tok+'}'; t.value=t.value.slice(0,a)+v+t.value.slice(z); t.focus(); t.selectionStart=t.selectionEnd=a+v.length; } }; }
+function pasosEL(){ return [{t:'Mezclado',d:'3-5 minutos',key:'tx-e0'},{t:'Primer amasado',d:'8-10 minutos',key:'tx-e1'},{t:'Primer reposo',d:'15 minutos',key:'tx-e2'},{t:'Segundo amasado',d:'2-3 minutos',key:'tx-e3'},{t:'Segundo reposo',d:'15-20 minutos',key:'tx-e4'},{t:'División y boleado',d:'3-5 minutos',key:'tx-e5'},{t:'Fermentación en frigorífico',d:PZ.t+' horas',key:'tx-e6',fr:1}]; }
 function ltInput(d){ const z=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())+'T'+z(d.getHours())+':'+z(d.getMinutes()); }
 function finFerm(){ if(!EL.fridge) return ''; const d=new Date(new Date(EL.fridge).getTime()+PZ.t*3600e3); return d.toLocaleString('es-ES',{weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'}); }
 function pintaElab(){ const P=pasosEL(); const cur=P.findIndex((_,i)=>!EL.done[i]); const c=pzCalc();
- let h='<div class="meta" style="margin:6px 0 10px">'+PZ.n+' bolas de '+PZ.g+' g · harina '+f0(c.harina)+' g · agua '+f0(c.agua)+' g · sal '+f1(c.sal)+' g · levadura '+f2(c.lev)+' g · fermentación '+PZ.t+' h. Se ajusta a lo que elijas en la calculadora.</div>';
+ let h='<div class="meta" style="margin:6px 0 10px">Se ajusta a la calculadora.</div>';
  h+=P.map((p,i)=>{ const hecho=!!EL.done[i], act=i===cur, abierto=EL.open[i]!==undefined?EL.open[i]:act; const dur=DUR[i+1];
   return '<div class="paso2'+(hecho?' hecho':'')+(act?' act':'')+'"><div class="cab" data-st="'+i+'"><i>'+(hecho?'✓':i+1)+'</i><span><b>'+esc(p.t)+'</b><small>'+esc(p.d)+'</small></span><em>'+(abierto?'▾':'▸')+'</em></div>'+
-  (abierto?'<div class="cue">'+p.l.map(x=>'<div>• '+x+'</div>').join('')+
+  (abierto?'<div class="cue">'+lineasHtml(p.key)+
    (dur?'<div class="fila tmr"><b data-tm="'+(i+1)+'">'+mmss(tmRest(i+1,dur))+'</b><button class="sm" data-tg="'+(i+1)+'">'+(TM[i+1]&&TM[i+1].run?'Pausa':'Iniciar')+'</button><button class="sm" data-tr="'+(i+1)+'">↺</button></div>':'')+
    (p.fr?'<div class="campo"><label>Metido en el frigorífico</label><div class="fila"><input type="datetime-local" id="frI" value="'+(EL.fridge?ltInput(new Date(EL.fridge)):'')+'" style="flex:1"><button class="sm pri" data-fn="1">Ahora</button></div>'+(EL.fridge?'<div class="fin">Fermentación lista: <b>'+esc(finFerm())+'</b></div>':'<div class="meta">Pulsa «Ahora» al meter la masa para ver cuándo termina.</div>')+'</div>':'')+
    '<button class="'+(hecho?'':'pri ')+'sm" data-dn="'+i+'" style="margin-top:8px">'+(hecho?'Desmarcar':'✓ Hecho')+'</button></div>':'')+'</div>'; }).join('');
- const lst=a=>a.map((x,i)=>'<div>'+(i+1)+'. '+x+'</div>').join('');
- h+='<h3 style="margin:18px 0 4px;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--mut)">Si vas a congelar</h3>'+
- tarj('cg','❄','Congelación y descongelación','',false,'<div class="meta" style="margin-bottom:6px">Congelación</div>'+lst(['Fermentar las bolas <b>12 horas</b> en el frigorífico a 3-4 °C.','Guardarlas individualmente en recipientes herméticos ligeramente aceitados.','Congelar a <b>-18 °C</b>, preferiblemente hasta 3 meses.'])+'<div class="meta" style="margin:12px 0 6px">Descongelación</div>'+lst(['Pasar al frigorífico 12-24 horas, hasta descongelarlas.','Dejar tapadas a temperatura ambiente 2-4 horas, ajustando según su fermentación.','Estirar cuando estén aireadas y relajadas.'])+'<div class="fin" style="margin-top:12px">Al descongelar en el frigorífico, la fermentación continúa: 12-24 h, sumadas a las 12 h previas.</div>');
+ h+='<h3 style="margin:18px 0 4px;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--mut)">Si vas a congelar</h3>'+tarj('cg','❄','Congelación y descongelación','',false,lineasHtml('tx-ecg'));
  h+='<div class="meta" style="margin:10px 0">Los tiempos de amasado y reposo son orientaciones prácticas para elaboración manual doméstica, no requisitos oficiales de la AVPN.</div><button data-rs="1">Empezar de nuevo</button>';
  return h; }
 function tmRest(n,dur){ const t=TM[n]; if(!t) return dur; return t.run?(t.end-Date.now())/1000:t.rem; }
@@ -231,7 +243,7 @@ function tarj(key,num,tit,sub,defOpen,inner,fl){ fl=fl||{}; const ab=EL.open[key
   return '<div class="paso2'+(fl.hecho?' hecho':'')+(fl.act?' act':'')+'"><div class="cab" data-ac="'+key+'" data-def="'+(defOpen?1:0)+'"><i>'+(fl.hecho?'✓':num)+'</i><span><b>'+esc(tit)+'</b>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</span><em>'+(ab?'▾':'▸')+'</em></div>'+(ab?'<div class="cue">'+inner+'</div>':'')+'</div>'; }
 /* pizzas (catálogo) */
 const PIZZAS=[{id:'kebab',nombre:'Kebab',desc:'Carne de kebab, salsa kebab.',capas:['carne','zigzag'],base:250,ing:[{k:'carne',n:'Carne de kebab cocinada',c:'carne',g:90},{k:'salsa',n:'Salsa kebab',c:'salsa',g:30,antes:8}],
-  orden:[{t:'Extender <b>{salsa_antes} g</b> de salsa kebab.',f:'antes'},{t:'Repartir <b>{carne} g</b> de carne de kebab.',f:'antes'},{t:'Hornear.',f:'horno'},{t:'Añadir los <b>{salsa_desp} g</b> restantes de salsa kebab al sacar la pizza.',f:'despues'}]}];
+  orden:[{t:'<b>{salsa_antes} g</b> salsa kebab',f:'antes'},{t:'<b>{carne} g</b> carne de kebab',f:'antes'},{t:'Hornear',f:'horno'},{t:'<b>{salsa_desp} g</b> salsa kebab (resto)',f:'despues'}]}];
 let PZP={}, PZSEL='kebab'; try{ PZP=JSON.parse(localStorage.getItem('dgp-cocina-pz-pizzas')||'{}'); PZSEL=localStorage.getItem('dgp-cocina-pz-sel')||'kebab'; }catch(e){}
 function hacer(id){ PZSEL=id; EL.cm={}; EL.mdone={}; ['m0','m1','m2','m3'].forEach(k=>delete EL.open[k]); EL.open.m0=false; EL.open.m1=false; EL.open.m2=true; guardaEL(); guardaPZP(); PZV='mont'; pintar(); window.scrollTo(0,0); }
 function guardaPZP(){ try{ localStorage.setItem('dgp-cocina-pz-pizzas',JSON.stringify(PZP)); localStorage.setItem('dgp-cocina-pz-sel',PZSEL); }catch(e){} }
@@ -285,11 +297,12 @@ const CAPA={mozz:'mozz',tomate:'tomate',albahaca:'albahaca',carne:'carne',salsa:
 function buildCustom(id,nombre){ const ing=[], antes=[], desp=[], capas=[], names=[];
   TS.sel.forEach(k=>{ const T=TOPf().find(x=>x.k===k), g=tG(k), nm=T.n.toLowerCase(); capas.push(CAPA[k]||'otro:'+k+':'+T.t); names.push(nm);
     const it={k,n:T.n,c:T.t.toLowerCase(),g:g==null||g===''?null:+g,fase:tF(k)}; 
-    if(k==='salsa'){ if(it.g==null) it.g=30; it.antes=Math.min(it.g,tA()); ing.push(it); antes.push({t:'Extender <b>{salsa_antes} g</b> de salsa kebab.',f:'antes'}); desp.push({t:'Añadir los <b>{salsa_desp} g</b> restantes de salsa kebab al sacar la pizza.',f:'despues'}); return; }
+    if(k==='salsa'){ if(it.g==null) it.g=30; it.antes=Math.min(it.g,tA()); ing.push(it); antes.push({t:'<b>{salsa_antes} g</b> salsa kebab',f:'antes'}); desp.push({t:'<b>{salsa_desp} g</b> salsa kebab (resto)',f:'despues'}); return; }
     ing.push(it);
-    if(tF(k)==='antes') antes.push({t:it.g!=null?'Colocar <b>{'+k+'} g</b> de '+nm+'.':'Colocar '+nm+'.',f:'antes'});
-    else desp.push({t:it.g!=null?'Añadir <b>{'+k+'} g</b> de '+nm+' al sacar la pizza.':'Añadir '+nm+' al sacar la pizza.',f:'despues'}); });
-  const d=names.join(', '); return {id,custom:true,nombre:nombre||'Pizza a medida',desc:d.charAt(0).toUpperCase()+d.slice(1)+'.',capas,base:250,ing,orden:[].concat(antes,[{t:'Hornear.',f:'horno'}],desp)}; }
+    const tn=T.t.toLowerCase();
+    if(tF(k)==='antes') antes.push({t:it.g!=null?'<b>{'+k+'} g</b> '+tn:T.t,f:'antes'});
+    else desp.push({t:it.g!=null?'<b>{'+k+'} g</b> '+tn:T.t,f:'despues'}); });
+  const d=names.join(', '); return {id,custom:true,nombre:nombre||'Pizza a medida',desc:d.charAt(0).toUpperCase()+d.slice(1)+'.',capas,base:250,ing,orden:[].concat(antes,[{t:'Hornear',f:'horno'}],desp)}; }
 function editarPizza(p){ if(!TS.editId) TS.prev={sel:TS.sel,g:TS.g,f:TS.f,antes:TS.antes,nombre:TS.nombre}; TS.editId=p.id; TS.nombre=p.nombre; TS.sel=p.ing.map(i=>i.k); TS.g={}; TS.f={}; TS.antes=null;
   p.ing.forEach(i=>{ const b=baseDe(p,i); TS.g[i.k]=b==null||b===''?null:+b; if(i.k==='salsa'){ const a=baseDe(p,i,'antes'); TS.antes=a==null?8:+a; } else TS.f[i.k]=i.fase||(TOPf().find(x=>x.k===i.k)||{}).fase||'antes'; });
   guardaTS(); PZV='top'; pintar(); window.scrollTo(0,0); }
@@ -321,14 +334,14 @@ function comandaHtml(p,v){ EL.cm=EL.cm||{};
    '<div class="fila" style="margin-top:10px"><button class="sm" data-cmr="1">Desmarcar todo</button></div>'; }
 function prepHtml(){ const h=EL.hora||''; let r='';
   if(/^\d\d:\d\d$/.test(h)){ const m=(+h.slice(0,2))*60+(+h.slice(3)), fm=x=>{ const d=x<0, y=((x%1440)+1440)%1440; return String(Math.floor(y/60)).padStart(2,'0')+':'+String(y%60).padStart(2,'0')+(d?' (día anterior)':''); }; r='<div class="fin">Sácalas entre las <b>'+fm(m-180)+'</b> y las <b>'+fm(m-120)+'</b>.</div>'; }
-  return '<div>• Sacar las bolas del frigorífico <b>2-3 horas antes de hornear</b>.</div><div>• Mantenerlas tapadas hasta que estén relajadas y fáciles de estirar.</div><div class="campo"><label>¿A qué hora vas a hornear?</label><input type="time" data-hr="1" value="'+esc(h)+'" style="max-width:160px"></div>'+r; }
+  return '<div class="campo"><label>¿A qué hora vas a hornear?</label><input type="time" data-hr="1" value="'+esc(h)+'" style="max-width:160px"></div>'+r; }
 function pintaMontaje(){ EL.mdone=EL.mdone||{}; let p=todasPizzas().find(x=>x.id===PZSEL); if(!p){ p=PIZZAS[0]; PZSEL=p.id; } const v=valsPizza(p);
-  const S=[{t:'Preparación antes de hornear',s:'Sacar 2-3 horas antes',html:prepHtml()},
-  {t:'Estirado',s:'',l:['Utilizar poca sémola fina de trigo duro o harina de maíz granulada, como Domino’s.','Estirar manualmente desde el centro hacia los bordes, conservando el aire del borde.','No utilizar rodillo.','Retirar el exceso de harina.']},
+  const S=[{t:'Preparación antes de hornear',s:'Sacar 2-3 horas antes',html:lineasHtml('tx-m0')+prepHtml()},
+  {t:'Estirado',s:'',html:lineasHtml('tx-m1')},
   {t:'Colocación de toppings',s:'Pizza: '+p.nombre,html:comandaHtml(p,v)},
-  {t:'Horneado',s:'',l:['Ariete 3901 a <b>430 °C</b>, ambas resistencias.','Precalentar 15-20 minutos.','Piedra entre 380 y 430 °C.','Cocinar aproximadamente 2 minutos.','Comprobar la recuperación de temperatura entre pizzas.']}];
+  {t:'Horneado',s:'',html:lineasHtml('tx-m3')}];
   const cur=S.findIndex((_,i)=>!EL.mdone[i]);
-  return S.map((x,i)=>{ const hecho=!!EL.mdone[i], act=i===cur; return tarj('m'+i,i+1,x.t,x.s,act,(x.html||x.l.map(z=>'<div>• '+z+'</div>').join(''))+'<button class="'+(hecho?'':'pri ')+'sm" data-md="'+i+'" style="margin-top:8px">'+(hecho?'Desmarcar':'✓ Hecho')+'</button>',{hecho,act}); }).join('')+'<div class="fila" style="margin-top:10px"><button data-mrs="1">Empezar de nuevo</button></div>'; }
+  return S.map((x,i)=>{ const hecho=!!EL.mdone[i], act=i===cur; return tarj('m'+i,i+1,x.t,x.s,act,x.html+'<button class="'+(hecho?'':'pri ')+'sm" data-md="'+i+'" style="margin-top:8px">'+(hecho?'Desmarcar':'✓ Hecho')+'</button>',{hecho,act}); }).join('')+'<div class="fila" style="margin-top:10px"><button data-mrs="1">Empezar de nuevo</button></div>'; }
 function calcPizza(){ if(!$('pzN')) return; const c=pzCalc(); $('pzN').textContent=PZ.n; $('pzH').value=PZ.h; $('pzHv').textContent=String(PZ.h).replace('.',',')+' %';
   document.querySelectorAll('#pzG button').forEach(b=>b.classList.toggle('on',+b.dataset.g===PZ.g)); document.querySelectorAll('#pzT button').forEach(b=>b.classList.toggle('on',+b.dataset.t===PZ.t));
   $('pzR').innerHTML='<div><small>Harina de fuerza Gallo</small><b>'+f0(c.harina)+' g</b></div><div><small>Agua</small><b>'+f0(c.agua)+' g</b></div><div><small>Sal</small><b>'+f1(c.sal)+' g</b></div><div><small>Levadura seca</small><b>'+f2(c.lev)+' g</b></div><div><small>Peso total de la masa</small><b>'+f0(c.total)+' g</b></div><div><small>Bolas</small><b>'+PZ.n+' × '+PZ.g+' g</b></div><div class="full"><small>Fermentación en frigorífico</small><b>'+PZ.t+' horas</b></div>';
@@ -397,6 +410,7 @@ $('main').onclick=e=>{ if(V==='pizza'){ const tp=e.target.closest('[data-tp]'); 
   if(b.dataset.cmr){ EL.cm={}; guardaEL(); pintar(); return; }
   if(b.dataset.tu){ const [k,d]=b.dataset.tu.split('|'), i=TS.sel.indexOf(k), j=i+(+d); if(i>=0&&j>=0&&j<TS.sel.length){ TS.sel.splice(i,1); TS.sel.splice(j,0,k); guardaTS(); pintar(); } return; }
   if(b.dataset.tf){ const k=b.dataset.tf; TS.f[k]=tF(k)==='antes'?'despues':'antes'; guardaTS(); pintar(); return; }
+  if(b.dataset.te){ editTxt(b.dataset.te); return; }
   if(b.dataset.nt){ formTopping(); return; }
   if(b.dataset.nte){ formTopping((U.top||[]).find(x=>x.k===b.dataset.nte)); return; }
   if(b.dataset.ntd){ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='¿Seguro?'; return; } const k=b.dataset.ntd; U.top=(U.top||[]).filter(x=>x.k!==k); TS.sel=TS.sel.filter(x=>x!==k); guardaU('top'); guardaTS(); pintar(); return; }
@@ -438,7 +452,7 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&$('sheet
 <script>
 /* Actualización automática */
 (function(){
-  var BUILD='V2.08', ROOT='../';
+  var BUILD='V2.09', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

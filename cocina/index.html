@@ -516,7 +516,8 @@ $('main').onclick=e=>{ if(V==='pizza'){ const tp=e.target.closest('[data-tp]'); 
   if(b.dataset.nte){ formTopping(TOPf().find(x=>x.k===b.dataset.nte)); return; }
   if(b.dataset.pdp){ const [id,j]=b.dataset.pdp.split('|'), o=PEDIDOS.find(x=>x.id===id), it=o&&o.items[+j]; if(!it) return;
     if(it.tipo==='medida'){ const ks=(it.tops||[]).filter(k=>TOPf().some(x=>x.k===k)); TS.sel=ks; TS.g={}; TS.f={}; TS.u={}; PZTMP=buildCustom('tmp','Pedido de '+o.nombre); guardaTS(); hacer('tmp'); } else if(todasPizzas().some(x=>x.id===it.id)) hacer(it.id); return; }
-  if(b.dataset.pdc){ const L=necesarioPedidos(); U.compra=U.compra||[]; L.forEach(x=>{ const t=x.n+(x.gOk&&x.g?' ('+fmtQ(Math.round(x.g),x.u)+')':''); if(!U.compra.some(c=>!c.ok&&c.t===t)) U.compra.push({t,ok:false}); }); guardaU('compra'); b.textContent='✓ Añadido a la compra'; b.disabled=true; return; }
+  if(b.dataset.pdc){ const L=necesarioPedidos(); U.compra=U.compra||[]; L.forEach(x=>{ const t=x.n+(x.gOk&&x.g?' ('+fmtQ(Math.round(x.g),x.u)+')':''); if(!U.compra.some(c=>!c.ok&&c.t===t)) U.compra.push({t,ok:false}); }); guardaU('compra'); b.textContent='✓ Añadido · Ver la lista de la compra'; b.dataset.pdc=''; b.dataset.vcl='1'; return; }
+  if(b.dataset.vcl){ V='compra'; pintar(); $('main').scrollTop=0; return; }
   if(b.dataset.pds){ const id=b.dataset.pds; PEDIDOS=PEDIDOS.filter(x=>x.id!==id); api('pedidos?id=eq.'+id,{m:'PATCH',b:{estado:'servido'},h:{Prefer:'return=minimal'}}); pintar(); return; }
   if(b.dataset.pfx){ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='¿Seguro?'; return; } delete U.fotos[b.dataset.pfx]; guardaU('fotos'); pintar(); return; }
   if(b.dataset.ntd){ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='¿Seguro? Toca otra vez'; return; } delTop(b.dataset.ntd); pintar(); return; }
@@ -563,7 +564,7 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&$('sheet
 <script>
 /* Actualización automática */
 (function(){
-  var BUILD='V2.47', ROOT='../';
+  var BUILD='V2.48', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

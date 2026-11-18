@@ -214,7 +214,7 @@ function tarj(key,num,tit,sub,defOpen,inner,fl){ fl=fl||{}; const ab=EL.open[key
   return '<div class="paso2'+(fl.hecho?' hecho':'')+(fl.act?' act':'')+'"><div class="cab" data-ac="'+key+'" data-def="'+(defOpen?1:0)+'"><i>'+(fl.hecho?'✓':num)+'</i><span><b>'+esc(tit)+'</b>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</span><em>'+(ab?'▾':'▸')+'</em></div>'+(ab?'<div class="cue">'+inner+'</div>':'')+'</div>'; }
 /* pizzas (catálogo) */
 const PIZZAS=[{id:'kebab',nombre:'Kebab',desc:'Carne de kebab, salsa kebab.',capas:['carne','zigzag'],base:250,ing:[{k:'carne',n:'Carne de kebab cocinada',c:'carne',g:90},{k:'salsa',n:'Salsa kebab',c:'salsa',g:30,antes:8}],
-  orden:[{t:'Estirar la masa.'},{t:'Extender <b>{salsa_antes} g</b> de salsa kebab.',f:'antes'},{t:'Repartir <b>{carne} g</b> de carne de kebab.',f:'antes'},{t:'Hornear.',f:'horno'},{t:'Añadir los <b>{salsa_desp} g</b> restantes de salsa kebab al sacar la pizza.',f:'despues'}]}];
+  orden:[{t:'Extender <b>{salsa_antes} g</b> de salsa kebab.',f:'antes'},{t:'Repartir <b>{carne} g</b> de carne de kebab.',f:'antes'},{t:'Hornear.',f:'horno'},{t:'Añadir los <b>{salsa_desp} g</b> restantes de salsa kebab al sacar la pizza.',f:'despues'}]}];
 let PZP={}, PZSEL='kebab'; try{ PZP=JSON.parse(localStorage.getItem('dgp-cocina-pz-pizzas')||'{}'); PZSEL=localStorage.getItem('dgp-cocina-pz-sel')||'kebab'; }catch(e){}
 function hacer(id){ PZSEL=id; EL.cm={}; EL.mdone={}; ['m0','m1','m2','m3'].forEach(k=>delete EL.open[k]); EL.open.m0=false; EL.open.m1=false; EL.open.m2=true; guardaEL(); guardaPZP(); PZV='mont'; pintar(); window.scrollTo(0,0); }
 function guardaPZP(){ try{ localStorage.setItem('dgp-cocina-pz-pizzas',JSON.stringify(PZP)); localStorage.setItem('dgp-cocina-pz-sel',PZSEL); }catch(e){} }
@@ -245,12 +245,12 @@ function svgPizza(p,peq){ const R=rng(11), cx=220, cy=182, RX=168, RY=140, IX=14
     o+='<g clip-path="url(#cl'+u+')"><path d="'+d+'" transform="translate(1.5 3)" fill="none" stroke="rgba(0,0,0,.22)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="'+d+'" fill="none" stroke="#fff6e4" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round" opacity=".97"/></g>'; }
   if(p.capas.includes('albahaca')){ for(let k=0;k<6;k++){ const x=cx+(R()*2-1)*IX*.7, y=cy+(R()*2-1)*IY*.7, r=f(R()*180); o+='<g transform="translate('+f(x)+' '+f(y)+') rotate('+r+')"><ellipse rx="17" ry="9" fill="#2f7d32" stroke="#1f5c24" stroke-width="1"/><line x1="-14" y1="0" x2="14" y2="0" stroke="#7cc27e" stroke-width="1.4" opacity=".8"/></g>'; } }
   return o+'</svg>'; }
-function pintaPizzas(){ return '<div class="meta" style="margin-bottom:8px">Cantidades para una masa de <b>'+PZ.g+' g</b> y <b>'+PZ.n+'</b> '+(PZ.n===1?'pizza':'pizzas')+', según la calculadora.</div>'+catalogo().map(p=>{ const v=valsPizza(p);
+function pintaPizzas(){ return catalogo().map(p=>{ const v=valsPizza(p);
   const ings='<h3>Ingredientes por pizza</h3>'+p.ing.map(i=>'<div class="ln2"><span>'+esc(i.n)+'</span><b>'+(v[i.k]==null?'a ojo':v[i.k]+' g')+'</b></div>'+(i.antes!=null&&v[i.k]!=null?'<div class="ln2 sub"><span>· antes de hornear</span><b>'+v[i.k+'_antes']+' g</b></div><div class="ln2 sub"><span>· después de hornear</span><b>'+v[i.k+'_desp']+' g</b></div>':'')).join('')+'<div class="meta">Para '+PZ.n+' '+(PZ.n===1?'pizza':'pizzas')+': '+p.ing.filter(i=>v[i.k]!=null).map(i=>esc(i.c)+' '+(v[i.k]*PZ.n)+' g').join(' · ')+'</div>';
   const ord='<h3>Orden de colocación</h3>'+p.orden.map((o,k)=>'<div class="ord"><i>'+(k+1)+'</i><span>'+pasoTxt(o.t,v)+(o.f?' <em class="fase '+o.f+'">'+FASE[o.f]+'</em>':'')+'</span></div>').join('');
   const ed='<h3>Cantidades base (masa de '+p.base+' g)</h3>'+p.ing.map(i=>'<div class="ln2"><span>'+esc(i.n)+'</span><input type="number" inputmode="decimal" step="1" min="0" data-bk="'+p.id+'|'+i.k+'" value="'+(baseDe(p,i)==null?'':baseDe(p,i))+'" placeholder="a ojo"> g</div>'+(i.antes!=null?'<div class="ln2 sub"><span>· antes de hornear</span><input type="number" inputmode="decimal" step="1" min="0" data-bk="'+p.id+'|'+i.k+'_antes" value="'+baseDe(p,i,'antes')+'"> g</div>':'')).join('')+'<div class="fila" style="margin-top:8px"><button class="sm" data-bkr="'+p.id+'">Valores iniciales</button><button class="sm'+' pri" data-sel="'+p.id+'">Hacer ahora</button>'+(p.custom?'<button class="sm" data-pdel="'+p.id+'" style="color:var(--neg)">Borrar</button>':'')+'</div>';
   const k='p-'+p.id, ab=EL.open[k]!==undefined?EL.open[k]:false;
-  return '<div class="menu"><div class="mrow" data-ac="'+k+'" data-def="0"><div class="mt"><b>'+esc(p.nombre)+'</b><span class="d">'+esc(p.desc)+'</span><span class="meta">Masa de '+PZ.g+' g · '+(ab?'▾':'▸')+'</span></div><div class="th">'+svgPizza(p,true)+'</div></div>'+(ab?'<div class="mdet"><div class="big">'+svgPizza(p,false)+'</div>'+ings+ord+ed+'</div>':'')+'</div>'; }).join(''); }
+  return '<div class="menu"><div class="mrow" data-ac="'+k+'" data-def="0"><div class="mt"><b>'+esc(p.nombre)+'</b><span class="d">'+esc(p.desc)+'</span><span class="meta">'+(ab?'▾':'▸')+'</span></div><div class="th">'+svgPizza(p,true)+'</div></div>'+(ab?'<div class="mdet"><div class="big">'+svgPizza(p,false)+'</div>'+ings+ord+ed+'</div>':'')+'</div>'; }).join(''); }
 /* toppings: selección y pizza a medida */
 const TOP=[{k:'mozz',t:'Mozzarella fresca',n:'Mozzarella fresca',fase:'antes',g:null,l:['Cortar en tiras.','Escurrir 1-2 horas en un colador dentro de la nevera.']},
  {k:'tomate',t:'Tomate',n:'Tomate',fase:'antes',g:null,l:['Si está muy líquido, escurrir 5-10 minutos en un colador fino.']},
@@ -270,7 +270,7 @@ function buildCustom(id,nombre){ const ing=[], antes=[], desp=[], capas=[], name
     ing.push(it);
     if(tF(k)==='antes') antes.push({t:it.g!=null?'Colocar <b>{'+k+'} g</b> de '+nm+'.':'Colocar '+nm+'.',f:'antes'});
     else desp.push({t:it.g!=null?'Añadir <b>{'+k+'} g</b> de '+nm+' al sacar la pizza.':'Añadir '+nm+' al sacar la pizza.',f:'despues'}); });
-  const d=names.join(', '); return {id,custom:true,nombre:nombre||'Pizza a medida',desc:d.charAt(0).toUpperCase()+d.slice(1)+'.',capas,base:250,ing,orden:[{t:'Estirar la masa.'}].concat(antes,[{t:'Hornear.',f:'horno'}],desp)}; }
+  const d=names.join(', '); return {id,custom:true,nombre:nombre||'Pizza a medida',desc:d.charAt(0).toUpperCase()+d.slice(1)+'.',capas,base:250,ing,orden:[].concat(antes,[{t:'Hornear.',f:'horno'}],desp)}; }
 function pintaToppings(){ const n=TS.sel.length;
   let h='<div class="meta" style="margin-bottom:8px">Toca <b>+</b> en los que quieras para montar una pizza a medida.</div>'+TOP.map(T=>{ const i=TS.sel.indexOf(T.k), on=i>=0, key='t'+T.k, ab=EL.open[key]!==undefined?EL.open[key]:false;
     return '<div class="paso2'+(on?' act':'')+'"><div class="cab" data-ac="'+key+'" data-def="0"><button class="selb'+(on?' on':'')+'" data-tp="'+T.k+'" aria-label="Elegir">'+(on?(i+1):'+')+'</button><span><b>'+esc(T.t)+'</b>'+(on?'<small>Elegido</small>':'')+'</span><em>'+(ab?'▾':'▸')+'</em></div>'+(ab?'<div class="cue">'+T.l.map(x=>'<div>• '+x+'</div>').join('')+'</div>':'')+'</div>'; }).join('');
@@ -399,7 +399,7 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&$('sheet
 <script>
 /* Actualización automática */
 (function(){
-  var BUILD='V2.04', ROOT='../';
+  var BUILD='V2.05', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

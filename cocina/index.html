@@ -131,7 +131,8 @@ let haySrvPz=false;
 let PEDIDOS=[], tCarta=0;
 const ITA={de:'di',del:'del',y:'e',con:'con',el:'il',la:'la',los:'i',las:'le',al:'al',sin:'senza',queso:'formaggio',quesos:'formaggi',salsa:'salsetta',tomate:'pomodoro',tomates:'pomodori',casero:'della casa',casera:'della casa',fresca:'fresca',fresco:'fresco',negras:'nere',negra:'nera',negro:'nero',verdes:'verdi',verde:'verde',alemana:'tedesca',aleman:'tedesco',frito:'fritto',frita:'fritta',jamon:'prosciutto',york:'di york',serrano:'serranissimo',champinones:'funghetti',champinon:'funghetto',setas:'funghi',seta:'fungo',cebolla:'cipollina',caramelizada:'caramellata',pimiento:'peperone',pimientos:'peperoni',rojo:'rosso',atun:'tonno',aceitunas:'olivette',aceituna:'olivetta',albahaca:'basilicco',oregano:'origano',pina:'ananasso',pollo:'pollo',ternera:'vitello',cerdo:'maiale',huevo:'uovo',nata:'panna',alcachofas:'carciofini',alcachofa:'carciofino',bacon:'bacone',beicon:'bacone',chorizo:'chorizzo',salchicha:'salsiccia',salchichas:'salsicce',kebab:'kebabbo',barbacoa:'barbecuccia',cheddar:'cheddarino',tranchetes:'tranchettini',maiz:'maisetto',rucula:'rucola',gambas:'gamberetti',anchoas:'acciughe',ajo:'aglio',picante:'piccante',miel:'miele',carne:'carne',roquefort:'roquefortino',cabra:'capra',azul:'azzurro',calabacin:'zucchina',berenjena:'melanzana',espinacas:'spinaci',patata:'patata',trufa:'tartufo',aceite:'olio',oliva:'oliva',mozzarella:'mozzarellona',parmesano:'parmigiano',burrata:'burratissima',salami:'salamino',pepperoni:'peperonzino',lomo:'lonzino',pavo:'tacchino',ricotta:'ricotta',provolone:'provolone',gorgonzola:'gorgonzola',cebollino:'erba cipollina'};
 const sinT=w=>w.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-function ita(t){ const w=String(t||'').split(/(\s+|,|\.)/); let out=w.map(x=>{ const k=sinT(x); return ITA[k]!==undefined?ITA[k]:x; }).join('').replace(/\s+/g,' ').trim(); return out.charAt(0).toUpperCase()+out.slice(1); }
+const FRASES=[[/tomate\s+frito/gi,'salsa di pomodoro']];
+function ita(t){ t=FRASES.reduce((x,r)=>x.replace(r[0],r[1]),String(t||'')); const w=String(t||'').split(/(\s+|,|\.)/); let out=w.map(x=>{ const k=sinT(x); return ITA[k]!==undefined?ITA[k]:x; }).join('').replace(/\s+/g,' ').trim(); return out.charAt(0).toUpperCase()+out.slice(1); }
 const nomCarta=T=>(T.nc&&T.nc.trim())||ita(T.t);
 function pubCarta(){ clearTimeout(tCarta); tCarta=setTimeout(()=>{ try{ const F=U.fotos||{};
   const carta={act:new Date().toISOString(),
@@ -552,7 +553,7 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&$('sheet
 <script>
 /* Actualización automática */
 (function(){
-  var BUILD='V2.36', ROOT='../';
+  var BUILD='V2.37', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

@@ -432,7 +432,7 @@ function prepHtml(){ const h=EL.hora||''; let r='';
   return '<div class="campo"><label>¿A qué hora vas a hornear?</label><input type="time" data-hr="1" value="'+esc(h)+'" style="max-width:160px"></div>'+r; }
 function pintaMontaje(){ return pedidosHtml()+pintaMontaje0(); }
 function pintaMontaje0(){ EL.mdone=EL.mdone||{}; let p=todasPizzas().find(x=>x.id===PZSEL); if(!p){ p=PIZZAS[0]; PZSEL=p.id; } const v=valsPizza(p);
-  const S=[{t:'Preparación antes de hornear',s:'Sacar 2-3 horas antes',html:lineasHtml('tx-m0')+prepHtml()},
+  const S=[{t:'Preparación antes de hornear',s:'Sacar 2-3 horas antes',html:lineasHtml('tx-m0')+prepHtml()+'<div class="meta" style="margin:12px 0 4px">Cantidades AVPN por pizza (Margherita, disciplinare 2024)</div><div class="ln2"><span>Tomate pelado triturado</span><b>60-80 g</b></div><div class="ln2"><span>Mozzarella de búfala o fior di latte</span><b>80-100 g</b></div><div class="ln2"><span>Aceite de oliva virgen extra</span><b>6-7 g</b></div><div class="ln2"><span>Albahaca fresca</span><b>unas hojas</b></div><div class="meta" style="margin-top:6px">Marinara: tomate 70-100 g, ajo 1 diente (3 g), orégano 0,5 g, aceite 6-8 g.</div>'},
   {t:'Estirado',s:'',html:lineasHtml('tx-m1')},
   {t:'Colocación de toppings',s:'Pizza: '+p.nombre,html:comandaHtml(p,v)},
   {t:'Horneado',s:'',html:lineasHtml('tx-m3')}];
@@ -564,7 +564,7 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&$('sheet
 <script>
 /* Actualización automática */
 (function(){
-  var BUILD='V2.48', ROOT='../';
+  var BUILD='V2.49', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

@@ -13,11 +13,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--crema:#f4ecdf;--papel:#fbf7f0;--verde:#1e3a2b;--verde2:#2b5540;--terra:#b4432c;--terra2:#9a3622;--oro:#b8924a;--tinta:#2a211b;--gris:#7b6e62;--linea:rgba(42,33,27,.12)}
+:root{--crema:#f1d9bb;--papel:#fff7ec;--verde:#1e3a2b;--verde2:#2b5540;--terra:#b4432c;--terra2:#9a3622;--oro:#b8924a;--tinta:#2a211b;--gris:#7b6e62;--linea:rgba(42,33,27,.12)}
 *{box-sizing:border-box}
 html,body{margin:0;overscroll-behavior:none}
 html.sa{min-height:calc(100% + env(safe-area-inset-top))}
-body{background:var(--crema);color:var(--tinta);font:16px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+body{background:linear-gradient(180deg,#f4dfc3 0%,#eccba3 100%) fixed;color:var(--tinta);font:16px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;padding-bottom:calc(96px + env(safe-area-inset-bottom))}
 button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
 input,textarea{font:inherit;color:var(--tinta)}
 .serif{font-family:"Cormorant Garamond",Georgia,serif}
@@ -114,10 +114,10 @@ footer{text-align:center;color:var(--gris);font-size:.8rem;padding:10px 0 20px;l
   <div class="orn">✦</div>
   <p>Forni di pietra</p>
 </header>
-<nav class="seg"><div><button data-v="carta" class="on">La cartta</button><button data-v="crea">Fatte la tuya</button></div></nav>
+<nav class="seg"><div><button data-v="carta" class="on">La cartta</button><button data-v="crea">Hazzetela tú</button></div></nav>
 <main id="main"><div class="vacio">Preparando la cartta, un momentino…</div></main>
 <footer>Buon appetito, amichi</footer>
-<div class="barra" id="barra"><button id="verPedido"><span><span class="n" id="nPed">0</span>Vedere il mio pedidini</span><span>›</span></button></div>
+<div class="barra" id="barra"><button id="verPedido"><span><span class="n" id="nPed">0</span>Ver il mio pedidino</span><span>›</span></button></div>
 <div class="velo" id="velo"></div>
 <div class="hoja" id="hoja"></div>
 <div class="gracias" id="gracias"></div>
@@ -126,7 +126,7 @@ footer{text-align:center;color:var(--gris);font-size:.8rem;padding:10px 0 20px;l
 const URL0='https://qtnqupcfgooazjzkpmtx.supabase.co', KEY='sb_publishable_brvDWgh8e_IrS8NWDvt7xg_rbL2dqcd';
 const $=id=>document.getElementById(id), esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const TIPOS=['Carnes','Pescados','Quesos','Verduras','Frutas','Salsas','Hierbas y especias','Otros'];
-const TIT={Carnes:'Carnettas',Pescados:'Pescaditos del mare',Quesos:'Formaggios',Verduras:'Verdurinis',Frutas:'Fruttas',Salsas:'Salsettas','Hierbas y especias':'Erbettas e spezias',Otros:'Altri cosi'};
+const TIT={Carnes:'Carnettas',Pescados:'Pescaditos del mare',Quesos:'Quesinis',Verduras:'Verdurinis',Frutas:'Fruttas',Salsas:'Salsettas','Hierbas y especias':'Hierbettas y especias',Otros:'Otras cosettas'};
 let C={pizzas:[],toppings:[]}, V='carta', PED=[], SEL=[], NOMBRE_P='';
 try{ PED=JSON.parse(localStorage.getItem('pz-ped')||'[]'); }catch(e){}
 const guarda=()=>{ try{ localStorage.setItem('pz-ped',JSON.stringify(PED)); }catch(e){} };
@@ -138,26 +138,26 @@ function suma(id,d){ const p=C.pizzas.find(x=>x.id===id); let x=PED.find(q=>q.ti
   if(!x&&d>0){ x={tipo:'carta',id,nombre:p.nombre,n:0}; PED.push(x); } if(!x) return; x.n+=d; if(x.n<=0) PED=PED.filter(q=>q!==x); guarda(); pinta(); }
 
 function carta(){ if(!C.pizzas.length) return '<div class="vacio">La cartta sta arrivando, un momentino…</div>';
-  return '<div class="intro"><h2>La cartta</h2><p>Elegisci la tua pizza e mettila nel pedidini.</p></div><div class="carta">'+C.pizzas.map((p,i)=>{ const n=enPed(p.id);
+  return '<div class="intro"><h2>La cartta</h2><p>Elige la tua pizza e ponla nel pedidino.</p></div><div class="carta">'+C.pizzas.map((p,i)=>{ const n=enPed(p.id);
     return '<article class="pz" style="animation-delay:'+(i*60)+'ms"><div class="plato">'+(p.foto?'<img src="'+esc(p.foto)+'" alt="'+esc(p.nombre)+'" loading="lazy">':SVG0)+'</div><h3>'+esc(p.nombre)+'</h3>'+(p.desc&&!(p.ing&&p.ing.length)?'<div class="d">'+esc(p.desc)+'</div>':'')+(p.ing&&p.ing.length?'<div class="ing">'+p.ing.map(esc).join(' · ')+'</div>':'')+
       '<div class="pie">'+(n?'<div class="qty"><button data-m="'+esc(p.id)+'" aria-label="Togliere una">−</button><b>'+n+'</b><button data-p="'+esc(p.id)+'" aria-label="Un altra">+</button></div>':'<button class="btn" data-p="'+esc(p.id)+'">Me la pidino</button>')+'</div></article>'; }).join('')+'</div>'; }
 
-function crea(){ if(!C.toppings.length) return '<div class="vacio">Gli ingredientis stanno arrivando, un momentino…</div>';
+function crea(){ if(!C.toppings.length) return '<div class="vacio">Los ingredientinis están llegando, un momentino…</div>';
   const G=TIPOS.map(g=>[g,C.toppings.filter(t=>(t.tipo||'Otros')===g)]).filter(x=>x[1].length);
   const nombres=SEL.map(k=>(C.toppings.find(t=>t.k===k)||{}).t).filter(Boolean);
-  return '<div class="crea"><div class="intro"><h2>Fatte la tuya</h2><p>Scegli gli ingredientis e te la facciamo al tuo gustino.</p></div>'+
+  return '<div class="crea"><div class="intro"><h2>Hazzetela tú</h2><p>Elige los ingredientinis y te la hacemo al tuo gustino.</p></div>'+
     G.map(([g,ts])=>'<section class="grupo"><h4>'+esc(TIT[g]||g)+'</h4><div class="chips">'+ts.map(t=>'<button class="chip'+(SEL.includes(t.k)?' on':'')+'" data-t="'+esc(t.k)+'"><span class="ico">'+icono(t.o)+'</span>'+esc(t.t)+'</button>').join('')+'</div></section>').join('')+
-    '<div class="resumen">'+(nombres.length?'<div class="sel">'+nombres.map(esc).join(', ')+'</div>':'<div class="vac">Tocca gli ingredientis que ti piacciano.</div>')+
-    '<input id="nomP" placeholder="Ponle nombrini (opzionale)" maxlength="40" value="'+esc(NOMBRE_P)+'"><button class="btn env" id="addCrea" style="margin-top:0"'+(nombres.length?'':' disabled')+'>Mettere al pedidini</button></div></div>'; }
+    '<div class="resumen">'+(nombres.length?'<div class="sel">'+nombres.map(esc).join(', ')+'</div>':'<div class="vac">Toca los ingredientinis que te gustano.</div>')+
+    '<input id="nomP" placeholder="Ponle nombrini (opcionale)" maxlength="40" value="'+esc(NOMBRE_P)+'"><button class="btn env" id="addCrea" style="margin-top:0"'+(nombres.length?'':' disabled')+'>Meter al pedidino</button></div></div>'; }
 
 function pinta(){ document.querySelectorAll('.seg button').forEach(b=>b.classList.toggle('on',b.dataset.v===V));
   $('main').innerHTML=V==='carta'?carta():crea(); const n=nItems(); $('nPed').textContent=n; $('barra').classList.toggle('vis',n>0); }
 
 function abreHoja(){ const nm=(()=>{ try{ return localStorage.getItem('pz-nombre')||''; }catch(e){ return ''; } })();
-  $('hoja').innerHTML='<div class="asa"></div><h2>Il tuo pedidini</h2>'+(PED.length?PED.map((x,i)=>'<div class="lin"><div class="t"><b>'+esc(x.nombre)+'</b>'+(x.tipo==='medida'?'<small>'+esc(x.nombres.join(', '))+'</small>':'')+'</div><div class="qty"><button data-hm="'+i+'" aria-label="Togliere una">−</button><b>'+x.n+'</b><button data-hp="'+i+'" aria-label="Un altra">+</button></div></div>').join(''):'<div class="vacio">Ancora non hai eletto niente, amico.</div>')+
-    '<div class="campo"><label>Il tuo nombre</label><input id="nomC" maxlength="60" value="'+esc(nm)+'" placeholder="Per sapere di chi è la cosa" autocomplete="given-name"></div>'+
-    '<div class="campo"><label>Nota per la cucina</label><textarea id="nota" maxlength="300" placeholder="Opzionale, eh"></textarea></div>'+
-    '<button class="btn env" id="enviar"'+(PED.length?'':' disabled')+'>Mandare alla cucina</button><div class="err" id="err"></div>';
+  $('hoja').innerHTML='<div class="asa"></div><h2>Il tuo pedidino</h2>'+(PED.length?PED.map((x,i)=>'<div class="lin"><div class="t"><b>'+esc(x.nombre)+'</b>'+(x.tipo==='medida'?'<small>'+esc(x.nombres.join(', '))+'</small>':'')+'</div><div class="qty"><button data-hm="'+i+'" aria-label="Togliere una">−</button><b>'+x.n+'</b><button data-hp="'+i+'" aria-label="Un altra">+</button></div></div>').join(''):'<div class="vacio">Todavía no has elegido nientes, amico.</div>')+
+    '<div class="campo"><label>Il tuo nombre</label><input id="nomC" maxlength="60" value="'+esc(nm)+'" placeholder="Para sabere de quién es la cosa" autocomplete="given-name"></div>'+
+    '<div class="campo"><label>Nota para il cocinero</label><textarea id="nota" maxlength="300" placeholder="Opcionale, eh"></textarea></div>'+
+    '<button class="btn env" id="enviar"'+(PED.length?'':' disabled')+'>Mandar alla cocina</button><div class="err" id="err"></div>';
   $('velo').classList.add('vis'); $('hoja').classList.add('vis'); }
 function cierraHoja(){ $('velo').classList.remove('vis'); $('hoja').classList.remove('vis'); }
 
@@ -171,15 +171,15 @@ $('main').oninput=e=>{ if(e.target.id==='nomP') NOMBRE_P=e.target.value; };
 $('verPedido').onclick=abreHoja; $('velo').onclick=cierraHoja;
 $('hoja').onclick=async e=>{ const b=e.target.closest('button'); if(!b) return;
   if(b.dataset.hp||b.dataset.hm){ const i=+(b.dataset.hp||b.dataset.hm), x=PED[i]; if(!x) return; x.n+=b.dataset.hp?1:-1; if(x.n<=0) PED.splice(i,1); guarda(); pinta(); const nm=$('nomC').value, nt=$('nota').value; abreHoja(); $('nomC').value=nm; $('nota').value=nt; if(!PED.length) cierraHoja(); return; }
-  if(b.id==='enviar'){ const nom=$('nomC').value.trim(); if(!nom){ $('err').textContent='Mettici il tuo nombre, per favore.'; $('nomC').focus(); return; }
+  if(b.id==='enviar'){ const nom=$('nomC').value.trim(); if(!nom){ $('err').textContent='Ponme il tuo nombre, per favore.'; $('nomC').focus(); return; }
     b.disabled=true; b.textContent='Mandando…'; $('err').textContent='';
     try{ localStorage.setItem('pz-nombre',nom); }catch(e){}
     try{ const r=await rpc('pedir_pizza',{p_nombre:nom,p_items:PED.map(x=>x.tipo==='carta'?{tipo:'carta',id:x.id,nombre:x.nombre,n:x.n}:{tipo:'medida',nombre:x.nombre,tops:x.tops,nombres:x.nombres,n:x.n}),p_nota:$('nota').value.trim()||null});
       if(!r||!r.ok) throw new Error(r&&r.motivo);
       PED=[]; guarda(); cierraHoja(); pinta();
-      $('gracias').innerHTML='<div class="pre">Pedidini mandato</div><h2>Grazie mille, '+esc(nom)+'</h2><div class="orn" style="width:220px">✦</div><p>Il tuo pedidini già sta in cucina. Appena esce dal forno, è tutto tuo.</p><button class="btn" id="otra">Pedire un\'altra cosina</button>';
+      $('gracias').innerHTML='<div class="pre">Pedidino mandato</div><h2>Grazie mille, '+esc(nom)+'</h2><div class="orn" style="width:220px">✦</div><p>Il tuo pedidino ya está en la cocina. En cuanto sale del forno, è tutto tuyo.</p><button class="btn" id="otra">Pedir otra cosina</button>';
       $('gracias').classList.add('vis');
-    }catch(err){ b.disabled=false; b.textContent='Mandare alla cucina'; $('err').textContent='Mamma mia, non se ha mandato. Riprova.'; } } };
+    }catch(err){ b.disabled=false; b.textContent='Mandar alla cocina'; $('err').textContent='Mamma mia, no se ha mandato. Prueba otra vezzi.'; } } };
 $('gracias').onclick=e=>{ if(e.target.id==='otra') $('gracias').classList.remove('vis'); };
 
 async function carga(){ try{ const c=await rpc('carta_pizzeria'); if(c&&c.pizzas) C=construye(c); }catch(e){} pinta(); }
@@ -193,7 +193,7 @@ function construye(c){ const tu=c.toppings||[], esB=k=>TOP0.some(b=>b.k===k);
   const F=c.fotos||{};
   const pizzas=pz.map(p=>({id:p.id,nombre:p.nombre,desc:p.desc?ita(p.desc):'',ing:(p.ing||[]).map(i=>{ const T=tops.find(x=>x.k===i.k); return T?nom(T):ita(i.n); }),foto:F[p.id]||null}));
   return {pizzas,toppings}; }
-const ITA={de:'di',del:'del',y:'e',con:'con',el:'il',la:'la',los:'i',las:'le',al:'al',sin:'senza',queso:'quesino',quesos:'quesini',salsa:'salsetta',tomate:'tomatte',tomates:'tomatti',casero:'della casa',casera:'della casa',fresca:'fresca',fresco:'fresco',negras:'negrissime',negra:'negrissima',negro:'negrissimo',verdes:'verdi',verde:'verde',frito:'fritto',frita:'fritta',jamon:'jamonini',york:'york',serrano:'serranissimo',champinones:'champiñonini',champinon:'champiñonino',setas:'setini',seta:'setina',cebolla:'cebollini',caramelizada:'caramelizzata',pimiento:'pimientino',pimientos:'pimientini',rojo:'rossino',atun:'atunino',aceitunas:'aceitunini',aceituna:'aceitunina',albahaca:'albahachina',oregano:'oregano',pina:'piñatta',pollo:'pollini',ternera:'terneretta',cerdo:'cerdino',huevo:'huevino',nata:'natta',alcachofas:'alcachofini',alcachofa:'alcachofina',bacon:'bacone',beicon:'bacone',chorizo:'chorizzo',salchicha:'salchichini',salchichas:'salchichini',kebab:'kebabbo',barbacoa:'barbacoa',cheddar:'cheddarino',tranchetes:'tranchettini',maiz:'maizino',rucula:'rucola',gambas:'gambetti',anchoas:'anchoini',ajo:'ajetto',picante:'picantissimo',miel:'miele',carne:'carne',cocinada:'cocinatta',cocinado:'cocinatto',roquefort:'roquefortino',cabra:'cabrina',azul:'azzurro',calabacin:'calabacino',berenjena:'berenjenina',espinacas:'espinacchi',trufa:'truffa',aceite:'aceitte',mozzarella:'mozzarella',parmesano:'parmesano',burrata:'burrata',salami:'salamino',pepperoni:'pepperoni',lomo:'lomino',pavo:'pavino',cebollino:'cebollino'};
+const ITA={de:'di',del:'del',y:'e',con:'con',el:'il',la:'la',al:'al',sin:'sinni',queso:'quesino',quesos:'quesini',salsa:'salsetta',tomate:'tomatte',tomates:'tomatti',casero:'della casa',casera:'della casa',fresca:'fresca',fresco:'fresco',negras:'negrissime',negra:'negrissima',negro:'negrissimo',verdes:'verdi',verde:'verde',frito:'fritto',frita:'fritta',jamon:'jamonini',york:'york',serrano:'serranissimo',champinones:'champiñonini',champinon:'champiñonino',setas:'setini',seta:'setina',cebolla:'cebollini',caramelizada:'caramelizzata',pimiento:'pimientino',pimientos:'pimientini',rojo:'rossino',atun:'atunino',aceitunas:'aceitunini',aceituna:'aceitunina',albahaca:'albahachina',oregano:'oregano',pina:'piñatta',pollo:'pollini',ternera:'terneretta',cerdo:'cerdino',huevo:'huevino',nata:'natta',alcachofas:'alcachofini',alcachofa:'alcachofina',bacon:'bacone',beicon:'bacone',chorizo:'chorizzo',salchicha:'salchichini',salchichas:'salchichini',kebab:'kebabbo',barbacoa:'barbacoa',cheddar:'cheddarino',tranchetes:'tranchettini',maiz:'maizino',rucula:'rucola',gambas:'gambetti',anchoas:'anchoini',ajo:'ajetto',picante:'picantissimo',miel:'miele',carne:'carne',cocinada:'cocinatta',cocinado:'cocinatto',roquefort:'roquefortino',cabra:'cabrina',azul:'azulino',calabacin:'calabacino',berenjena:'berenjenina',espinacas:'espinacchi',trufa:'truffa',aceite:'aceitte',mozzarella:'mozzarella',parmesano:'parmesano',burrata:'burrata',salami:'salamino',pepperoni:'pepperoni',lomo:'lomino',pavo:'pavino',cebollino:'cebollino'};
 const sinT=w=>w.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 const FRASES=[[/tomate\s+frito/gi,'salsa di tomate']];
 function ita(t){ t=FRASES.reduce((x,r)=>x.replace(r[0],r[1]),String(t||'')); const out=String(t||'').split(/(\s+|,|\.)/).map(x=>{ const k=sinT(x); return ITA[k]!==undefined?ITA[k]:x; }).join('').replace(/\s+/g,' ').trim(); return out.charAt(0).toUpperCase()+out.slice(1); }
@@ -210,7 +210,7 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden) carga();
 <script>
 /* Actualización automática */
 (function(){
-  var BUILD='V2.40', ROOT='../';
+  var BUILD='V2.41', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

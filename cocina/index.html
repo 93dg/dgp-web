@@ -69,7 +69,7 @@ main{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch
 .ord{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--bd)}.ord i{flex:0 0 24px;height:24px;border-radius:50%;background:var(--s2);border:1px solid var(--bd);font-style:normal;text-align:center;font-size:.78rem;line-height:22px}.ord span{flex:1}
 .fase{display:inline-block;font-style:normal;font-size:.72rem;border-radius:999px;padding:0 8px;margin-left:4px;border:1px solid var(--bd);color:var(--mut)}.fase.antes{border-color:var(--ac);color:var(--ac)}.fase.despues{border-color:var(--pos);color:var(--pos)}
 .menu{border-bottom:1px solid var(--bd)}.mrow{display:flex;gap:14px;align-items:center;justify-content:space-between;padding:14px 2px;cursor:pointer}.mrow .mt{flex:1;min-width:0}.mrow b{display:block;font-size:1.1rem}.mrow .d{display:block;color:var(--mut);margin-top:2px}.mrow .meta{display:block;margin-top:4px}
-.th{flex:0 0 118px;background:#f1eee8;border-radius:14px;padding:4px;border:1px solid var(--bd)}.th .pzsvg{display:block;width:100%;height:auto}.big{background:#f1eee8;border-radius:16px;padding:8px;margin:2px 0 6px}.big .pzsvg{display:block;width:100%;height:auto}.mdet{padding:0 2px 14px}
+.th img,.big img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px}.big img{aspect-ratio:4/3}.fbtn{position:relative;overflow:hidden;display:inline-flex;align-items:center}.fbtn input{position:absolute;inset:0;left:0;top:0;width:100%;height:100%;opacity:0;font-size:40px}.th{flex:0 0 118px;background:#f1eee8;border-radius:14px;padding:4px;border:1px solid var(--bd)}.th .pzsvg{display:block;width:100%;height:auto}.big{background:#f1eee8;border-radius:16px;padding:8px;margin:2px 0 6px}.big .pzsvg{display:block;width:100%;height:auto}.mdet{padding:0 2px 14px}
 .selb{flex:0 0 32px;height:32px;min-height:0;padding:0;border-radius:50%;font-size:1.1rem;line-height:1}.selb.on{background:var(--ac);color:#000;border-color:var(--ac);font-weight:700}.paso2 .cab .selb+span{flex:1}
 .tsel{background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:10px 12px;margin:6px 0}
 .cm{display:flex;gap:12px;align-items:center;padding:14px 4px;border-bottom:1px solid var(--bd);font-size:1.12rem;cursor:pointer}.cm .bx{flex:0 0 30px;height:30px;border-radius:8px;border:2px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:1rem;color:#000}.cm.hecho{opacity:.45}.cm.hecho span{text-decoration:line-through}.cm.hecho .bx{background:var(--pos);border-color:var(--pos)}
@@ -130,10 +130,10 @@ let haySrvPz=false;
 function syncPZC(){ U.pzc=PZC; guardaU('pzc'); }
 async function cargar(){
   const a=await api('recetas?select=*&order=titulo.asc'); if(a){ R=a; conSesion=true; }
-  const u=await api('ui_estado?clave=in.(cocina_compra,cocina_despensa,cocina_menu,cocina_toppings,cocina_pizzas,cocina_textos,cocina_diario)&select=clave,valor');
-  if(u){ u.forEach(x=>{ if(x.clave==='cocina_compra') U.compra=x.valor||[]; if(x.clave==='cocina_despensa') U.desp=x.valor||[]; if(x.clave==='cocina_menu') U.menu=x.valor||{}; if(x.clave==='cocina_toppings') U.top=x.valor||[]; if(x.clave==='cocina_textos') U.txt=x.valor||{}; if(x.clave==='cocina_diario') U.diario=x.valor||[]; if(x.clave==='cocina_pizzas'){ PZC=x.valor||[]; haySrvPz=true; } }); if(!haySrvPz&&PZC.length) syncPZC(); if(!(u.some(x=>x.clave==='cocina_toppings'))&&(U.top||[]).length) guardaU('top'); }
+  const u=await api('ui_estado?clave=in.(cocina_compra,cocina_despensa,cocina_menu,cocina_toppings,cocina_pizzas,cocina_textos,cocina_diario,cocina_fotos)&select=clave,valor');
+  if(u){ u.forEach(x=>{ if(x.clave==='cocina_compra') U.compra=x.valor||[]; if(x.clave==='cocina_despensa') U.desp=x.valor||[]; if(x.clave==='cocina_menu') U.menu=x.valor||{}; if(x.clave==='cocina_toppings') U.top=x.valor||[]; if(x.clave==='cocina_textos') U.txt=x.valor||{}; if(x.clave==='cocina_diario') U.diario=x.valor||[]; if(x.clave==='cocina_fotos') U.fotos=x.valor||{}; if(x.clave==='cocina_pizzas'){ PZC=x.valor||[]; haySrvPz=true; } }); if(!haySrvPz&&PZC.length) syncPZC(); if(!(u.some(x=>x.clave==='cocina_toppings'))&&(U.top||[]).length) guardaU('top'); }
   cargado=true; cache(); pintar(); }
-const tU={}; function guardaU(k){ cache(); clearTimeout(tU[k]); tU[k]=setTimeout(()=>{ const clave={compra:'cocina_compra',desp:'cocina_despensa',menu:'cocina_menu',top:'cocina_toppings',pzc:'cocina_pizzas',txt:'cocina_textos',diario:'cocina_diario'}[k];
+const tU={}; function guardaU(k){ cache(); clearTimeout(tU[k]); tU[k]=setTimeout(()=>{ const clave={compra:'cocina_compra',desp:'cocina_despensa',menu:'cocina_menu',top:'cocina_toppings',pzc:'cocina_pizzas',txt:'cocina_textos',diario:'cocina_diario',fotos:'cocina_fotos'}[k];
   api('ui_estado?on_conflict=clave',{m:'POST',h:{Prefer:'resolution=merge-duplicates,return=minimal'},b:{clave,valor:U[k],actualizado:new Date().toISOString()}}); },500); }
 async function guardaR(r){ r.actualizado=new Date().toISOString(); const cuerpo={tipo:r.tipo,titulo:r.titulo,etiquetas:r.etiquetas,raciones:r.raciones,tiempo:r.tiempo,ingredientes:r.ingredientes,pasos:r.pasos,notas:r.notas,fav:!!r.fav,actualizado:r.actualizado};
   if(r.id){ const i=R.findIndex(x=>x.id===r.id); if(i>=0) R[i]=r; cache(); await api('recetas?id=eq.'+r.id,{m:'PATCH',b:cuerpo,h:{Prefer:'return=minimal'}}); return r; }
@@ -286,6 +286,7 @@ function valsPizza(p){ const f=PZ.g/p.base, v={}; p.ing.forEach(i=>{ const b0=ba
 const FASE={antes:'Antes de hornear',horno:'Horno',despues:'Después de hornear'};
 function pasoTxt(t,v){ return t.replace(/\{(\w+)\}/g,(m,k)=>v[k]!=null?v[k]:m); }
 function rng(a){ return ()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function imgPizza(p,peq){ const f=(U.fotos||{})[p.id]; return f?'<img src="'+f+'" alt="">':svgPizza(p,peq); }
 function svgPizza(p,peq){ const R=rng(11), cx=220, cy=182, RX=168, RY=140, IX=148, IY=121, u=(peq?'s':'b')+p.id, f=n=>Math.round(n*10)/10;
   let o='<svg viewBox="0 0 440 364" class="pzsvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pizza '+esc(p.nombre)+'"><defs>'+
    '<radialGradient id="cr'+u+'" cx="50%" cy="40%" r="65%"><stop offset=".6" stop-color="#f0c479"/><stop offset="1" stop-color="#c98a3a"/></radialGradient>'+
@@ -314,7 +315,7 @@ function pintaPizzas(){ return catalogo().map(p=>{ const v=valsPizza(p);
   const ord='<h3>Orden de colocación</h3>'+p.orden.map((o,k)=>'<div class="ord"><i>'+(k+1)+'</i><span>'+pasoTxt(o.t,v)+(o.f?' <em class="fase '+o.f+'">'+FASE[o.f]+'</em>':'')+'</span></div>').join('');
   const ed='<h3>Cantidades base (masa de '+p.base+' g)</h3>'+p.ing.map(i=>'<div class="ln2"><span>'+esc(i.n)+'</span><input type="number" inputmode="decimal" step="1" min="0" data-bk="'+p.id+'|'+i.k+'" value="'+(baseDe(p,i)==null?'':baseDe(p,i))+'" placeholder="a ojo"> '+(i.u&&i.u!=='g'?UN[i.u][1]:'g')+'</div>'+(i.antes!=null?'<div class="ln2 sub"><span>· antes de hornear</span><input type="number" inputmode="decimal" step="1" min="0" data-bk="'+p.id+'|'+i.k+'_antes" value="'+baseDe(p,i,'antes')+'"> g</div>':'')).join('')+'<div class="fila" style="margin-top:8px"><button class="sm" data-bkr="'+p.id+'">Valores iniciales</button><button class="sm'+' pri" data-sel="'+p.id+'">Hacer ahora</button>'+(p.custom?'<button class="sm" data-pdel="'+p.id+'" style="color:var(--neg)">'+(esBase(p.id)?'Restaurar original':'Borrar')+'</button>':'')+'</div>';
   const k='p-'+p.id, ab=EL.open[k]!==undefined?EL.open[k]:false;
-  return '<div class="menu"><div class="mrow" data-pk="'+esc(p.id)+'" data-ac="'+k+'" data-def="0"><div class="mt"><button class="sm edi" data-pedit="'+p.id+'" aria-label="Editar" style="float:right">✎</button><b>'+esc(p.nombre)+'</b><span class="d">'+esc(p.desc)+'</span></div><div class="th">'+svgPizza(p,true)+'</div></div>'+(ab?'<div class="mdet"><div class="big">'+svgPizza(p,false)+'</div>'+ings+ord+ed+'</div>':'')+'</div>'; }).join(''); }
+  return '<div class="menu"><div class="mrow" data-pk="'+esc(p.id)+'" data-ac="'+k+'" data-def="0"><div class="mt"><button class="sm edi" data-pedit="'+p.id+'" aria-label="Editar" style="float:right">✎</button><b>'+esc(p.nombre)+'</b><span class="d">'+esc(p.desc)+'</span></div><div class="th">'+imgPizza(p,true)+'</div></div>'+(ab?'<div class="mdet"><div class="big">'+imgPizza(p,false)+'</div><div class="fila" style="margin-bottom:8px"><span class="sm fbtn" role="button" style="border:1px solid var(--bd);border-radius:10px;padding:8px 12px;background:var(--s2)">Cambiar foto<input type="file" accept="image/*" data-pfoto="'+esc(p.id)+'"></span>'+((U.fotos||{})[p.id]?'<button class="sm" data-pfx="'+esc(p.id)+'">Quitar foto</button>':'')+'</div>'+ings+ord+ed+'</div>':'')+'</div>'; }).join(''); }
 /* toppings: selección y pizza a medida */
 const TOP0=[{k:'mozz',tipo:'Quesos',t:'Mozzarella fresca',n:'Mozzarella fresca',fase:'antes',pos:'media',est:'crudo',g:null,l:['Cortar en tiras.','Escurrir 1-2 horas en un colador dentro de la nevera.']},
  {k:'tomcas',t:'Tomate casero',n:'Tomate casero',fase:'antes',pos:'baja',est:'conserva',marca:'otra',marcaTxt:'San Marzano DOP',tprod:'Pelado y entero',alts:'Martinete o marca local',cant:'60-80',g:null,l:['Retirar 30 ml de líquido por cada 400 g de conserva. Ajustar según la textura.','Retirar la parte dura del pedúnculo.','Aplastar con las manos.','Añadir sal: 0,7-1 g por cada 100 g.','Opcional: corregir acidez con 0,5-1 g de azúcar por cada 100 g.']},
@@ -481,6 +482,7 @@ $('main').onclick=e=>{ if(V==='pizza'){ const tp=e.target.closest('[data-tp]'); 
   if(b.dataset.te){ editTxt(b.dataset.te); return; }
   if(b.dataset.nt){ formTopping(); return; }
   if(b.dataset.nte){ formTopping(TOPf().find(x=>x.k===b.dataset.nte)); return; }
+  if(b.dataset.pfx){ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='¿Seguro?'; return; } delete U.fotos[b.dataset.pfx]; guardaU('fotos'); pintar(); return; }
   if(b.dataset.ntd){ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='¿Seguro? Toca otra vez'; return; } delTop(b.dataset.ntd); pintar(); return; }
   if(b.dataset.pedit){ const q=catalogo().find(x=>x.id===b.dataset.pedit); if(q) editarPizza(q); return; }
   if(b.dataset.mk==='cancel'){ salirEdicion(); PZV='piz'; pintar(); return; }
@@ -503,6 +505,7 @@ $('main').onclick=e=>{ if(V==='pizza'){ const tp=e.target.closest('[data-tp]'); 
   else if(b.dataset.despensa){ U.compra.filter(x=>x.ok).forEach(x=>U.desp.push({t:x.t,ok:false})); U.compra=U.compra.filter(x=>!x.ok); guardaU('compra'); guardaU('desp'); pintar(); }
   else if(b.id==='menuCompra'){ let n=0; for(let i=0;i<7;i++) for(const s of ['c','n']){ const r=R.find(x=>x.id===U.menu[i+s]); if(r){ lineas(r.ingredientes).forEach(l=>{ U.compra.push({t:l.replace(/^[-•*·]\s*/,''),ok:false}); n++; }); } } guardaU('compra'); b.textContent='✓ '+n+' ingredientes añadidos'; }
   else if(b.id==='menuBorra'){ U.menu={}; guardaU('menu'); pintar(); } };
+$('main').addEventListener('change',e=>{ const t=e.target; if(!t.dataset||!t.dataset.pfoto||!t.files||!t.files[0]) return; const id=t.dataset.pfoto, fr=new FileReader(); fr.onload=()=>{ const im=new Image(); im.onload=()=>{ const M=700, k=Math.min(1,M/Math.max(im.width,im.height)), c=document.createElement('canvas'); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k); c.getContext('2d').drawImage(im,0,0,c.width,c.height); U.fotos=U.fotos||{}; U.fotos[id]=c.toDataURL('image/jpeg',0.8); guardaU('fotos'); setTimeout(pintar,0); }; im.src=fr.result; }; fr.readAsDataURL(t.files[0]); t.value=''; });
 $('main').addEventListener('change',e=>{ if(e.target.id==='frI'&&e.target.value){ EL.fridge=new Date(e.target.value).toISOString(); guardaEL(); pintar(); } });
 $('main').addEventListener('change',e=>{ const t=e.target; if(!t.dataset) return;
   if(t.dataset.bk){ const [pid,k]=t.dataset.bk.split('|'); const v=parseFloat(String(t.value).replace(',','.')); if(String(t.value).trim()===''){ if(PZP[pid]) delete PZP[pid][k]; guardaPZP(); } else if(isFinite(v)&&v>=0){ (PZP[pid]=PZP[pid]||{})[k]=v; guardaPZP(); } setTimeout(pintar,0); }
@@ -524,7 +527,7 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&$('sheet
 <script>
 /* Actualización automática */
 (function(){
-  var BUILD='V2.30', ROOT='../';
+  var BUILD='V2.31', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

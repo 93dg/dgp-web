@@ -305,7 +305,7 @@ const TOP0=[{k:'mozz',t:'Mozzarella fresca',n:'Mozzarella fresca',fase:'antes',p
  {k:'albahaca',t:'Albahaca',n:'Albahaca fresca',fase:'despues',pos:'superior',est:'crudo',g:null,l:['Añadir fresca al sacar la pizza del horno.']},
  {k:'carne',t:'Carne de kebab',n:'Carne de kebab cocinada',fase:'antes',pos:'media',est:'cocinado',g:90,l:['Utilizarla previamente cocinada.']},
  {k:'salsa',t:'Salsa kebab',n:'Salsa kebab',fase:'split',pos:'superior',est:'cocinado',g:30,antes:8,l:['Reservar la mayor parte para añadirla después del horneado.']}];
-const POSN={superior:'Superior',media:'Media',baja:'Baja'}, ESTN={crudo:'Crudo',cocinado:'Cocinado'}, isBase=k=>TOP0.some(b=>b.k===k), posA=T=>{ const a=(Array.isArray(T.pos)?T.pos:[T.pos||'media']).filter(k=>POSN[k]), o=Object.keys(POSN).filter(k=>a.includes(k)); return o.length?o:['media']; }, posT=T=>posA(T).join('–'), pe=T=>'Posición '+posT(T)+' · '+(ESTN[T.est]||'Crudo').toLowerCase();
+const POSN={superior:'Superior',media:'Media',baja:'Baja'}, ESTN={crudo:'Crudo',cocinado:'Cocinado',cocido:'Cocido',salteado:'Salteado',asado:'Asado',frito:'Frito',conserva:'En conserva',ahumado:'Ahumado',curado:'Curado'}, isBase=k=>TOP0.some(b=>b.k===k), posA=T=>{ const a=(Array.isArray(T.pos)?T.pos:[T.pos||'media']).filter(k=>POSN[k]), o=Object.keys(POSN).filter(k=>a.includes(k)); return o.length?o:['media']; }, posT=T=>posA(T).join('–'), pe=T=>'Posición '+posT(T)+' · '+(ESTN[T.est]||'Crudo').toLowerCase();
 const TOPf=()=>{ const u=U.top||[]; return TOP0.map(b=>u.find(x=>x.k===b.k)||b).concat(u.filter(x=>!isBase(x.k))); };
 let TS={sel:[],g:{},f:{},u:{},antes:null,nombre:''}, PZC=[], PZTMP=null;
 try{ Object.assign(TS,JSON.parse(localStorage.getItem('dgp-cocina-pz-ts')||'{}')); PZC=JSON.parse(localStorage.getItem('dgp-cocina-pz-custom')||'[]'); PZTMP=JSON.parse(localStorage.getItem('dgp-cocina-pz-tmp')||'null'); }catch(e){}
@@ -481,7 +481,7 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&$('sheet
 <script>
 /* Actualización automática */
 (function(){
-  var BUILD='V2.14', ROOT='../';
+  var BUILD='V2.15', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

@@ -263,8 +263,10 @@ const PIZZAS=[{id:'kebab',nombre:'Kebab',desc:'Carne de kebab, salsa kebab.',cap
 let PZP={}, PZSEL='kebab'; try{ PZP=JSON.parse(localStorage.getItem('dgp-cocina-pz-pizzas')||'{}'); PZSEL=localStorage.getItem('dgp-cocina-pz-sel')||'kebab'; }catch(e){}
 function hacer(id){ PZSEL=id; EL.cm={}; EL.mdone={}; ['m0','m1','m2','m3'].forEach(k=>delete EL.open[k]); EL.open.m0=false; EL.open.m1=false; EL.open.m2=true; guardaEL(); guardaPZP(); PZV='mont'; pintar(); $('main').scrollTop=0; }
 function guardaPZP(){ try{ localStorage.setItem('dgp-cocina-pz-pizzas',JSON.stringify(PZP)); localStorage.setItem('dgp-cocina-pz-sel',PZSEL); }catch(e){} }
+const UN={g:['g','g'],cda:['cucharada','cucharadas'],cdta:['cucharadita','cucharaditas'],pizca:['pizca','pizcas'],puñado:['puñado','puñados'],rodaja:['rodaja','rodajas'],ud:['unidad','unidades']};
+const fmtQ=(n,u)=>{ u=UN[u]?u:'g'; return u==='g'?n+' g':n+' '+(n==1?UN[u][0]:UN[u][1]); }, unSel=(u,attr)=>'<select '+attr+'>'+Object.keys(UN).map(k=>'<option value="'+k+'"'+((u||'g')===k?' selected':'')+'>'+(k==='g'?'gramos':UN[k][1])+'</option>').join('')+'</select>';
 function baseDe(p,i,campo){ const o=(PZP[p.id]||{})[i.k+(campo==='antes'?'_antes':'')]; return o!=null?o:(campo==='antes'?(i.antes==null?null:i.antes):(i.g==null?null:i.g)); }
-function valsPizza(p){ const f=PZ.g/p.base, v={}; p.ing.forEach(i=>{ const b0=baseDe(p,i); if(b0==null||b0===''){ v[i.k]=null; return; } const tot=Math.round(b0*f); v[i.k]=tot; if(i.antes!=null){ const a=Math.min(tot,Math.round(baseDe(p,i,'antes')*f)); v[i.k+'_antes']=a; v[i.k+'_desp']=tot-a; } }); return v; }
+function valsPizza(p){ const f=PZ.g/p.base, v={}; p.ing.forEach(i=>{ const b0=baseDe(p,i); if(b0==null||b0===''){ v[i.k]=null; return; } const gr=!i.u||i.u==='g'; const tot=gr?Math.round(b0*f):+b0; v[i.k]=tot; v[i.k+'_t']=fmtQ(tot,i.u); if(i.antes!=null){ const a=Math.min(tot,Math.round(baseDe(p,i,'antes')*f)); v[i.k+'_antes']=a; v[i.k+'_desp']=tot-a; } }); return v; }
 const FASE={antes:'Antes de hornear',horno:'Horno',despues:'Después de hornear'};
 function pasoTxt(t,v){ return t.replace(/\{(\w+)\}/g,(m,k)=>v[k]!=null?v[k]:m); }
 function rng(a){ return ()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
@@ -292,52 +294,55 @@ function svgPizza(p,peq){ const R=rng(11), cx=220, cy=182, RX=168, RY=140, IX=14
   if(p.capas.includes('albahaca')){ for(let k=0;k<6;k++){ const x=cx+(R()*2-1)*IX*.7, y=cy+(R()*2-1)*IY*.7, r=f(R()*180); o+='<g transform="translate('+f(x)+' '+f(y)+') rotate('+r+')"><ellipse rx="17" ry="9" fill="#2f7d32" stroke="#1f5c24" stroke-width="1"/><line x1="-14" y1="0" x2="14" y2="0" stroke="#7cc27e" stroke-width="1.4" opacity=".8"/></g>'; } }
   return o+'</svg>'; }
 function pintaPizzas(){ return catalogo().map(p=>{ const v=valsPizza(p);
-  const ings='<h3>Ingredientes por pizza</h3>'+p.ing.map(i=>'<div class="ln2"><span>'+esc(i.n)+'</span><b>'+(v[i.k]==null?'a ojo':v[i.k]+' g')+'</b></div>'+(i.antes!=null&&v[i.k]!=null?'<div class="ln2 sub"><span>· antes de hornear</span><b>'+v[i.k+'_antes']+' g</b></div><div class="ln2 sub"><span>· después de hornear</span><b>'+v[i.k+'_desp']+' g</b></div>':'')).join('')+'<div class="meta">Para '+PZ.n+' '+(PZ.n===1?'pizza':'pizzas')+': '+p.ing.filter(i=>v[i.k]!=null).map(i=>esc(i.c)+' '+(v[i.k]*PZ.n)+' g').join(' · ')+'</div>';
+  const ings='<h3>Ingredientes por pizza</h3>'+p.ing.map(i=>'<div class="ln2"><span>'+esc(i.n)+'</span><b>'+(v[i.k]==null?'a ojo':v[i.k+'_t'])+'</b></div>'+(i.antes!=null&&v[i.k]!=null?'<div class="ln2 sub"><span>· antes de hornear</span><b>'+v[i.k+'_antes']+' g</b></div><div class="ln2 sub"><span>· después de hornear</span><b>'+v[i.k+'_desp']+' g</b></div>':'')).join('')+'<div class="meta">Para '+PZ.n+' '+(PZ.n===1?'pizza':'pizzas')+': '+p.ing.filter(i=>v[i.k]!=null).map(i=>esc(i.c)+' '+fmtQ(v[i.k]*PZ.n,i.u)).join(' · ')+'</div>';
   const ord='<h3>Orden de colocación</h3>'+p.orden.map((o,k)=>'<div class="ord"><i>'+(k+1)+'</i><span>'+pasoTxt(o.t,v)+(o.f?' <em class="fase '+o.f+'">'+FASE[o.f]+'</em>':'')+'</span></div>').join('');
-  const ed='<h3>Cantidades base (masa de '+p.base+' g)</h3>'+p.ing.map(i=>'<div class="ln2"><span>'+esc(i.n)+'</span><input type="number" inputmode="decimal" step="1" min="0" data-bk="'+p.id+'|'+i.k+'" value="'+(baseDe(p,i)==null?'':baseDe(p,i))+'" placeholder="a ojo"> g</div>'+(i.antes!=null?'<div class="ln2 sub"><span>· antes de hornear</span><input type="number" inputmode="decimal" step="1" min="0" data-bk="'+p.id+'|'+i.k+'_antes" value="'+baseDe(p,i,'antes')+'"> g</div>':'')).join('')+'<div class="fila" style="margin-top:8px"><button class="sm" data-bkr="'+p.id+'">Valores iniciales</button><button class="sm'+' pri" data-sel="'+p.id+'">Hacer ahora</button>'+'<button class="sm" data-pedit="'+p.id+'">Editar</button>'+(p.custom?'<button class="sm" data-pdel="'+p.id+'" style="color:var(--neg)">'+(esBase(p.id)?'Restaurar original':'Borrar')+'</button>':'')+'</div>';
+  const ed='<h3>Cantidades base (masa de '+p.base+' g)</h3>'+p.ing.map(i=>'<div class="ln2"><span>'+esc(i.n)+'</span><input type="number" inputmode="decimal" step="1" min="0" data-bk="'+p.id+'|'+i.k+'" value="'+(baseDe(p,i)==null?'':baseDe(p,i))+'" placeholder="a ojo"> '+(i.u&&i.u!=='g'?UN[i.u][1]:'g')+'</div>'+(i.antes!=null?'<div class="ln2 sub"><span>· antes de hornear</span><input type="number" inputmode="decimal" step="1" min="0" data-bk="'+p.id+'|'+i.k+'_antes" value="'+baseDe(p,i,'antes')+'"> g</div>':'')).join('')+'<div class="fila" style="margin-top:8px"><button class="sm" data-bkr="'+p.id+'">Valores iniciales</button><button class="sm'+' pri" data-sel="'+p.id+'">Hacer ahora</button>'+'<button class="sm" data-pedit="'+p.id+'">Editar</button>'+(p.custom?'<button class="sm" data-pdel="'+p.id+'" style="color:var(--neg)">'+(esBase(p.id)?'Restaurar original':'Borrar')+'</button>':'')+'</div>';
   const k='p-'+p.id, ab=EL.open[k]!==undefined?EL.open[k]:false;
   return '<div class="menu"><div class="mrow" data-ac="'+k+'" data-def="0"><div class="mt"><b>'+esc(p.nombre)+'</b><span class="d">'+esc(p.desc)+'</span><span class="meta">'+(ab?'▾':'▸')+'</span></div><div class="th">'+svgPizza(p,true)+'</div></div>'+(ab?'<div class="mdet"><div class="big">'+svgPizza(p,false)+'</div>'+ings+ord+ed+'</div>':'')+'</div>'; }).join(''); }
 /* toppings: selección y pizza a medida */
-const TOP0=[{k:'mozz',t:'Mozzarella fresca',n:'Mozzarella fresca',fase:'antes',g:null,l:['Cortar en tiras.','Escurrir 1-2 horas en un colador dentro de la nevera.']},
- {k:'tomate',t:'Tomate',n:'Tomate',fase:'antes',g:null,l:['Si está muy líquido, escurrir 5-10 minutos en un colador fino.']},
- {k:'albahaca',t:'Albahaca',n:'Albahaca fresca',fase:'despues',g:null,l:['Añadir fresca al sacar la pizza del horno.']},
- {k:'carne',t:'Carne de kebab',n:'Carne de kebab cocinada',fase:'antes',g:90,l:['Utilizarla previamente cocinada.']},
- {k:'salsa',t:'Salsa kebab',n:'Salsa kebab',fase:'split',g:30,antes:8,l:['Reservar la mayor parte para añadirla después del horneado.']}];
-const TOPf=()=>TOP0.concat(U.top||[]);
-let TS={sel:[],g:{},f:{},antes:null,nombre:''}, PZC=[], PZTMP=null;
+const TOP0=[{k:'mozz',t:'Mozzarella fresca',n:'Mozzarella fresca',fase:'antes',pos:'media',est:'crudo',g:null,l:['Cortar en tiras.','Escurrir 1-2 horas en un colador dentro de la nevera.']},
+ {k:'tomate',t:'Tomate',n:'Tomate',fase:'antes',pos:'baja',est:'crudo',g:null,l:['Si está muy líquido, escurrir 5-10 minutos en un colador fino.']},
+ {k:'albahaca',t:'Albahaca',n:'Albahaca fresca',fase:'despues',pos:'superior',est:'crudo',g:null,l:['Añadir fresca al sacar la pizza del horno.']},
+ {k:'carne',t:'Carne de kebab',n:'Carne de kebab cocinada',fase:'antes',pos:'media',est:'cocinado',g:90,l:['Utilizarla previamente cocinada.']},
+ {k:'salsa',t:'Salsa kebab',n:'Salsa kebab',fase:'split',pos:'superior',est:'cocinado',g:30,antes:8,l:['Reservar la mayor parte para añadirla después del horneado.']}];
+const POSN={superior:'Superior',media:'Media',baja:'Baja'}, ESTN={crudo:'Crudo',cocinado:'Cocinado'}, isBase=k=>TOP0.some(b=>b.k===k), pe=T=>'Posición '+(POSN[T.pos]||'Media').toLowerCase()+' · '+(ESTN[T.est]||'Crudo').toLowerCase();
+const TOPf=()=>{ const u=U.top||[]; return TOP0.map(b=>u.find(x=>x.k===b.k)||b).concat(u.filter(x=>!isBase(x.k))); };
+let TS={sel:[],g:{},f:{},u:{},antes:null,nombre:''}, PZC=[], PZTMP=null;
 try{ Object.assign(TS,JSON.parse(localStorage.getItem('dgp-cocina-pz-ts')||'{}')); PZC=JSON.parse(localStorage.getItem('dgp-cocina-pz-custom')||'[]'); PZTMP=JSON.parse(localStorage.getItem('dgp-cocina-pz-tmp')||'null'); }catch(e){}
 function guardaTS(){ try{ localStorage.setItem('dgp-cocina-pz-ts',JSON.stringify(TS)); localStorage.setItem('dgp-cocina-pz-custom',JSON.stringify(PZC)); localStorage.setItem('dgp-cocina-pz-tmp',JSON.stringify(PZTMP)); }catch(e){} }
 const catalogo=()=>PIZZAS.map(x=>PZC.find(c=>c.id===x.id)||x).concat(PZC.filter(c=>!PIZZAS.some(x=>x.id===c.id))), todasPizzas=()=>catalogo().concat(PZTMP?[PZTMP]:[]), esBase=id=>PIZZAS.some(x=>x.id===id);
-const tG=k=>{ const T=TOPf().find(x=>x.k===k); return TS.g[k]!==undefined?TS.g[k]:T.g; }, tF=k=>TS.f[k]||TOPf().find(x=>x.k===k).fase, tA=()=>TS.antes!=null?TS.antes:8;
+const tG=k=>{ const T=TOPf().find(x=>x.k===k); return TS.g[k]!==undefined?TS.g[k]:T.g; }, tUn=k=>(TS.u&&TS.u[k])||(TOPf().find(x=>x.k===k)||{}).u||'g', tF=k=>TS.f[k]||TOPf().find(x=>x.k===k).fase, tA=()=>TS.antes!=null?TS.antes:8;
 const CAPA={mozz:'mozz',tomate:'tomate',albahaca:'albahaca',carne:'carne',salsa:'zigzag'};
 function buildCustom(id,nombre){ const ing=[], antes=[], desp=[], capas=[], names=[];
   TS.sel.forEach(k=>{ const T=TOPf().find(x=>x.k===k), g=tG(k), nm=T.n.toLowerCase(); capas.push(CAPA[k]||'otro:'+k+':'+T.t); names.push(nm);
-    const it={k,n:T.n,c:T.t.toLowerCase(),g:g==null||g===''?null:+g,fase:tF(k)}; 
+    const it={k,n:T.n,c:T.t.toLowerCase(),g:g==null||g===''?null:+g,fase:tF(k),u:tUn(k)}; 
     if(k==='salsa'){ if(it.g==null) it.g=30; it.antes=Math.min(it.g,tA()); ing.push(it); antes.push({t:'<b>{salsa_antes} g</b> salsa kebab',f:'antes'}); desp.push({t:'<b>{salsa_desp} g</b> salsa kebab (resto)',f:'despues'}); return; }
     ing.push(it);
     const tn=T.t.toLowerCase();
-    if(tF(k)==='antes') antes.push({t:it.g!=null?'<b>{'+k+'} g</b> '+tn:T.t,f:'antes'});
-    else desp.push({t:it.g!=null?'<b>{'+k+'} g</b> '+tn:T.t,f:'despues'}); });
+    const sfx=' <span class="meta">· '+(POSN[T.pos]||'Media').toLowerCase()+' · '+(ESTN[T.est]||'Crudo').toLowerCase()+'</span>'; if(tF(k)==='antes') antes.push({t:(it.g!=null?'<b>{'+k+'_t}</b> '+tn:T.t)+sfx,f:'antes'});
+    else desp.push({t:(it.g!=null?'<b>{'+k+'_t}</b> '+tn:T.t)+sfx,f:'despues'}); });
   const d=names.join(', '); return {id,custom:true,nombre:nombre||'Pizza a medida',desc:d.charAt(0).toUpperCase()+d.slice(1)+'.',capas,base:250,ing,orden:[].concat(antes,[{t:'Hornear',f:'horno'}],desp)}; }
-function editarPizza(p){ if(!TS.editId) TS.prev={sel:TS.sel,g:TS.g,f:TS.f,antes:TS.antes,nombre:TS.nombre}; TS.editId=p.id; TS.nombre=p.nombre; TS.sel=p.ing.map(i=>i.k); TS.g={}; TS.f={}; TS.antes=null;
-  p.ing.forEach(i=>{ const b=baseDe(p,i); TS.g[i.k]=b==null||b===''?null:+b; if(i.k==='salsa'){ const a=baseDe(p,i,'antes'); TS.antes=a==null?8:+a; } else TS.f[i.k]=i.fase||(TOPf().find(x=>x.k===i.k)||{}).fase||'antes'; });
+function editarPizza(p){ if(!TS.editId) TS.prev={sel:TS.sel,g:TS.g,f:TS.f,u:TS.u,antes:TS.antes,nombre:TS.nombre}; TS.editId=p.id; TS.nombre=p.nombre; TS.sel=p.ing.map(i=>i.k); TS.g={}; TS.f={}; TS.u={}; TS.antes=null;
+  p.ing.forEach(i=>{ TS.u[i.k]=i.u||'g'; const b=baseDe(p,i); TS.g[i.k]=b==null||b===''?null:+b; if(i.k==='salsa'){ const a=baseDe(p,i,'antes'); TS.antes=a==null?8:+a; } else TS.f[i.k]=i.fase||(TOPf().find(x=>x.k===i.k)||{}).fase||'antes'; });
   guardaTS(); PZV='top'; pintar(); $('main').scrollTop=0; }
-function salirEdicion(){ const pv=TS.prev||{sel:[],g:{},f:{},antes:null,nombre:''}; TS.sel=pv.sel; TS.g=pv.g; TS.f=pv.f; TS.antes=pv.antes; TS.nombre=pv.nombre; TS.editId=null; TS.prev=null; guardaTS(); }
-function formTopping(T){ const sh=$('sheet'); sh.hidden=false; document.body.style.overflow='hidden'; T=T||{t:'',fase:'antes',g:null,l:[]};
+function salirEdicion(){ const pv=TS.prev||{sel:[],g:{},f:{},antes:null,nombre:''}; TS.sel=pv.sel; TS.g=pv.g; TS.f=pv.f; TS.u=pv.u||{}; TS.antes=pv.antes; TS.nombre=pv.nombre; TS.editId=null; TS.prev=null; guardaTS(); }
+function formTopping(T){ const sh=$('sheet'); sh.hidden=false; document.body.style.overflow='hidden'; T=T||{t:'',fase:'antes',pos:'media',est:'crudo',g:null,l:[]};
   sh.innerHTML='<div class="barra"><button id="x">←</button><b style="flex:1">'+(T.k?'Editar topping':'Nuevo topping')+'</b><button class="pri" id="ok">Guardar</button></div>'+
   '<div class="campo"><label>Nombre</label><input id="n_t" value="'+esc(T.t)+'" placeholder="Ej. Cebolla caramelizada"></div>'+
-  '<div class="fila"><div class="campo" style="flex:1"><label>Gramos (masa de 250 g), opcional</label><input id="n_g" type="number" inputmode="decimal" min="0" value="'+(T.g==null?'':T.g)+'" placeholder="a ojo"></div>'+
+  '<div class="fila"><div class="campo" style="flex:1"><label>Cantidad por pizza (masa de 250 g), opcional</label><input id="n_g" type="number" inputmode="decimal" min="0" value="'+(T.g==null?'':T.g)+'" placeholder="a ojo"></div><div class="campo" style="flex:1"><label>Unidad</label>'+unSel(T.u,'id="n_u"')+'</div></div><div class="fila">'+
   '<div class="campo" style="flex:1"><label>Se añade</label><select id="n_f"><option value="antes"'+(T.fase==='antes'?' selected':'')+'>Antes de hornear</option><option value="despues"'+(T.fase==='despues'?' selected':'')+'>Después de hornear</option></select></div></div>'+
+  '<div class="fila"><div class="campo" style="flex:1"><label>Posición</label><select id="n_p">'+Object.keys(POSN).map(k=>'<option value="'+k+'"'+((T.pos||'media')===k?' selected':'')+'>'+POSN[k]+'</option>').join('')+'</select></div><div class="campo" style="flex:1"><label>Estado</label><select id="n_e">'+Object.keys(ESTN).map(k=>'<option value="'+k+'"'+((T.est||'crudo')===k?' selected':'')+'>'+ESTN[k]+'</option>').join('')+'</select></div></div>'+
   '<div class="campo"><label>Preparación (una línea por paso), opcional</label><textarea id="n_l">'+esc((T.l||[]).join('\n'))+'</textarea></div>';
-  sh.onclick=e=>{ const b=e.target.closest('button'); if(!b) return; if(b.id==='x') cerrar2(); else if(b.id==='ok'){ const nombre=$('n_t').value.trim(); if(!nombre) return; const g=parseFloat(String($('n_g').value).replace(',','.')); const o={k:T.k||('x'+Date.now()),t:nombre,n:nombre.charAt(0).toUpperCase()+nombre.slice(1),fase:$('n_f').value,g:isFinite(g)&&g>=0?g:null,l:lineas($('n_l').value),custom:true};
+  sh.onclick=e=>{ const b=e.target.closest('button'); if(!b) return; if(b.id==='x') cerrar2(); else if(b.id==='ok'){ const nombre=$('n_t').value.trim(); if(!nombre) return; const g=parseFloat(String($('n_g').value).replace(',','.')); const o={k:T.k||('x'+Date.now()),t:nombre,n:nombre.charAt(0).toUpperCase()+nombre.slice(1),fase:$('n_f').value,g:isFinite(g)&&g>=0?g:null,l:lineas($('n_l').value),u:$('n_u').value,pos:$('n_p').value,est:$('n_e').value,custom:!isBase(T.k||'')};
+      if(T.k&&isBase(T.k)){ o.n=T.n; o.fase=T.fase==="split"?"split":o.fase; o.antes=T.antes; }
       U.top=U.top||[]; const i=U.top.findIndex(x=>x.k===o.k); if(i>=0) U.top[i]=o; else U.top.push(o); guardaU('top'); cerrar2(); } }; }
 function cerrar2(){ $('sheet').hidden=true; $('sheet').innerHTML=''; document.body.style.overflow=''; pintar(); }
 function pintaToppings(){ const n=TS.sel.length;
   let h=(TS.editId?'<div class="fin" style="margin-bottom:10px">Editando <b>'+esc(TS.nombre||'pizza')+'</b>. Añade o quita ingredientes, cambia cantidades y orden, y guarda.</div>':'<div class="meta" style="margin-bottom:8px">Toca <b>+</b> en los que quieras para montar una pizza a medida.</div>')+TOPf().map(T=>{ const i=TS.sel.indexOf(T.k), on=i>=0, key='t'+T.k, ab=EL.open[key]!==undefined?EL.open[key]:false;
-    return '<div class="paso2'+(on?' act':'')+'"><div class="cab" data-ac="'+key+'" data-def="0"><button class="selb'+(on?' on':'')+'" data-tp="'+T.k+'" aria-label="Elegir">'+(on?(i+1):'+')+'</button><span><b>'+esc(T.t)+'</b>'+(on?'<small>Elegido</small>':'')+'</span><em>'+(ab?'▾':'▸')+'</em></div>'+(ab?'<div class="cue">'+(T.l.length?T.l.map(x=>'<div>• '+x+'</div>').join(''):'<div class="meta">Sin notas de preparación.</div>')+(T.custom?'<div class="fila" style="margin-top:8px"><button class="sm" data-nte="'+T.k+'">Editar</button><button class="sm" data-ntd="'+T.k+'" style="color:var(--neg)">Borrar</button></div>':'')+'</div>':'')+'</div>'; }).join('')+'<div class="fila" style="margin-top:10px"><button data-nt="1" style="flex:1">+ Nuevo topping</button></div>';
+    return '<div class="paso2'+(on?' act':'')+'"><div class="cab" data-ac="'+key+'" data-def="0"><button class="selb'+(on?' on':'')+'" data-tp="'+T.k+'" aria-label="Elegir">'+(on?(i+1):'+')+'</button><span><b>'+esc(T.t)+'</b>'+(on?'<small>Elegido</small>':'')+'</span><em>'+(ab?'▾':'▸')+'</em></div>'+(ab?'<div class="cue"><div class="meta" style="margin-bottom:6px">'+pe(T)+'</div>'+(T.l.length?T.l.map(x=>'<div>• '+x+'</div>').join(''):'<div class="meta">Sin notas de preparación.</div>')+'<div class="fila" style="margin-top:8px"><button class="sm" data-nte="'+T.k+'">Editar</button>'+(T.custom?'<button class="sm" data-ntd="'+T.k+'" style="color:var(--neg)">Borrar</button>':'')+'</div>'+'</div>':'')+'</div>'; }).join('')+'<div class="fila" style="margin-top:10px"><button data-nt="1" style="flex:1">+ Nuevo topping</button></div>';
   if(n){ h+='<h3>Pizza a medida</h3><div class="meta" style="margin-bottom:6px">Gramos para una masa de 250 g (se ajustan a tu peso). Déjalo vacío si va a ojo.</div>'+TS.sel.map((k,i)=>{ const T=TOPf().find(x=>x.k===k), g=tG(k);
-      return '<div class="tsel"><div class="fila"><span style="flex:1"><b>'+esc(T.t)+'</b></span><button class="sm" data-tu="'+k+'|-1" '+(i===0?'disabled':'')+'>▲</button><button class="sm" data-tu="'+k+'|1" '+(i===n-1?'disabled':'')+'>▼</button></div>'+
-      '<div class="fila" style="margin-top:6px"><input type="number" inputmode="decimal" min="0" data-tg="'+k+'" value="'+(g==null?'':g)+'" placeholder="a ojo" style="width:90px"> g'+
+      return '<div class="tsel"><div class="fila"><span style="flex:1"><b>'+esc(T.t)+'</b><br><small class="meta">'+pe(T)+'</small></span><button class="sm" data-tu="'+k+'|-1" '+(i===0?'disabled':'')+'>▲</button><button class="sm" data-tu="'+k+'|1" '+(i===n-1?'disabled':'')+'>▼</button></div>'+
+      '<div class="fila" style="margin-top:6px"><input type="number" inputmode="decimal" min="0" data-tg="'+k+'" value="'+(g==null?'':g)+'" placeholder="a ojo" style="width:90px"> '+(k==='salsa'?'g':unSel(tUn(k),'data-tu2="'+k+'"'))+
       (k==='salsa'?'<span class="meta">· antes de hornear</span><input type="number" inputmode="decimal" min="0" data-ta="1" value="'+tA()+'" style="width:80px"> g<span class="meta">y el resto después</span>':'<button class="sm" data-tf="'+k+'" style="margin-left:auto">'+(tF(k)==='antes'?'Antes de hornear':'Después de hornear')+'</button>')+'</div></div>'; }).join('')+
     '<div class="campo" style="margin-top:10px"><label>Nombre (para guardarla)</label><input data-tn="1" value="'+esc(TS.nombre)+'" placeholder="Pizza a medida"></div>'+
     (TS.editId?'<div class="fila"><button class="pri" data-mk="upd" style="flex:1">Guardar cambios</button><button data-mk="cancel" style="flex:1">Cancelar</button></div>':'<div class="fila"><button class="pri" data-mk="now" style="flex:1">Hacer ahora</button><button data-mk="save" style="flex:1">Guardar en Pizzas</button></div><div class="fila" style="margin-top:8px"><button class="sm" data-mk="clear">Quitar selección</button></div>'); }
@@ -432,7 +437,7 @@ $('main').onclick=e=>{ if(V==='pizza'){ const tp=e.target.closest('[data-tp]'); 
   if(b.dataset.dgr){ const d=(U.diario||[]).find(x=>String(x.id)===b.dataset.dgr); if(d){ PZ.n=d.n; PZ.g=d.g; PZ.h=d.h; PZ.t=d.t; EL.omit={1:!d.a1,3:!d.a2}; EL.done={}; EL.open={}; EL.fridge=null; guardaEL(); PZV='calc'; pintar(); $('main').scrollTop=0; } return; }
   if(b.dataset.te){ editTxt(b.dataset.te); return; }
   if(b.dataset.nt){ formTopping(); return; }
-  if(b.dataset.nte){ formTopping((U.top||[]).find(x=>x.k===b.dataset.nte)); return; }
+  if(b.dataset.nte){ formTopping(TOPf().find(x=>x.k===b.dataset.nte)); return; }
   if(b.dataset.ntd){ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='¿Seguro?'; return; } const k=b.dataset.ntd; U.top=(U.top||[]).filter(x=>x.k!==k); TS.sel=TS.sel.filter(x=>x!==k); guardaU('top'); guardaTS(); pintar(); return; }
   if(b.dataset.pedit){ const q=catalogo().find(x=>x.id===b.dataset.pedit); if(q) editarPizza(q); return; }
   if(b.dataset.mk==='cancel'){ salirEdicion(); PZV='piz'; pintar(); return; }
@@ -458,6 +463,7 @@ $('main').onclick=e=>{ if(V==='pizza'){ const tp=e.target.closest('[data-tp]'); 
 $('main').addEventListener('change',e=>{ if(e.target.id==='frI'&&e.target.value){ EL.fridge=new Date(e.target.value).toISOString(); guardaEL(); pintar(); } });
 $('main').addEventListener('change',e=>{ const t=e.target; if(!t.dataset) return;
   if(t.dataset.bk){ const [pid,k]=t.dataset.bk.split('|'); const v=parseFloat(String(t.value).replace(',','.')); if(String(t.value).trim()===''){ if(PZP[pid]) delete PZP[pid][k]; guardaPZP(); } else if(isFinite(v)&&v>=0){ (PZP[pid]=PZP[pid]||{})[k]=v; guardaPZP(); } setTimeout(pintar,0); }
+  else if(t.dataset.tu2){ TS.u=TS.u||{}; TS.u[t.dataset.tu2]=t.value; guardaTS(); setTimeout(pintar,0); }
   else if(t.dataset.tg){ const v=String(t.value).trim()===''?null:parseFloat(String(t.value).replace(',','.')); TS.g[t.dataset.tg]=(v!=null&&isFinite(v)&&v>=0)?v:null; guardaTS(); setTimeout(pintar,0); }
   else if(t.dataset.ta){ const v=parseFloat(String(t.value).replace(',','.')); TS.antes=isFinite(v)&&v>=0?v:8; guardaTS(); setTimeout(pintar,0); }
   else if(t.dataset.hr){ EL.hora=t.value; guardaEL(); setTimeout(pintar,0); }
@@ -475,7 +481,7 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&$('sheet
 <script>
 /* Actualización automática */
 (function(){
-  var BUILD='V2.11', ROOT='../';
+  var BUILD='V2.12', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

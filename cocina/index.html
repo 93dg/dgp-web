@@ -100,18 +100,22 @@ main{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch
   var pr=document.createElement('div'); pr.style.cssText='position:fixed;top:0;left:0;width:1px;visibility:hidden;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)'; document.body.appendChild(pr); var cs=getComputedStyle(pr), st=cs.paddingTop, sb=cs.paddingBottom; pr.remove();
   var q=document.createElement('div'); q.style.cssText='position:fixed;top:0;height:100dvh;width:1px;visibility:hidden'; document.body.appendChild(q); var dv=q.getBoundingClientRect().height; q.style.height='100vh'; var vh=q.getBoundingClientRect().height; q.remove();
   var n=document.getElementById('nav').getBoundingClientRect(), b=document.body.getBoundingClientRect();
-  p.textContent='in '+innerHeight+' sc '+screen.height+' vv '+(window.visualViewport?Math.round(visualViewport.height):'-')+' dvh '+Math.round(dv)+' vh '+Math.round(vh)+' html '+document.documentElement.clientHeight+' body '+Math.round(b.bottom)+' nav '+Math.round(n.bottom)+' st '+st+' sb '+sb+' sa '+(navigator.standalone?1:0); }catch(e){} }
+  p.textContent='in '+innerHeight+' sc '+screen.height+' vv '+(window.visualViewport?Math.round(visualViewport.height):'-')+' dvh '+Math.round(dv)+' vh '+Math.round(vh)+' html '+document.documentElement.clientHeight+' body '+Math.round(b.bottom)+' nav '+Math.round(n.bottom)+' st '+st+' sb '+sb+' sa '+(navigator.standalone?1:0)+' heal '+window.__heal; }catch(e){} }
   addEventListener('load',function(){ d(); setInterval(d,1000); }); })();
 </script>
 <script>
-/* iOS (app en pantalla de inicio): al abrir el teclado la ventana encoge ~59 px y no se recupera; se fuerza a re-medir */
-(function(){ var maxVH=window.innerHeight;
-  addEventListener('resize',function(){ maxVH=Math.max(maxVH,window.innerHeight); });
-  function heal(){ if(maxVH-window.innerHeight<=4) return; var b=document.body, m=document.getElementById('main'), st=m?m.scrollTop:0;
-    b.style.display='none'; void b.offsetHeight; b.style.display=''; if(m) m.scrollTop=st; }
+/* iOS (app en pantalla de inicio): la ventana queda 59 px mas corta que la pantalla (873 vs 932). Se fuerza a WebKit a re-medir. */
+window.__heal=0;
+(function(){ function full(){ var q=document.createElement('div'); q.style.cssText='position:fixed;top:0;height:100vh;width:1px;visibility:hidden'; document.body.appendChild(q); var h=q.getBoundingClientRect().height; q.remove(); return h; }
+  function heal(){ try{ if(!document.body) return; if(full()-window.innerHeight<=4) return; window.__heal++;
+    var r=document.documentElement, m=document.getElementById('main'), st=m?m.scrollTop:0;
+    r.style.display='none'; void r.offsetHeight; r.style.display='';
+    document.body.style.display='none'; void document.body.offsetHeight; document.body.style.display='';
+    window.scrollTo(0,1); window.scrollTo(0,0); if(m) m.scrollTop=st; }catch(e){} }
+  function later(){ [0,150,500,1200,2500].forEach(function(t){ setTimeout(heal,t); }); }
+  addEventListener('load',later); addEventListener('pageshow',later); addEventListener('orientationchange',later);
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden) later(); });
   document.addEventListener('focusout',function(e){ var t=e.target; if(t&&/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)){ setTimeout(heal,140); setTimeout(heal,600); } });
-  document.addEventListener('visibilitychange',function(){ if(!document.hidden) setTimeout(heal,200); });
-  addEventListener('pageshow',function(){ setTimeout(heal,200); });
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
@@ -512,7 +516,7 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&$('sheet
 <script>
 /* Actualización automática */
 (function(){
-  var BUILD='V2.22', ROOT='../';
+  var BUILD='V2.23', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

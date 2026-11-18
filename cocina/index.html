@@ -15,7 +15,7 @@
 @media(prefers-color-scheme:light){:root{--bg:#f3f4f8;--s1:#fff;--s2:#eef0f6;--bd:rgba(15,20,35,.16);--tx:#10131a;--mut:#58627a;--ac:#946100;--pos:#0e7c57;--neg:#c42b2b}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
-html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none}html{background:#0b6!important}@media (display-mode:standalone){html{height:min(100lvh,calc(100% + env(safe-area-inset-top)))}body{box-sizing:border-box;height:100%}}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none}html{background:#0b6!important}html.sa{height:calc(100% + env(safe-area-inset-top))}html.sa body{box-sizing:border-box;height:100%}
 body{background:var(--bg);color:var(--tx);font:16px/1.45 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;height:100vh;height:100dvh;padding-top:env(safe-area-inset-top)}
 button,input,select,textarea{font:inherit;color:var(--tx)}
 button{background:var(--s2);border:1px solid var(--bd);border-radius:10px;min-height:44px;padding:0 14px;cursor:pointer}
@@ -94,6 +94,7 @@ main{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch
 <nav id="nav" aria-label="Navegación"></nav>
 <button class="fab pri" id="fab" aria-label="Añadir">+</button>
 <div class="sheet" id="sheet" hidden></div>
+<script>if(navigator.standalone)document.documentElement.classList.add('sa');</script>
 <script>
 /* DIAGNOSTICO temporal del menu inferior */
 (function(){ function d(){ try{ var p=document.getElementById('dgx'); if(!p){ p=document.createElement('div'); p.id='dgx'; p.style.cssText='position:fixed;left:6px;right:6px;top:calc(env(safe-area-inset-top) + 2px);z-index:99;background:#c00;color:#fff;font:11px/1.3 monospace;padding:3px 6px;border-radius:6px;pointer-events:none'; document.body.appendChild(p); }
@@ -516,7 +517,7 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&$('sheet
 <script>
 /* Actualización automática */
 (function(){
-  var BUILD='V2.24', ROOT='../';
+  var BUILD='V2.25', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

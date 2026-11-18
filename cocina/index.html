@@ -103,7 +103,7 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;',
 const URL0='https://qtnqupcfgooazjzkpmtx.supabase.co', KEY='sb_publishable_brvDWgh8e_IrS8NWDvt7xg_rbL2dqcd';
 const sbc=window.supabase?window.supabase.createClient(URL0,KEY):null;
 async function cab(){ try{ if(!sbc) return null; const {data:{session}}=await sbc.auth.getSession(); return session?{apikey:KEY,Authorization:'Bearer '+session.access_token}:null; }catch(e){ return null; } }
-let R=[], U={compra:[],desp:[],menu:{},top:[],pzc:[],txt:{}}, V='rec', Q='', TAG='', conSesion=true, cargado=false;
+let R=[], U={compra:[],desp:[],menu:{},top:[],pzc:[],txt:{},diario:[]}, V='rec', Q='', TAG='', conSesion=true, cargado=false;
 try{ R=JSON.parse(localStorage.getItem('dgp-cocina')||'[]'); U=Object.assign(U,JSON.parse(localStorage.getItem('dgp-cocina-u')||'{}')); V=localStorage.getItem('dgp-cocina-v')||'rec'; }catch(e){}
 function cache(){ try{ localStorage.setItem('dgp-cocina',JSON.stringify(R)); localStorage.setItem('dgp-cocina-u',JSON.stringify(U)); }catch(e){} }
 /* ---------- servidor ---------- */
@@ -114,10 +114,10 @@ let haySrvPz=false;
 function syncPZC(){ U.pzc=PZC; guardaU('pzc'); }
 async function cargar(){
   const a=await api('recetas?select=*&order=titulo.asc'); if(a){ R=a; conSesion=true; }
-  const u=await api('ui_estado?clave=in.(cocina_compra,cocina_despensa,cocina_menu,cocina_toppings,cocina_pizzas,cocina_textos)&select=clave,valor');
-  if(u){ u.forEach(x=>{ if(x.clave==='cocina_compra') U.compra=x.valor||[]; if(x.clave==='cocina_despensa') U.desp=x.valor||[]; if(x.clave==='cocina_menu') U.menu=x.valor||{}; if(x.clave==='cocina_toppings') U.top=x.valor||[]; if(x.clave==='cocina_textos') U.txt=x.valor||{}; if(x.clave==='cocina_pizzas'){ PZC=x.valor||[]; haySrvPz=true; } }); if(!haySrvPz&&PZC.length) syncPZC(); if(!(u.some(x=>x.clave==='cocina_toppings'))&&(U.top||[]).length) guardaU('top'); }
+  const u=await api('ui_estado?clave=in.(cocina_compra,cocina_despensa,cocina_menu,cocina_toppings,cocina_pizzas,cocina_textos,cocina_diario)&select=clave,valor');
+  if(u){ u.forEach(x=>{ if(x.clave==='cocina_compra') U.compra=x.valor||[]; if(x.clave==='cocina_despensa') U.desp=x.valor||[]; if(x.clave==='cocina_menu') U.menu=x.valor||{}; if(x.clave==='cocina_toppings') U.top=x.valor||[]; if(x.clave==='cocina_textos') U.txt=x.valor||{}; if(x.clave==='cocina_diario') U.diario=x.valor||[]; if(x.clave==='cocina_pizzas'){ PZC=x.valor||[]; haySrvPz=true; } }); if(!haySrvPz&&PZC.length) syncPZC(); if(!(u.some(x=>x.clave==='cocina_toppings'))&&(U.top||[]).length) guardaU('top'); }
   cargado=true; cache(); pintar(); }
-const tU={}; function guardaU(k){ cache(); clearTimeout(tU[k]); tU[k]=setTimeout(()=>{ const clave={compra:'cocina_compra',desp:'cocina_despensa',menu:'cocina_menu',top:'cocina_toppings',pzc:'cocina_pizzas',txt:'cocina_textos'}[k];
+const tU={}; function guardaU(k){ cache(); clearTimeout(tU[k]); tU[k]=setTimeout(()=>{ const clave={compra:'cocina_compra',desp:'cocina_despensa',menu:'cocina_menu',top:'cocina_toppings',pzc:'cocina_pizzas',txt:'cocina_textos',diario:'cocina_diario'}[k];
   api('ui_estado?on_conflict=clave',{m:'POST',h:{Prefer:'resolution=merge-duplicates,return=minimal'},b:{clave,valor:U[k],actualizado:new Date().toISOString()}}); },500); }
 async function guardaR(r){ r.actualizado=new Date().toISOString(); const cuerpo={tipo:r.tipo,titulo:r.titulo,etiquetas:r.etiquetas,raciones:r.raciones,tiempo:r.tiempo,ingredientes:r.ingredientes,pasos:r.pasos,notas:r.notas,fav:!!r.fav,actualizado:r.actualizado};
   if(r.id){ const i=R.findIndex(x=>x.id===r.id); if(i>=0) R[i]=r; cache(); await api('recetas?id=eq.'+r.id,{m:'PATCH',b:cuerpo,h:{Prefer:'return=minimal'}}); return r; }
@@ -145,7 +145,7 @@ function parseNota(txt){ const L=String(txt).split('\n').map(x=>x.replace(/\s+$/
 /* ---------- navegación inferior ---------- */
 const sv=p=>'<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';
 const IC={rec:sv('<path d="M6 3v7a2 2 0 002 2v9M10 3v7a2 2 0 01-2 2M17 3c-2 2-3 4-3 7 0 2 1 3 3 3v8"/>'),menu:sv('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'),compra:sv('<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.5 12h11l2-8H6"/>'),pizza:sv('<path d="M3 5a14 14 0 0118 0L12 21z"/><circle cx="10" cy="9" r="1"/><circle cx="14" cy="11" r="1"/><circle cx="12" cy="15" r="1"/>'),
- calc:sv('<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/>'),elab:sv('<path d="M3 11h18a8 8 0 01-8 8h-2a8 8 0 01-8-8z"/><path d="M8 7c0-2 2-2 2-4M13 7c0-2 2-2 2-4"/>'),mont:sv('<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>'),top:sv('<path d="M5 19C5 10 10 5 20 4c0 10-5 15-14 15z"/><path d="M5 19L14 10"/>'),piz:sv('<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>')};
+ calc:sv('<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/>'),elab:sv('<path d="M3 11h18a8 8 0 01-8 8h-2a8 8 0 01-8-8z"/><path d="M8 7c0-2 2-2 2-4M13 7c0-2 2-2 2-4"/>'),mont:sv('<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>'),top:sv('<path d="M5 19C5 10 10 5 20 4c0 10-5 15-14 15z"/><path d="M5 19L14 10"/>'),piz:sv('<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>'),dia:sv('<path d="M6 3h12v18H6z"/><path d="M9 7h6M9 11h6M9 15h4"/>')};
 function pintaNav(){ const home=[['rec','Recetas'],['menu','Menú'],['compra','Compra'],['pizza','Pizza']];
   const act=V==='nota'?'rec':V==='desp'?'compra':V;
   $('nav').innerHTML=(V==='pizza'?SUBS.map(x=>'<button data-sub="'+x[0]+'" class="'+(PZV===x[0]?'on':'')+'">'+IC[x[0]]+'<span>'+x[1]+'</span></button>'):home.map(x=>'<button data-v="'+x[0]+'" class="'+(act===x[0]?'on':'')+'">'+IC[x[0]]+'<span>'+x[1]+'</span></button>')).join('');
@@ -217,26 +217,41 @@ function editTxt(key){ const sh=$('sheet'); sh.hidden=false; document.body.style
     else if(b.id==='ok'){ U.txt=U.txt||{}; U.txt[key]=$('tx_t').value; guardaU('txt'); cerrar2(); }
     else if(b.id==='rst'){ if(U.txt) delete U.txt[key]; guardaU('txt'); cerrar2(); }
     else if(b.dataset.tok){ const t=$('tx_t'), a=t.selectionStart||0, z=t.selectionEnd||0, v='{'+b.dataset.tok+'}'; t.value=t.value.slice(0,a)+v+t.value.slice(z); t.focus(); t.selectionStart=t.selectionEnd=a+v.length; } }; }
+const OPC={1:1,3:1}, hechoEL=i=>!!EL.done[i]||!!(EL.omit&&EL.omit[i]);
 function pasosEL(){ return [{t:'Mezclado',d:'3-5 minutos',key:'tx-e0'},{t:'Primer amasado',d:'8-10 minutos',key:'tx-e1'},{t:'Primer reposo',d:'15 minutos',key:'tx-e2'},{t:'Segundo amasado',d:'2-3 minutos',key:'tx-e3'},{t:'Segundo reposo',d:'15-20 minutos',key:'tx-e4'},{t:'División y boleado',d:'3-5 minutos',key:'tx-e5'},{t:'Fermentación en frigorífico',d:PZ.t+' horas',key:'tx-e6',fr:1}]; }
 function ltInput(d){ const z=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())+'T'+z(d.getHours())+':'+z(d.getMinutes()); }
 function finFerm(){ if(!EL.fridge) return ''; const d=new Date(new Date(EL.fridge).getTime()+PZ.t*3600e3); return d.toLocaleString('es-ES',{weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'}); }
-function pintaElab(){ const P=pasosEL(); const cur=P.findIndex((_,i)=>!EL.done[i]); const c=pzCalc();
+function pintaElab(){ const P=pasosEL(); const cur=P.findIndex((_,i)=>!hechoEL(i)); const c=pzCalc();
  let h='<div class="meta" style="margin:6px 0 10px">Se ajusta a la calculadora.</div>';
- h+=P.map((p,i)=>{ const hecho=!!EL.done[i], act=i===cur, abierto=EL.open[i]!==undefined?EL.open[i]:act; const dur=DUR[i+1];
-  return '<div class="paso2'+(hecho?' hecho':'')+(act?' act':'')+'"><div class="cab" data-st="'+i+'"><i>'+(hecho?'✓':i+1)+'</i><span><b>'+esc(p.t)+'</b><small>'+esc(p.d)+'</small></span><em>'+(abierto?'▾':'▸')+'</em></div>'+
-  (abierto?'<div class="cue">'+lineasHtml(p.key)+
+ h+=P.map((p,i)=>{ const om=!!(EL.omit&&EL.omit[i]), hecho=!!EL.done[i]||om, act=i===cur, abierto=EL.open[i]!==undefined?EL.open[i]:act; const dur=om?0:DUR[i+1];
+  return '<div class="paso2'+(hecho?' hecho':'')+(act?' act':'')+'"><div class="cab" data-st="'+i+'"><i>'+(om?'–':hecho?'✓':i+1)+'</i><span><b>'+esc(p.t)+'</b><small>'+(om?'Omitido':esc(p.d)+(OPC[i]?' · opcional':''))+'</small></span><em>'+(abierto?'▾':'▸')+'</em></div>'+
+  (abierto?'<div class="cue">'+(om?'':lineasHtml(p.key))+(OPC[i]?'<button class="sm'+(om?' pri':'')+'" data-om="'+i+'" style="margin:8px 8px 0 0">'+(om?'Hacerlo':'Omitir este amasado')+'</button>':'')+
    (dur?'<div class="fila tmr"><b data-tm="'+(i+1)+'">'+mmss(tmRest(i+1,dur))+'</b><button class="sm" data-tg="'+(i+1)+'">'+(TM[i+1]&&TM[i+1].run?'Pausa':'Iniciar')+'</button><button class="sm" data-tr="'+(i+1)+'">↺</button></div>':'')+
    (p.fr?'<div class="campo"><label>Metido en el frigorífico</label><div class="fila"><input type="datetime-local" id="frI" value="'+(EL.fridge?ltInput(new Date(EL.fridge)):'')+'" style="flex:1"><button class="sm pri" data-fn="1">Ahora</button></div>'+(EL.fridge?'<div class="fin">Fermentación lista: <b>'+esc(finFerm())+'</b></div>':'<div class="meta">Pulsa «Ahora» al meter la masa para ver cuándo termina.</div>')+'</div>':'')+
-   '<button class="'+(hecho?'':'pri ')+'sm" data-dn="'+i+'" style="margin-top:8px">'+(hecho?'Desmarcar':'✓ Hecho')+'</button></div>':'')+'</div>'; }).join('');
+   (om?'':'<button class="'+(hecho?'':'pri ')+'sm" data-dn="'+i+'" style="margin-top:8px">'+(hecho?'Desmarcar':'✓ Hecho')+'</button>')+'</div>':'')+'</div>'; }).join('');
  h+='<h3 style="margin:18px 0 4px;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--mut)">Si vas a congelar</h3>'+tarj('cg','❄','Congelación y descongelación','',false,lineasHtml('tx-ecg'));
- h+='<div class="meta" style="margin:10px 0">Los tiempos de amasado y reposo son orientaciones prácticas para elaboración manual doméstica, no requisitos oficiales de la AVPN.</div><button data-rs="1">Empezar de nuevo</button>';
+
+ h+='<div class="meta" style="margin:10px 0">Los tiempos de amasado y reposo son orientaciones prácticas para elaboración manual doméstica, no requisitos oficiales de la AVPN.</div><div class="fila"><button class="pri" data-dgs="1" style="flex:1">Guardar esta masa en el Diario</button><button data-rs="1">Empezar de nuevo</button></div>';
  return h; }
 function tmRest(n,dur){ const t=TM[n]; if(!t) return dur; return t.run?(t.end-Date.now())/1000:t.rem; }
 function tmTick(){ document.querySelectorAll('[data-tm]').forEach(el=>{ const n=+el.dataset.tm,t=TM[n]; if(!t||!t.run) return; const r=(t.end-Date.now())/1000; if(r<=0){ t.run=false; t.rem=0; el.textContent='¡Tiempo!'; pitido(); if(V==='pizza') setTimeout(pintar,50); } else el.textContent=mmss(r); }); }
 setInterval(tmTick,500);
 function pitido(){ try{ navigator.vibrate&&navigator.vibrate([300,150,300]); }catch(e){} try{ const a=new (window.AudioContext||window.webkitAudioContext)(); [0,.4,.8].forEach(d=>{ const o=a.createOscillator(),g=a.createGain(); o.frequency.value=880; g.gain.value=.2; o.connect(g); g.connect(a.destination); o.start(a.currentTime+d); o.stop(a.currentTime+d+.25); }); }catch(e){} }
-const SUBS=[['calc','Calculadora'],['elab','Elaboración'],['mont','Montaje'],['top','Toppings'],['piz','Pizzas']];
-function pintaPizza(){ const body=PZV==='calc'?pintaCalc():'<div class="pz">'+(PZV==='elab'?pintaElab():PZV==='mont'?pintaMontaje():PZV==='top'?pintaToppings():pintaPizzas())+'</div>';
+const SUBS=[['calc','Calculadora'],['elab','Elaboración'],['mont','Montaje'],['top','Toppings'],['piz','Pizzas'],['dia','Diario']];
+function fechaCorta(iso){ try{ return new Date(iso).toLocaleString('es-ES',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}); }catch(e){ return iso; } }
+const grpA=d=>d.a1&&d.a2?'Con los 2 amasados':d.a1?'Solo 1.º amasado':d.a2?'Solo 2.º amasado':'Sin amasados';
+function pintaDiario(){ const D=(U.diario||[]).slice().sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  if(!D.length) return '<div class="vacio">Aún no hay masas guardadas.<br>En Elaboración, al terminar, toca «Guardar esta masa en el Diario».</div>';
+  const gr={}; D.filter(d=>d.nota!=null).forEach(d=>{ const k=grpA(d); (gr[k]=gr[k]||[]).push(d.nota); });
+  let h=Object.keys(gr).length>1?'<div class="bk" style="margin-bottom:10px">'+Object.keys(gr).map(k=>'<div>'+k+': <b>'+(Math.round(gr[k].reduce((a,b)=>a+b,0)/gr[k].length*10)/10).toString().replace('.',',')+'</b> <span>('+gr[k].length+(gr[k].length===1?' masa':' masas')+')</span></div>').join('')+'</div>':'';
+  return h+D.map(d=>{ const key='d'+d.id, ab=EL.open[key]!==undefined?EL.open[key]:false, hs=String(d.h).replace('.',',');
+    const head='<div class="cab" data-ac="'+key+'" data-def="0"><i style="flex:0 0 34px;height:34px;line-height:32px;font-weight:700">'+(d.nota!=null?String(d.nota).replace('.',','):'–')+'</i><span><b>'+d.n+' × '+d.g+' g · '+hs+' % · '+d.t+' h</b><small>'+esc(fechaCorta(d.fecha))+' · 1.º amasado '+(d.a1?'sí':'no')+' · 2.º '+(d.a2?'sí':'no')+'</small></span><em>'+(ab?'▾':'▸')+'</em></div>';
+    const body=ab?'<div class="cue"><div>Harina <b>'+d.harina+' g</b> · agua <b>'+d.agua+' g</b> · sal <b>'+d.sal+' g</b> · levadura <b>'+d.lev+' g</b></div>'+(d.pizza?'<div>Pizza: '+esc(d.pizza)+'</div>':'')+(d.fridge?'<div>Al frigorífico: '+esc(fechaCorta(d.fridge))+'</div>':'')+
+      '<div class="fila" style="margin-top:10px"><label style="color:var(--mut)">Nota (0-10)</label><input type="number" inputmode="decimal" min="0" max="10" step="0.5" data-dgn="'+d.id+'" value="'+(d.nota==null?'':d.nota)+'" style="width:90px"></div>'+
+      '<div class="campo"><label>Resultado (textura, borde, sabor…)</label><textarea data-dgc="'+d.id+'" style="min-height:90px">'+esc(d.com||'')+'</textarea></div>'+
+      '<div class="fila"><button class="sm" data-dgr="'+d.id+'">Repetir esta masa</button><button class="sm" data-dgx="'+d.id+'" style="color:var(--neg)">Borrar</button></div></div>':'';
+    return '<div class="paso2">'+head+body+'</div>'; }).join(''); }
+function pintaPizza(){ const body=PZV==='calc'?pintaCalc():'<div class="pz">'+(PZV==='elab'?pintaElab():PZV==='mont'?pintaMontaje():PZV==='top'?pintaToppings():PZV==='dia'?pintaDiario():pintaPizzas())+'</div>';
   return body; }
 /* tarjeta desplegable genérica */
 function tarj(key,num,tit,sub,defOpen,inner,fl){ fl=fl||{}; const ab=EL.open[key]!==undefined?EL.open[key]:defOpen;
@@ -401,7 +416,7 @@ $('fab').onclick=nuevo;
 $('main').onclick=e=>{ if(V==='pizza'){ const tp=e.target.closest('[data-tp]'); if(tp){ const k=tp.dataset.tp, i=TS.sel.indexOf(k); if(i>=0) TS.sel.splice(i,1); else TS.sel.push(k); guardaTS(); pintar(); return; }
   const cm=e.target.closest('[data-cm]'); if(cm){ EL.cm=EL.cm||{}; EL.cm[cm.dataset.cm]=!EL.cm[cm.dataset.cm]; guardaEL(); pintar(); return; }
   const ac=e.target.closest('[data-ac]'); if(ac){ const k=ac.dataset.ac, cur=EL.open[k]!==undefined?EL.open[k]:ac.dataset.def==='1'; EL.open[k]=!cur; guardaEL(); pintar(); return; }
-  const st=e.target.closest('[data-st]'); if(st){ const i=+st.dataset.st, P=pasosEL(), cur=P.findIndex((_,k)=>!EL.done[k]); const ab=EL.open[i]!==undefined?EL.open[i]:i===cur; EL.open[i]=!ab; guardaEL(); pintar(); return; }
+  const st=e.target.closest('[data-st]'); if(st){ const i=+st.dataset.st, P=pasosEL(), cur=P.findIndex((_,k)=>!hechoEL(k)); const ab=EL.open[i]!==undefined?EL.open[i]:i===cur; EL.open[i]=!ab; guardaEL(); pintar(); return; }
   const b=e.target.closest('button'); if(!b) return;
   if(b.dataset.sub){ PZV=b.dataset.sub; pintar(); window.scrollTo(0,0); return; }
   if(b.dataset.md!==undefined){ EL.mdone=EL.mdone||{}; const i=+b.dataset.md; EL.mdone[i]=!EL.mdone[i]; EL.open['m'+i]=false; const nx=[0,1,2,3].find(k=>!EL.mdone[k]); if(nx!==undefined) EL.open['m'+nx]=true; guardaEL(); pintar(); return; }
@@ -410,6 +425,9 @@ $('main').onclick=e=>{ if(V==='pizza'){ const tp=e.target.closest('[data-tp]'); 
   if(b.dataset.cmr){ EL.cm={}; guardaEL(); pintar(); return; }
   if(b.dataset.tu){ const [k,d]=b.dataset.tu.split('|'), i=TS.sel.indexOf(k), j=i+(+d); if(i>=0&&j>=0&&j<TS.sel.length){ TS.sel.splice(i,1); TS.sel.splice(j,0,k); guardaTS(); pintar(); } return; }
   if(b.dataset.tf){ const k=b.dataset.tf; TS.f[k]=tF(k)==='antes'?'despues':'antes'; guardaTS(); pintar(); return; }
+  if(b.dataset.dgs){ const c=pzCalc(); U.diario=U.diario||[]; const p=todasPizzas().find(x=>x.id===PZSEL); U.diario.push({id:Date.now(),fecha:new Date().toISOString(),n:PZ.n,g:PZ.g,h:PZ.h,t:PZ.t,harina:f0(c.harina),agua:f0(c.agua),sal:f1(c.sal),lev:f2(c.lev),a1:!(EL.omit&&EL.omit[1]),a2:!(EL.omit&&EL.omit[3]),fridge:EL.fridge||null,pizza:p?p.nombre:'',nota:null,com:''}); guardaU('diario'); b.textContent='✓ Guardada en el Diario'; return; }
+  if(b.dataset.dgx){ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='¿Seguro?'; return; } U.diario=(U.diario||[]).filter(x=>String(x.id)!==b.dataset.dgx); guardaU('diario'); pintar(); return; }
+  if(b.dataset.dgr){ const d=(U.diario||[]).find(x=>String(x.id)===b.dataset.dgr); if(d){ PZ.n=d.n; PZ.g=d.g; PZ.h=d.h; PZ.t=d.t; EL.omit={1:!d.a1,3:!d.a2}; EL.done={}; EL.open={}; EL.fridge=null; guardaEL(); PZV='calc'; pintar(); window.scrollTo(0,0); } return; }
   if(b.dataset.te){ editTxt(b.dataset.te); return; }
   if(b.dataset.nt){ formTopping(); return; }
   if(b.dataset.nte){ formTopping((U.top||[]).find(x=>x.k===b.dataset.nte)); return; }
@@ -422,11 +440,12 @@ $('main').onclick=e=>{ if(V==='pizza'){ const tp=e.target.closest('[data-tp]'); 
   if(b.dataset.mk==='save'){ const q=buildCustom('c'+Date.now(),TS.nombre||('Pizza a medida '+(PZC.length+1))); PZC.push(q); syncPZC(); guardaTS(); b.textContent='✓ Guardada en Pizzas'; return; }
   if(b.dataset.pdel){ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='¿Seguro?'; return; } PZC=PZC.filter(x=>x.id!==b.dataset.pdel); syncPZC(); delete PZP[b.dataset.pdel]; if(PZSEL===b.dataset.pdel&&!esBase(PZSEL)) PZSEL='kebab'; guardaTS(); guardaPZP(); pintar(); return; }
   if(b.dataset.bkr){ delete PZP[b.dataset.bkr]; guardaPZP(); pintar(); return; }
-  if(b.dataset.dn!==undefined){ const i=+b.dataset.dn; EL.done[i]=!EL.done[i]; EL.open[i]=false; const P=pasosEL(), nx=P.findIndex((_,k)=>!EL.done[k]); if(nx>=0) EL.open[nx]=true; guardaEL(); pintar(); return; }
+  if(b.dataset.dn!==undefined){ const i=+b.dataset.dn; EL.done[i]=!EL.done[i]; EL.open[i]=false; const P=pasosEL(), nx=P.findIndex((_,k)=>!hechoEL(k)); if(nx>=0) EL.open[nx]=true; guardaEL(); pintar(); return; }
+  if(b.dataset.om!==undefined){ const i=+b.dataset.om; EL.omit=EL.omit||{}; EL.omit[i]=!EL.omit[i]; if(EL.omit[i]) EL.done[i]=false; delete EL.open[i]; guardaEL(); pintar(); return; }
   if(b.dataset.tg){ const n=+b.dataset.tg, t=TM[n]||(TM[n]={run:false,rem:DUR[n],end:0}); if(t.run){ t.rem=(t.end-Date.now())/1000; t.run=false; } else { if(t.rem<=0) t.rem=DUR[n]; t.end=Date.now()+t.rem*1000; t.run=true; } pintar(); return; }
   if(b.dataset.tr){ delete TM[+b.dataset.tr]; pintar(); return; }
   if(b.dataset.fn){ EL.fridge=new Date().toISOString(); guardaEL(); pintar(); return; }
-  if(b.dataset.rs){ EL.done={}; EL.open={}; EL.fridge=null; TM={}; guardaEL(); pintar(); return; } if(b.id==='pzM') PZ.n=Math.max(1,PZ.n-1); else if(b.id==='pzP') PZ.n=Math.min(20,PZ.n+1); else if(b.dataset.g) PZ.g=+b.dataset.g; else if(b.dataset.t) PZ.t=+b.dataset.t; else if(b.id==='pzSave'){ guardaPizza(b); return; } calcPizza(); return; }
+  if(b.dataset.rs){ EL.done={}; EL.open={}; EL.omit={}; EL.fridge=null; TM={}; guardaEL(); pintar(); return; } if(b.id==='pzM') PZ.n=Math.max(1,PZ.n-1); else if(b.id==='pzP') PZ.n=Math.min(20,PZ.n+1); else if(b.dataset.g) PZ.g=+b.dataset.g; else if(b.dataset.t) PZ.t=+b.dataset.t; else if(b.id==='pzSave'){ guardaPizza(b); return; } calcPizza(); return; }
   const c=e.target.closest('.card'); if(c){ abrir(c.dataset.id); return; } const b=e.target.closest('button'); if(!b) return;
   if(b.id==='addI'){ const i=$('nuevoI'), v=i.value.trim(); if(!v) return; U[b.dataset.k].push({t:v,ok:false}); guardaU(b.dataset.k); pintar(); $('nuevoI').focus(); }
   else if(b.dataset.quita){ const k=b.dataset.quita; U[k]=U[k].filter(x=>!x.ok); guardaU(k); pintar(); }
@@ -436,12 +455,14 @@ $('main').onclick=e=>{ if(V==='pizza'){ const tp=e.target.closest('[data-tp]'); 
   else if(b.id==='menuBorra'){ U.menu={}; guardaU('menu'); pintar(); } };
 $('main').addEventListener('change',e=>{ if(e.target.id==='frI'&&e.target.value){ EL.fridge=new Date(e.target.value).toISOString(); guardaEL(); pintar(); } });
 $('main').addEventListener('change',e=>{ const t=e.target; if(!t.dataset) return;
-  if(t.dataset.bk){ const [pid,k]=t.dataset.bk.split('|'); const v=parseFloat(String(t.value).replace(',','.')); if(String(t.value).trim()===''){ if(PZP[pid]) delete PZP[pid][k]; guardaPZP(); } else if(isFinite(v)&&v>=0){ (PZP[pid]=PZP[pid]||{})[k]=v; guardaPZP(); } pintar(); }
-  else if(t.dataset.tg){ const v=String(t.value).trim()===''?null:parseFloat(String(t.value).replace(',','.')); TS.g[t.dataset.tg]=(v!=null&&isFinite(v)&&v>=0)?v:null; guardaTS(); pintar(); }
-  else if(t.dataset.ta){ const v=parseFloat(String(t.value).replace(',','.')); TS.antes=isFinite(v)&&v>=0?v:8; guardaTS(); pintar(); }
-  else if(t.dataset.hr){ EL.hora=t.value; guardaEL(); pintar(); }
+  if(t.dataset.bk){ const [pid,k]=t.dataset.bk.split('|'); const v=parseFloat(String(t.value).replace(',','.')); if(String(t.value).trim()===''){ if(PZP[pid]) delete PZP[pid][k]; guardaPZP(); } else if(isFinite(v)&&v>=0){ (PZP[pid]=PZP[pid]||{})[k]=v; guardaPZP(); } setTimeout(pintar,0); }
+  else if(t.dataset.tg){ const v=String(t.value).trim()===''?null:parseFloat(String(t.value).replace(',','.')); TS.g[t.dataset.tg]=(v!=null&&isFinite(v)&&v>=0)?v:null; guardaTS(); setTimeout(pintar,0); }
+  else if(t.dataset.ta){ const v=parseFloat(String(t.value).replace(',','.')); TS.antes=isFinite(v)&&v>=0?v:8; guardaTS(); setTimeout(pintar,0); }
+  else if(t.dataset.hr){ EL.hora=t.value; guardaEL(); setTimeout(pintar,0); }
+  else if(t.dataset.dgn){ const d=(U.diario||[]).find(x=>String(x.id)===t.dataset.dgn), v=parseFloat(String(t.value).replace(',','.')); if(d){ d.nota=String(t.value).trim()===''||!isFinite(v)?null:Math.max(0,Math.min(10,v)); guardaU('diario'); setTimeout(pintar,0); } }
+  else if(t.dataset.dgc){ const d=(U.diario||[]).find(x=>String(x.id)===t.dataset.dgc); if(d){ d.com=t.value; guardaU('diario'); } }
   else if(t.dataset.tn){ TS.nombre=t.value.trim(); guardaTS(); }
-  else if(t.dataset.pz){ PZSEL=t.value; guardaPZP(); pintar(); } });
+  else if(t.dataset.pz){ PZSEL=t.value; guardaPZP(); setTimeout(pintar,0); } });
 $('main').oninput=e=>{ if(e.target.id==='pzH'){ PZ.h=parseFloat(e.target.value); calcPizza(); } };
 $('main').onchange=e=>{ const c=e.target; if(c.type==='checkbox'&&c.dataset.k){ U[c.dataset.k][+c.dataset.i].ok=c.checked; guardaU(c.dataset.k); pintar(); } else if(c.dataset.m){ U.menu[c.dataset.m]=c.value; guardaU('menu'); } };
 $('main').addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nuevoI') $('addI').click(); });
@@ -452,7 +473,7 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&$('sheet
 <script>
 /* Actualización automática */
 (function(){
-  var BUILD='V2.09', ROOT='../';
+  var BUILD='V2.10', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

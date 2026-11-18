@@ -197,9 +197,9 @@ function pintaElab(){ const P=pasosEL(); const cur=P.findIndex((_,i)=>!EL.done[i
    (dur?'<div class="fila tmr"><b data-tm="'+(i+1)+'">'+mmss(tmRest(i+1,dur))+'</b><button class="sm" data-tg="'+(i+1)+'">'+(TM[i+1]&&TM[i+1].run?'Pausa':'Iniciar')+'</button><button class="sm" data-tr="'+(i+1)+'">↺</button></div>':'')+
    (p.fr?'<div class="campo"><label>Metido en el frigorífico</label><div class="fila"><input type="datetime-local" id="frI" value="'+(EL.fridge?ltInput(new Date(EL.fridge)):'')+'" style="flex:1"><button class="sm pri" data-fn="1">Ahora</button></div>'+(EL.fridge?'<div class="fin">Fermentación lista: <b>'+esc(finFerm())+'</b></div>':'<div class="meta">Pulsa «Ahora» al meter la masa para ver cuándo termina.</div>')+'</div>':'')+
    '<button class="'+(hecho?'':'pri ')+'sm" data-dn="'+i+'" style="margin-top:8px">'+(hecho?'Desmarcar':'✓ Hecho')+'</button></div>':'')+'</div>'; }).join('');
- h+='<h3 style="margin:18px 0 4px;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--mut)">Congelación y descongelación</h3>'+
- tarj('cg','❄','Congelación','',false,['Fermentar las bolas <b>12 horas</b> en el frigorífico a 3-4 °C.','Guardarlas individualmente en recipientes herméticos ligeramente aceitados.','Congelar a <b>-18 °C</b>, preferiblemente hasta 3 meses.'].map((x,i)=>'<div>'+(i+1)+'. '+x+'</div>').join(''))+
- tarj('dg','☀','Descongelación','',false,['Pasar al frigorífico 12-24 horas, hasta descongelarlas.','Dejar tapadas a temperatura ambiente 2-4 horas, ajustando según su fermentación.','Estirar cuando estén aireadas y relajadas.'].map((x,i)=>'<div>'+(i+1)+'. '+x+'</div>').join(''));
+ const lst=a=>a.map((x,i)=>'<div>'+(i+1)+'. '+x+'</div>').join('');
+ h+='<h3 style="margin:18px 0 4px;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--mut)">Si vas a congelar</h3>'+
+ tarj('cg','❄','Congelación y descongelación','',false,'<div class="meta" style="margin-bottom:6px">Congelación</div>'+lst(['Fermentar las bolas <b>12 horas</b> en el frigorífico a 3-4 °C.','Guardarlas individualmente en recipientes herméticos ligeramente aceitados.','Congelar a <b>-18 °C</b>, preferiblemente hasta 3 meses.'])+'<div class="meta" style="margin:12px 0 6px">Descongelación</div>'+lst(['Pasar al frigorífico 12-24 horas, hasta descongelarlas.','Dejar tapadas a temperatura ambiente 2-4 horas, ajustando según su fermentación.','Estirar cuando estén aireadas y relajadas.'])+'<div class="fin" style="margin-top:12px">En el congelador la masa no fermenta: se detiene. La fermentación continúa al descongelar (frigorífico y ambiente), así que en total suma unas <b>26-40 h</b> (12 + 12-24 + 2-4), orientativo.</div>');
  h+='<div class="meta" style="margin:10px 0">Los tiempos de amasado y reposo son orientaciones prácticas para elaboración manual doméstica, no requisitos oficiales de la AVPN.</div><button data-rs="1">Empezar de nuevo</button>';
  return h; }
 function tmRest(n,dur){ const t=TM[n]; if(!t) return dur; return t.run?(t.end-Date.now())/1000:t.rem; }
@@ -399,7 +399,7 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&$('sheet
 <script>
 /* Actualización automática */
 (function(){
-  var BUILD='V2.03', ROOT='../';
+  var BUILD='V2.04', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

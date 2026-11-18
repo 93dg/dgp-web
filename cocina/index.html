@@ -422,8 +422,13 @@ function pintaToppings(){ const n=TS.sel.length;
     (TS.editId?'<div class="fila"><button class="pri" data-mk="upd" style="flex:1">Guardar cambios</button><button data-mk="cancel" style="flex:1">Cancelar</button></div>'+((PZC.find(x=>x.id===TS.editId)&&!esBase(TS.editId))?'<button data-pdel="'+TS.editId+'" style="color:var(--neg);margin-top:10px;width:100%">Borrar pizza</button>':''):'<div class="fila"><button class="pri" data-mk="now" style="flex:1">Hacer ahora</button><button data-mk="save" style="flex:1">Guardar en Pizzas</button></div><div class="fila" style="margin-top:8px"><button class="sm" data-mk="clear">Quitar selección</button></div>'); }
   return h; }
 /* montaje con comanda */
+function cantFila(t){ if(/<b>/.test(t)||/Hornear/.test(t)) return ''; const nm=sinT(t.replace(/<[^>]+>.*$/,'').trim());
+  const T=TOPf().find(x=>sinT(x.t||'')===nm||sinT(x.n||'')===nm);
+  let q=T&&T.cant?T.cant+' '+(T.u&&T.u!=='g'?UN[T.u][1]:'g'):(T&&T.g!=null?fmtQ(Math.round(T.g*PZ.g/250),T.u):'');
+  if(!q){ if(/mozzarella|fior di latte|bufala/.test(nm)) q='80-100 g'; else if(/tomate/.test(nm)) q='60-80 g'; else if(/aceite/.test(nm)) q='6-7 g'; }
+  return q?' <b style="color:var(--ac)">'+q+'</b>':''; }
 function comandaHtml(p,v){ EL.cm=EL.cm||{};
-  const filas=fase=>p.orden.map((o,i)=>[o,i]).filter(x=>x[0].f===fase).map(x=>{ const key=p.id+'|'+x[1], d=!!EL.cm[key]; return '<div class="cm'+(d?' hecho':'')+'" data-cm="'+key+'"><b class="bx">'+(d?'✓':'')+'</b><span>'+pasoTxt(x[0].t,v)+'</span></div>'; }).join('');
+  const filas=fase=>p.orden.map((o,i)=>[o,i]).filter(x=>x[0].f===fase).map(x=>{ const key=p.id+'|'+x[1], d=!!EL.cm[key]; return '<div class="cm'+(d?' hecho':'')+'" data-cm="'+key+'"><b class="bx">'+(d?'✓':'')+'</b><span>'+pasoTxt(x[0].t,v)+cantFila(x[0].t)+'</span></div>'; }).join('');
   return '<div class="fila" style="margin-bottom:8px"><select data-pz="1" style="flex:1">'+todasPizzas().map(q=>'<option value="'+esc(q.id)+'"'+(q.id===p.id?' selected':'')+'>'+esc(q.nombre)+'</option>').join('')+'</select><span class="meta">masa '+PZ.g+' g</span></div>'+
    '<div class="cmh">Antes de hornear</div>'+(filas('antes')||'<div class="meta">Nada.</div>')+'<div class="cmh sep">🔥 Hornear</div><div class="cmh">Después de hornear</div>'+(filas('despues')||'<div class="meta">Nada.</div>')+
    '<div class="fila" style="margin-top:10px"><button class="sm" data-cmr="1">Desmarcar todo</button></div>'; }
@@ -564,7 +569,7 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&$('sheet
 <script>
 /* Actualización automática */
 (function(){
-  var BUILD='V2.49', ROOT='../';
+  var BUILD='V2.50', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

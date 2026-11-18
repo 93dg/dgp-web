@@ -68,6 +68,12 @@ main{padding:10px 12px;max-width:900px;margin:0 auto}
 .ln2{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd)}.ln2>span{flex:1}.ln2.sub{padding-left:10px;color:var(--mut);font-size:.9rem}.ln2 input{width:84px;min-height:36px;padding:4px 8px;text-align:center}
 .ord{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--bd)}.ord i{flex:0 0 24px;height:24px;border-radius:50%;background:var(--s2);border:1px solid var(--bd);font-style:normal;text-align:center;font-size:.78rem;line-height:22px}.ord span{flex:1}
 .fase{display:inline-block;font-style:normal;font-size:.72rem;border-radius:999px;padding:0 8px;margin-left:4px;border:1px solid var(--bd);color:var(--mut)}.fase.antes{border-color:var(--ac);color:var(--ac)}.fase.despues{border-color:var(--pos);color:var(--pos)}
+.menu{border-bottom:1px solid var(--bd)}.mrow{display:flex;gap:14px;align-items:center;justify-content:space-between;padding:14px 2px;cursor:pointer}.mrow .mt{flex:1;min-width:0}.mrow b{display:block;font-size:1.1rem}.mrow .d{display:block;color:var(--mut);margin-top:2px}.mrow .meta{display:block;margin-top:4px}
+.th{flex:0 0 118px;background:#f1eee8;border-radius:14px;padding:4px;border:1px solid var(--bd)}.th .pzsvg{display:block;width:100%;height:auto}.big{background:#f1eee8;border-radius:16px;padding:8px;margin:2px 0 6px}.big .pzsvg{display:block;width:100%;height:auto}.mdet{padding:0 2px 14px}
+.selb{flex:0 0 32px;height:32px;min-height:0;padding:0;border-radius:50%;font-size:1.1rem;line-height:1}.selb.on{background:var(--ac);color:#000;border-color:var(--ac);font-weight:700}.paso2 .cab .selb+span{flex:1}
+.tsel{background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:10px 12px;margin:6px 0}
+.cm{display:flex;gap:12px;align-items:center;padding:14px 4px;border-bottom:1px solid var(--bd);font-size:1.12rem;cursor:pointer}.cm .bx{flex:0 0 30px;height:30px;border-radius:8px;border:2px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:1rem;color:#000}.cm.hecho{opacity:.45}.cm.hecho span{text-decoration:line-through}.cm.hecho .bx{background:var(--pos);border-color:var(--pos)}
+.cmh{margin:12px 0 2px;font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--mut)}.cmh.sep{margin:14px 0 6px;padding:8px 10px;border:1px dashed var(--ac);border-radius:10px;color:var(--ac);text-align:center}
 .dia{display:grid;grid-template-columns:70px 1fr 1fr;gap:6px;align-items:center;margin:6px 0}
 .dia b{font-size:.9rem}.dia select{min-height:40px;padding:6px 8px;font-size:.85rem}
 </style>
@@ -180,9 +186,7 @@ function pasosEL(){ const c=pzCalc(), p10=c.harina*0.1;
  {t:'Segundo amasado',d:'2-3 minutos',l:['Amasar brevemente para mejorar la estructura.','Si la masa ya está lisa y elástica, omitir este amasado.']},
  {t:'Segundo reposo',d:'15-20 minutos',l:['Dejar reposar la masa tapada a temperatura ambiente.']},
  {t:'División y boleado',d:'3-5 minutos',l:['Dividir la masa en <b>'+PZ.n+' bolas de '+PZ.g+' g</b> (total '+f0(c.total)+' g).','Formar bolas individuales con la superficie ligeramente tensada.','Evitar tensar demasiado las bolas.','Introducirlas en recipientes individuales tapados.']},
- {t:'Fermentación en frigorífico',d:PZ.t+' horas',l:['Introducir los recipientes en el frigorífico a 3-4 °C.','Fermentar durante <b>'+PZ.t+' horas</b>.','No volver a amasar ni desgasificar durante la fermentación.'],fr:1},
- {t:'Preparación antes de hornear',d:'2-3 horas aproximadamente',l:['Sacar las bolas del frigorífico.','Mantenerlas tapadas hasta que estén relajadas y fáciles de estirar.','Estirar manualmente desde el centro hacia los bordes.','No utilizar rodillo para conservar el aire del borde.']},
- {t:'Horneado',d:'unos 2 minutos por pizza',l:['Poner el Ariete 3901 a su temperatura máxima de 430 °C.','Encender ambas resistencias.','Precalentar inicialmente durante 15-20 minutos.','Comprobar, si se dispone de termómetro infrarrojo, que la piedra esté aproximadamente entre 380 y 430 °C.','Cocinar la pizza unos 2 minutos, ajustando según el dorado.','Dejar recuperar la temperatura de la piedra antes de preparar la siguiente.']}]; }
+ {t:'Fermentación en frigorífico',d:PZ.t+' horas',l:['Introducir los recipientes en el frigorífico a 3-4 °C.','Fermentar durante <b>'+PZ.t+' horas</b>.','No volver a amasar ni desgasificar durante la fermentación.'],fr:1}]; }
 function ltInput(d){ const z=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())+'T'+z(d.getHours())+':'+z(d.getMinutes()); }
 function finFerm(){ if(!EL.fridge) return ''; const d=new Date(new Date(EL.fridge).getTime()+PZ.t*3600e3); return d.toLocaleString('es-ES',{weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'}); }
 function pintaElab(){ const P=pasosEL(); const cur=P.findIndex((_,i)=>!EL.done[i]); const c=pzCalc();
@@ -209,34 +213,90 @@ function pintaPizza(){ const body=PZV==='calc'?pintaCalc():'<div class="pz">'+(P
 function tarj(key,num,tit,sub,defOpen,inner,fl){ fl=fl||{}; const ab=EL.open[key]!==undefined?EL.open[key]:defOpen;
   return '<div class="paso2'+(fl.hecho?' hecho':'')+(fl.act?' act':'')+'"><div class="cab" data-ac="'+key+'" data-def="'+(defOpen?1:0)+'"><i>'+(fl.hecho?'✓':num)+'</i><span><b>'+esc(tit)+'</b>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</span><em>'+(ab?'▾':'▸')+'</em></div>'+(ab?'<div class="cue">'+inner+'</div>':'')+'</div>'; }
 /* pizzas (catálogo) */
-const PIZZAS=[{id:'kebab',nombre:'Kebab',base:250,ing:[{k:'carne',n:'Carne de kebab cocinada',c:'carne',g:90},{k:'salsa',n:'Salsa kebab',c:'salsa',g:30,antes:8}],
+const PIZZAS=[{id:'kebab',nombre:'Kebab',desc:'Carne de kebab, salsa kebab.',capas:['carne','zigzag'],base:250,ing:[{k:'carne',n:'Carne de kebab cocinada',c:'carne',g:90},{k:'salsa',n:'Salsa kebab',c:'salsa',g:30,antes:8}],
   orden:[{t:'Estirar la masa.'},{t:'Extender <b>{salsa_antes} g</b> de salsa kebab.',f:'antes'},{t:'Repartir <b>{carne} g</b> de carne de kebab.',f:'antes'},{t:'Hornear.',f:'horno'},{t:'Añadir los <b>{salsa_desp} g</b> restantes de salsa kebab al sacar la pizza.',f:'despues'}]}];
 let PZP={}, PZSEL='kebab'; try{ PZP=JSON.parse(localStorage.getItem('dgp-cocina-pz-pizzas')||'{}'); PZSEL=localStorage.getItem('dgp-cocina-pz-sel')||'kebab'; }catch(e){}
+function hacer(id){ PZSEL=id; EL.cm={}; EL.mdone={}; ['m0','m1','m2','m3'].forEach(k=>delete EL.open[k]); EL.open.m0=false; EL.open.m1=false; EL.open.m2=true; guardaEL(); guardaPZP(); PZV='mont'; pintar(); window.scrollTo(0,0); }
 function guardaPZP(){ try{ localStorage.setItem('dgp-cocina-pz-pizzas',JSON.stringify(PZP)); localStorage.setItem('dgp-cocina-pz-sel',PZSEL); }catch(e){} }
-function baseDe(p,i,campo){ const o=(PZP[p.id]||{})[i.k+(campo==='antes'?'_antes':'')]; return o!=null?o:(campo==='antes'?i.antes:i.g); }
-function valsPizza(p){ const f=PZ.g/p.base, v={}; p.ing.forEach(i=>{ const tot=Math.round(baseDe(p,i)*f); v[i.k]=tot; if(i.antes!=null){ const a=Math.min(tot,Math.round(baseDe(p,i,'antes')*f)); v[i.k+'_antes']=a; v[i.k+'_desp']=tot-a; } }); return v; }
+function baseDe(p,i,campo){ const o=(PZP[p.id]||{})[i.k+(campo==='antes'?'_antes':'')]; return o!=null?o:(campo==='antes'?(i.antes==null?null:i.antes):(i.g==null?null:i.g)); }
+function valsPizza(p){ const f=PZ.g/p.base, v={}; p.ing.forEach(i=>{ const b0=baseDe(p,i); if(b0==null||b0===''){ v[i.k]=null; return; } const tot=Math.round(b0*f); v[i.k]=tot; if(i.antes!=null){ const a=Math.min(tot,Math.round(baseDe(p,i,'antes')*f)); v[i.k+'_antes']=a; v[i.k+'_desp']=tot-a; } }); return v; }
 const FASE={antes:'Antes de hornear',horno:'Horno',despues:'Después de hornear'};
 function pasoTxt(t,v){ return t.replace(/\{(\w+)\}/g,(m,k)=>v[k]!=null?v[k]:m); }
-function pintaPizzas(){ return '<div class="meta" style="margin-bottom:8px">Cantidades para una masa de <b>'+PZ.g+' g</b> y <b>'+PZ.n+'</b> '+(PZ.n===1?'pizza':'pizzas')+', según la calculadora.</div>'+PIZZAS.map(p=>{ const v=valsPizza(p);
-  const ings='<h3>Ingredientes por pizza</h3>'+p.ing.map(i=>'<div class="ln2"><span>'+esc(i.n)+'</span><b>'+v[i.k]+' g</b></div>'+(i.antes!=null?'<div class="ln2 sub"><span>· antes de hornear</span><b>'+v[i.k+'_antes']+' g</b></div><div class="ln2 sub"><span>· después de hornear</span><b>'+v[i.k+'_desp']+' g</b></div>':'')).join('')+'<div class="meta">Para '+PZ.n+' '+(PZ.n===1?'pizza':'pizzas')+': '+p.ing.map(i=>esc(i.c)+' '+(v[i.k]*PZ.n)+' g').join(' · ')+'</div>';
+function rng(a){ return ()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function svgPizza(p,peq){ const R=rng(11), cx=220, cy=182, RX=168, RY=140, IX=148, IY=121, u=(peq?'s':'b')+p.id, f=n=>Math.round(n*10)/10;
+  let o='<svg viewBox="0 0 440 364" class="pzsvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pizza '+esc(p.nombre)+'"><defs>'+
+   '<radialGradient id="cr'+u+'" cx="50%" cy="40%" r="65%"><stop offset=".6" stop-color="#f0c479"/><stop offset="1" stop-color="#c98a3a"/></radialGradient>'+
+   '<radialGradient id="in'+u+'" cx="50%" cy="45%" r="62%"><stop offset="0" stop-color="#f7e2b8"/><stop offset="1" stop-color="#e8c58b"/></radialGradient>'+
+   '<clipPath id="cl'+u+'"><ellipse cx="'+cx+'" cy="'+cy+'" rx="'+IX+'" ry="'+IY+'"/></clipPath></defs>'+
+   '<ellipse cx="'+cx+'" cy="'+(cy+7)+'" rx="'+(RX+5)+'" ry="'+(RY+5)+'" fill="rgba(0,0,0,.14)"/>'+
+   '<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+RX+'" ry="'+RY+'" fill="url(#cr'+u+')"/>'+
+   '<ellipse cx="'+cx+'" cy="'+(cy-1)+'" rx="'+(RX-4)+'" ry="'+(RY-4)+'" fill="none" stroke="#fbe0a6" stroke-width="3" opacity=".55"/>'+
+   '<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+(IX+4)+'" ry="'+(IY+4)+'" fill="#cf9040" opacity=".6"/>'+
+   '<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+IX+'" ry="'+IY+'" fill="url(#in'+u+')"/>';
+  for(let k=0;k<34;k++){ const a=R()*6.283, r=.86+R()*.11, x=cx+Math.cos(a)*RX*r, y=cy+Math.sin(a)*RY*r; o+='<ellipse cx="'+f(x)+'" cy="'+f(y)+'" rx="'+f(2.5+R()*6)+'" ry="'+f(1.5+R()*3)+'" transform="rotate('+f(a*57.3+90)+' '+f(x)+' '+f(y)+')" fill="#3b2412" opacity="'+f(.35+R()*.45)+'"/>'; }
+  for(let k=0;k<26;k++){ const a=R()*6.283, r=.82+R()*.15; o+='<circle cx="'+f(cx+Math.cos(a)*RX*r)+'" cy="'+f(cy+Math.sin(a)*RY*r)+'" r="'+f(1+R()*2.2)+'" fill="#fbe0a6" opacity=".7"/>'; }
+  const blob=(x,y,sz,c,op)=>{ let d=''; for(let i=0;i<7;i++){ const an=i*.8976+R()*.5, rr=sz*(.55+R()*.55); d+=(i?'L':'M')+f(x+Math.cos(an)*rr)+' '+f(y+Math.sin(an)*rr*.72)+' '; } return '<path d="'+d+'Z" fill="'+c+'" stroke="'+c+'" stroke-width="3" stroke-linejoin="round"'+(op?' opacity="'+op+'"':'')+'/>'; };
+  if(p.capas.includes('tomate')){ o+='<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+(IX-3)+'" ry="'+(IY-3)+'" fill="#c8372c"/><ellipse cx="'+cx+'" cy="'+(cy-6)+'" rx="'+(IX*.7)+'" ry="'+(IY*.6)+'" fill="#d9483a" opacity=".6"/>'; for(let k=0;k<14;k++){ const x=cx+(R()*2-1)*IX*.85, y=cy+(R()*2-1)*IY*.8; if(((x-cx)/IX)**2+((y-cy)/IY)**2<.8) o+=blob(x,y,6+R()*6,'#a82a22',.45); } }
+  if(p.capas.includes('mozz')){ o+='<g clip-path="url(#cl'+u+')">'; for(let k=0;k<11;k++){ const x=cx+(R()*2-1)*IX*.85, y=cy+(R()*2-1)*IY*.85; o+=blob(x,y,22+R()*14,'#fbf3dc')+blob(x+3,y+3,10+R()*8,'#f1e3bd',.5); } o+='</g>'; }
+  if(p.capas.includes('carne')){ const col=['#a8743d','#93612f','#b88650','#7b4c26','#c39561','#6e4223']; o+='<g clip-path="url(#cl'+u+')">';
+    for(let k=0;k<130;k++){ const x=cx+(R()*2-1)*IX*1.02, y=cy+(R()*2-1)*IY*1.02, sz=9+R()*10; o+=blob(x,y,sz,col[Math.floor(R()*6)]); if(R()<.4) o+=blob(x-2,y-2.5,sz*.5,'#e0b985',.4); }
+    o+='</g>'; }
+  if(p.capas.includes('zigzag')){ let d='', n=9; for(let i=0;i<=n;i++){ const x=cx-IX*1.05+i*(2*IX*1.05/n)+(R()*10-5), y=(i%2?cy+IY+16:cy-IY-16)+(R()*10-5); if(!i) d+='M'+f(x)+' '+f(y)+' '; else { const px=cx-IX*1.05+(i-1)*(2*IX*1.05/n), mx=(px+x)/2+(R()*14-7), my=cy+(R()*30-15); d+='Q'+f(mx)+' '+f(my)+' '+f(x)+' '+f(y)+' '; } }
+    o+='<g clip-path="url(#cl'+u+')"><path d="'+d+'" transform="translate(1.5 3)" fill="none" stroke="rgba(0,0,0,.22)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="'+d+'" fill="none" stroke="#fff6e4" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round" opacity=".97"/></g>'; }
+  if(p.capas.includes('albahaca')){ for(let k=0;k<6;k++){ const x=cx+(R()*2-1)*IX*.7, y=cy+(R()*2-1)*IY*.7, r=f(R()*180); o+='<g transform="translate('+f(x)+' '+f(y)+') rotate('+r+')"><ellipse rx="17" ry="9" fill="#2f7d32" stroke="#1f5c24" stroke-width="1"/><line x1="-14" y1="0" x2="14" y2="0" stroke="#7cc27e" stroke-width="1.4" opacity=".8"/></g>'; } }
+  return o+'</svg>'; }
+function pintaPizzas(){ return '<div class="meta" style="margin-bottom:8px">Cantidades para una masa de <b>'+PZ.g+' g</b> y <b>'+PZ.n+'</b> '+(PZ.n===1?'pizza':'pizzas')+', según la calculadora.</div>'+catalogo().map(p=>{ const v=valsPizza(p);
+  const ings='<h3>Ingredientes por pizza</h3>'+p.ing.map(i=>'<div class="ln2"><span>'+esc(i.n)+'</span><b>'+(v[i.k]==null?'a ojo':v[i.k]+' g')+'</b></div>'+(i.antes!=null&&v[i.k]!=null?'<div class="ln2 sub"><span>· antes de hornear</span><b>'+v[i.k+'_antes']+' g</b></div><div class="ln2 sub"><span>· después de hornear</span><b>'+v[i.k+'_desp']+' g</b></div>':'')).join('')+'<div class="meta">Para '+PZ.n+' '+(PZ.n===1?'pizza':'pizzas')+': '+p.ing.filter(i=>v[i.k]!=null).map(i=>esc(i.c)+' '+(v[i.k]*PZ.n)+' g').join(' · ')+'</div>';
   const ord='<h3>Orden de colocación</h3>'+p.orden.map((o,k)=>'<div class="ord"><i>'+(k+1)+'</i><span>'+pasoTxt(o.t,v)+(o.f?' <em class="fase '+o.f+'">'+FASE[o.f]+'</em>':'')+'</span></div>').join('');
-  const ed='<h3>Cantidades base (masa de '+p.base+' g)</h3>'+p.ing.map(i=>'<div class="ln2"><span>'+esc(i.n)+'</span><input type="number" inputmode="decimal" step="1" min="0" data-bk="'+p.id+'|'+i.k+'" value="'+baseDe(p,i)+'"> g</div>'+(i.antes!=null?'<div class="ln2 sub"><span>· antes de hornear</span><input type="number" inputmode="decimal" step="1" min="0" data-bk="'+p.id+'|'+i.k+'_antes" value="'+baseDe(p,i,'antes')+'"> g</div>':'')).join('')+'<div class="fila" style="margin-top:8px"><button class="sm" data-bkr="'+p.id+'">Valores iniciales</button><button class="sm'+(PZSEL===p.id?' pri':'')+'" data-sel="'+p.id+'">'+(PZSEL===p.id?'✓ En Montaje':'Usar en Montaje')+'</button></div>';
-  return tarj('p-'+p.id,'🍕',p.nombre,PZ.g+' g de masa',false,ings+ord+ed); }).join(''); }
-/* toppings */
-const TOP=[['Mozzarella fresca',['Cortar en tiras.','Escurrir 1-2 horas en un colador dentro de la nevera.']],['Tomate',['Si está muy líquido, escurrir 5-10 minutos en un colador fino.']],['Albahaca',['Añadir fresca al sacar la pizza del horno.']],['Carne de kebab',['Utilizarla previamente cocinada.']],['Salsa kebab',['Reservar la mayor parte para añadirla después del horneado.']]];
-function pintaToppings(){ return TOP.map((t,i)=>tarj('t'+i,i+1,t[0],'',false,t[1].map(x=>'<div>• '+x+'</div>').join(''))).join(''); }
-/* montaje */
-function pintaMontaje(){ EL.mdone=EL.mdone||{}; const p=PIZZAS.find(x=>x.id===PZSEL)||PIZZAS[0], v=valsPizza(p);
-  const antes=p.orden.map(o=>o).filter(o=>o.f==='antes'), desp=p.orden.filter(o=>o.f==='despues');
-  const S=[{t:'Estirado',s:'',l:['Utilizar poca sémola fina de trigo duro o harina de maíz granulada, como Domino’s.','Estirar manualmente desde el centro, conservando el aire del borde.','Retirar el exceso de harina.']},
-  {t:'Colocación de toppings',s:'Pizza: '+p.nombre,l:['<b>Antes de hornear</b>']
-    .concat(antes.map(o=>'· '+pasoTxt(o.t,v)))
-    .concat(['<b>Después de hornear</b>']).concat(desp.map(o=>'· '+pasoTxt(o.t,v)))
-    .concat(['<span class="meta">Cantidades y orden de la pizza elegida en «Pizzas».</span>'])},
+  const ed='<h3>Cantidades base (masa de '+p.base+' g)</h3>'+p.ing.map(i=>'<div class="ln2"><span>'+esc(i.n)+'</span><input type="number" inputmode="decimal" step="1" min="0" data-bk="'+p.id+'|'+i.k+'" value="'+(baseDe(p,i)==null?'':baseDe(p,i))+'" placeholder="a ojo"> g</div>'+(i.antes!=null?'<div class="ln2 sub"><span>· antes de hornear</span><input type="number" inputmode="decimal" step="1" min="0" data-bk="'+p.id+'|'+i.k+'_antes" value="'+baseDe(p,i,'antes')+'"> g</div>':'')).join('')+'<div class="fila" style="margin-top:8px"><button class="sm" data-bkr="'+p.id+'">Valores iniciales</button><button class="sm'+' pri" data-sel="'+p.id+'">Hacer ahora</button>'+(p.custom?'<button class="sm" data-pdel="'+p.id+'" style="color:var(--neg)">Borrar</button>':'')+'</div>';
+  const k='p-'+p.id, ab=EL.open[k]!==undefined?EL.open[k]:false;
+  return '<div class="menu"><div class="mrow" data-ac="'+k+'" data-def="0"><div class="mt"><b>'+esc(p.nombre)+'</b><span class="d">'+esc(p.desc)+'</span><span class="meta">Masa de '+PZ.g+' g · '+(ab?'▾':'▸')+'</span></div><div class="th">'+svgPizza(p,true)+'</div></div>'+(ab?'<div class="mdet"><div class="big">'+svgPizza(p,false)+'</div>'+ings+ord+ed+'</div>':'')+'</div>'; }).join(''); }
+/* toppings: selección y pizza a medida */
+const TOP=[{k:'mozz',t:'Mozzarella fresca',n:'Mozzarella fresca',fase:'antes',g:null,l:['Cortar en tiras.','Escurrir 1-2 horas en un colador dentro de la nevera.']},
+ {k:'tomate',t:'Tomate',n:'Tomate',fase:'antes',g:null,l:['Si está muy líquido, escurrir 5-10 minutos en un colador fino.']},
+ {k:'albahaca',t:'Albahaca',n:'Albahaca fresca',fase:'despues',g:null,l:['Añadir fresca al sacar la pizza del horno.']},
+ {k:'carne',t:'Carne de kebab',n:'Carne de kebab cocinada',fase:'antes',g:90,l:['Utilizarla previamente cocinada.']},
+ {k:'salsa',t:'Salsa kebab',n:'Salsa kebab',fase:'split',g:30,antes:8,l:['Reservar la mayor parte para añadirla después del horneado.']}];
+let TS={sel:[],g:{},f:{},antes:null,nombre:''}, PZC=[], PZTMP=null;
+try{ Object.assign(TS,JSON.parse(localStorage.getItem('dgp-cocina-pz-ts')||'{}')); PZC=JSON.parse(localStorage.getItem('dgp-cocina-pz-custom')||'[]'); PZTMP=JSON.parse(localStorage.getItem('dgp-cocina-pz-tmp')||'null'); }catch(e){}
+function guardaTS(){ try{ localStorage.setItem('dgp-cocina-pz-ts',JSON.stringify(TS)); localStorage.setItem('dgp-cocina-pz-custom',JSON.stringify(PZC)); localStorage.setItem('dgp-cocina-pz-tmp',JSON.stringify(PZTMP)); }catch(e){} }
+const catalogo=()=>PIZZAS.concat(PZC), todasPizzas=()=>PIZZAS.concat(PZC,PZTMP?[PZTMP]:[]);
+const tG=k=>{ const T=TOP.find(x=>x.k===k); return TS.g[k]!==undefined?TS.g[k]:T.g; }, tF=k=>TS.f[k]||TOP.find(x=>x.k===k).fase, tA=()=>TS.antes!=null?TS.antes:8;
+const CAPA={mozz:'mozz',tomate:'tomate',albahaca:'albahaca',carne:'carne',salsa:'zigzag'};
+function buildCustom(id,nombre){ const ing=[], antes=[], desp=[], capas=[], names=[];
+  TS.sel.forEach(k=>{ const T=TOP.find(x=>x.k===k), g=tG(k), nm=T.n.toLowerCase(); capas.push(CAPA[k]); names.push(nm);
+    const it={k,n:T.n,c:T.t.toLowerCase(),g:g==null||g===''?null:+g}; 
+    if(k==='salsa'){ if(it.g==null) it.g=30; it.antes=Math.min(it.g,tA()); ing.push(it); antes.push({t:'Extender <b>{salsa_antes} g</b> de salsa kebab.',f:'antes'}); desp.push({t:'Añadir los <b>{salsa_desp} g</b> restantes de salsa kebab al sacar la pizza.',f:'despues'}); return; }
+    ing.push(it);
+    if(tF(k)==='antes') antes.push({t:it.g!=null?'Colocar <b>{'+k+'} g</b> de '+nm+'.':'Colocar '+nm+'.',f:'antes'});
+    else desp.push({t:it.g!=null?'Añadir <b>{'+k+'} g</b> de '+nm+' al sacar la pizza.':'Añadir '+nm+' al sacar la pizza.',f:'despues'}); });
+  const d=names.join(', '); return {id,custom:true,nombre:nombre||'Pizza a medida',desc:d.charAt(0).toUpperCase()+d.slice(1)+'.',capas,base:250,ing,orden:[{t:'Estirar la masa.'}].concat(antes,[{t:'Hornear.',f:'horno'}],desp)}; }
+function pintaToppings(){ const n=TS.sel.length;
+  let h='<div class="meta" style="margin-bottom:8px">Toca <b>+</b> en los que quieras para montar una pizza a medida.</div>'+TOP.map(T=>{ const i=TS.sel.indexOf(T.k), on=i>=0, key='t'+T.k, ab=EL.open[key]!==undefined?EL.open[key]:false;
+    return '<div class="paso2'+(on?' act':'')+'"><div class="cab" data-ac="'+key+'" data-def="0"><button class="selb'+(on?' on':'')+'" data-tp="'+T.k+'" aria-label="Elegir">'+(on?(i+1):'+')+'</button><span><b>'+esc(T.t)+'</b>'+(on?'<small>Elegido</small>':'')+'</span><em>'+(ab?'▾':'▸')+'</em></div>'+(ab?'<div class="cue">'+T.l.map(x=>'<div>• '+x+'</div>').join('')+'</div>':'')+'</div>'; }).join('');
+  if(n){ h+='<h3>Pizza a medida</h3><div class="meta" style="margin-bottom:6px">Gramos para una masa de 250 g (se ajustan a tu peso). Déjalo vacío si va a ojo.</div>'+TS.sel.map((k,i)=>{ const T=TOP.find(x=>x.k===k), g=tG(k);
+      return '<div class="tsel"><div class="fila"><span style="flex:1"><b>'+esc(T.t)+'</b></span><button class="sm" data-tu="'+k+'|-1" '+(i===0?'disabled':'')+'>▲</button><button class="sm" data-tu="'+k+'|1" '+(i===n-1?'disabled':'')+'>▼</button></div>'+
+      '<div class="fila" style="margin-top:6px"><input type="number" inputmode="decimal" min="0" data-tg="'+k+'" value="'+(g==null?'':g)+'" placeholder="a ojo" style="width:90px"> g'+
+      (k==='salsa'?'<span class="meta">· antes de hornear</span><input type="number" inputmode="decimal" min="0" data-ta="1" value="'+tA()+'" style="width:80px"> g<span class="meta">y el resto después</span>':'<button class="sm" data-tf="'+k+'" style="margin-left:auto">'+(tF(k)==='antes'?'Antes de hornear':'Después de hornear')+'</button>')+'</div></div>'; }).join('')+
+    '<div class="campo" style="margin-top:10px"><label>Nombre (para guardarla)</label><input data-tn="1" value="'+esc(TS.nombre)+'" placeholder="Pizza a medida"></div>'+
+    '<div class="fila"><button class="pri" data-mk="now" style="flex:1">Hacer ahora</button><button data-mk="save" style="flex:1">Guardar en Pizzas</button></div><div class="fila" style="margin-top:8px"><button class="sm" data-mk="clear">Quitar selección</button></div>'; }
+  return h; }
+/* montaje con comanda */
+function comandaHtml(p,v){ EL.cm=EL.cm||{};
+  const filas=fase=>p.orden.map((o,i)=>[o,i]).filter(x=>x[0].f===fase).map(x=>{ const key=p.id+'|'+x[1], d=!!EL.cm[key]; return '<div class="cm'+(d?' hecho':'')+'" data-cm="'+key+'"><b class="bx">'+(d?'✓':'')+'</b><span>'+pasoTxt(x[0].t,v)+'</span></div>'; }).join('');
+  return '<div class="fila" style="margin-bottom:8px"><select data-pz="1" style="flex:1">'+todasPizzas().map(q=>'<option value="'+esc(q.id)+'"'+(q.id===p.id?' selected':'')+'>'+esc(q.nombre)+'</option>').join('')+'</select><span class="meta">masa '+PZ.g+' g</span></div>'+
+   '<div class="cmh">Antes de hornear</div>'+(filas('antes')||'<div class="meta">Nada.</div>')+'<div class="cmh sep">🔥 Hornear</div><div class="cmh">Después de hornear</div>'+(filas('despues')||'<div class="meta">Nada.</div>')+
+   '<div class="fila" style="margin-top:10px"><button class="sm" data-cmr="1">Desmarcar todo</button></div>'; }
+function prepHtml(){ const h=EL.hora||''; let r='';
+  if(/^\d\d:\d\d$/.test(h)){ const m=(+h.slice(0,2))*60+(+h.slice(3)), fm=x=>{ const d=x<0, y=((x%1440)+1440)%1440; return String(Math.floor(y/60)).padStart(2,'0')+':'+String(y%60).padStart(2,'0')+(d?' (día anterior)':''); }; r='<div class="fin">Sácalas entre las <b>'+fm(m-180)+'</b> y las <b>'+fm(m-120)+'</b>.</div>'; }
+  return '<div>• Sacar las bolas del frigorífico <b>2-3 horas antes de hornear</b>.</div><div>• Mantenerlas tapadas hasta que estén relajadas y fáciles de estirar.</div><div class="campo"><label>¿A qué hora vas a hornear?</label><input type="time" data-hr="1" value="'+esc(h)+'" style="max-width:160px"></div>'+r; }
+function pintaMontaje(){ EL.mdone=EL.mdone||{}; let p=todasPizzas().find(x=>x.id===PZSEL); if(!p){ p=PIZZAS[0]; PZSEL=p.id; } const v=valsPizza(p);
+  const S=[{t:'Preparación antes de hornear',s:'Sacar 2-3 horas antes',html:prepHtml()},
+  {t:'Estirado',s:'',l:['Utilizar poca sémola fina de trigo duro o harina de maíz granulada, como Domino’s.','Estirar manualmente desde el centro hacia los bordes, conservando el aire del borde.','No utilizar rodillo.','Retirar el exceso de harina.']},
+  {t:'Colocación de toppings',s:'Pizza: '+p.nombre,html:comandaHtml(p,v)},
   {t:'Horneado',s:'',l:['Ariete 3901 a <b>430 °C</b>, ambas resistencias.','Precalentar 15-20 minutos.','Piedra entre 380 y 430 °C.','Cocinar aproximadamente 2 minutos.','Comprobar la recuperación de temperatura entre pizzas.']}];
   const cur=S.findIndex((_,i)=>!EL.mdone[i]);
-  return S.map((x,i)=>{ const hecho=!!EL.mdone[i], act=i===cur; return tarj('m'+i,i+1,x.t,x.s,act,x.l.map(z=>'<div>'+(z.charAt(0)==='<'||z.charAt(0)==='·'?z:'• '+z)+'</div>').join('')+'<button class="'+(hecho?'':'pri ')+'sm" data-md="'+i+'" style="margin-top:8px">'+(hecho?'Desmarcar':'✓ Hecho')+'</button>',{hecho,act}); }).join('')+'<div class="fila" style="margin-top:10px"><button data-mrs="1">Empezar de nuevo</button></div>'; }
-
+  return S.map((x,i)=>{ const hecho=!!EL.mdone[i], act=i===cur; return tarj('m'+i,i+1,x.t,x.s,act,(x.html||x.l.map(z=>'<div>• '+z+'</div>').join(''))+'<button class="'+(hecho?'':'pri ')+'sm" data-md="'+i+'" style="margin-top:8px">'+(hecho?'Desmarcar':'✓ Hecho')+'</button>',{hecho,act}); }).join('')+'<div class="fila" style="margin-top:10px"><button data-mrs="1">Empezar de nuevo</button></div>'; }
 function calcPizza(){ if(!$('pzN')) return; const c=pzCalc(); $('pzN').textContent=PZ.n; $('pzH').value=PZ.h; $('pzHv').textContent=String(PZ.h).replace('.',',')+' %';
   document.querySelectorAll('#pzG button').forEach(b=>b.classList.toggle('on',+b.dataset.g===PZ.g)); document.querySelectorAll('#pzT button').forEach(b=>b.classList.toggle('on',+b.dataset.t===PZ.t));
   $('pzR').innerHTML='<div><small>Harina de fuerza Gallo</small><b>'+f0(c.harina)+' g</b></div><div><small>Agua</small><b>'+f0(c.agua)+' g</b></div><div><small>Sal</small><b>'+f1(c.sal)+' g</b></div><div><small>Levadura seca</small><b>'+f2(c.lev)+' g</b></div><div><small>Peso total de la masa</small><b>'+f0(c.total)+' g</b></div><div><small>Bolas</small><b>'+PZ.n+' × '+PZ.g+' g</b></div><div class="full"><small>Fermentación en frigorífico</small><b>'+PZ.t+' horas</b></div>';
@@ -292,13 +352,22 @@ $('tabs').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; V=b.da
 $('q').oninput=()=>{ Q=$('q').value; pintar(); };
 $('chips').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; TAG=TAG===b.dataset.t?'':b.dataset.t; pintar(); };
 $('fab').onclick=nuevo;
-$('main').onclick=e=>{ if(V==='pizza'){ const ac=e.target.closest('[data-ac]'); if(ac){ const k=ac.dataset.ac, cur=EL.open[k]!==undefined?EL.open[k]:ac.dataset.def==='1'; EL.open[k]=!cur; guardaEL(); pintar(); return; }
+$('main').onclick=e=>{ if(V==='pizza'){ const tp=e.target.closest('[data-tp]'); if(tp){ const k=tp.dataset.tp, i=TS.sel.indexOf(k); if(i>=0) TS.sel.splice(i,1); else TS.sel.push(k); guardaTS(); pintar(); return; }
+  const cm=e.target.closest('[data-cm]'); if(cm){ EL.cm=EL.cm||{}; EL.cm[cm.dataset.cm]=!EL.cm[cm.dataset.cm]; guardaEL(); pintar(); return; }
+  const ac=e.target.closest('[data-ac]'); if(ac){ const k=ac.dataset.ac, cur=EL.open[k]!==undefined?EL.open[k]:ac.dataset.def==='1'; EL.open[k]=!cur; guardaEL(); pintar(); return; }
   const st=e.target.closest('[data-st]'); if(st){ const i=+st.dataset.st, P=pasosEL(), cur=P.findIndex((_,k)=>!EL.done[k]); const ab=EL.open[i]!==undefined?EL.open[i]:i===cur; EL.open[i]=!ab; guardaEL(); pintar(); return; }
   const b=e.target.closest('button'); if(!b) return;
   if(b.dataset.sub){ PZV=b.dataset.sub; pintar(); window.scrollTo(0,0); return; }
-  if(b.dataset.md!==undefined){ EL.mdone=EL.mdone||{}; const i=+b.dataset.md; EL.mdone[i]=!EL.mdone[i]; EL.open['m'+i]=false; const nx=[0,1,2].find(k=>!EL.mdone[k]); if(nx!==undefined) EL.open['m'+nx]=true; guardaEL(); pintar(); return; }
-  if(b.dataset.mrs){ EL.mdone={}; ['m0','m1','m2'].forEach(k=>delete EL.open[k]); guardaEL(); pintar(); return; }
-  if(b.dataset.sel){ PZSEL=b.dataset.sel; guardaPZP(); pintar(); return; }
+  if(b.dataset.md!==undefined){ EL.mdone=EL.mdone||{}; const i=+b.dataset.md; EL.mdone[i]=!EL.mdone[i]; EL.open['m'+i]=false; const nx=[0,1,2,3].find(k=>!EL.mdone[k]); if(nx!==undefined) EL.open['m'+nx]=true; guardaEL(); pintar(); return; }
+  if(b.dataset.mrs){ EL.mdone={}; ['m0','m1','m2','m3'].forEach(k=>delete EL.open[k]); guardaEL(); pintar(); return; }
+  if(b.dataset.sel){ hacer(b.dataset.sel); return; }
+  if(b.dataset.cmr){ EL.cm={}; guardaEL(); pintar(); return; }
+  if(b.dataset.tu){ const [k,d]=b.dataset.tu.split('|'), i=TS.sel.indexOf(k), j=i+(+d); if(i>=0&&j>=0&&j<TS.sel.length){ TS.sel.splice(i,1); TS.sel.splice(j,0,k); guardaTS(); pintar(); } return; }
+  if(b.dataset.tf){ const k=b.dataset.tf; TS.f[k]=tF(k)==='antes'?'despues':'antes'; guardaTS(); pintar(); return; }
+  if(b.dataset.mk==='clear'){ TS.sel=[]; guardaTS(); pintar(); return; }
+  if(b.dataset.mk==='now'){ PZTMP=buildCustom('tmp',TS.nombre||'Pizza a medida'); guardaTS(); hacer('tmp'); return; }
+  if(b.dataset.mk==='save'){ const q=buildCustom('c'+Date.now(),TS.nombre||('Pizza a medida '+(PZC.length+1))); PZC.push(q); guardaTS(); b.textContent='✓ Guardada en Pizzas'; return; }
+  if(b.dataset.pdel){ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='¿Seguro?'; return; } PZC=PZC.filter(x=>x.id!==b.dataset.pdel); if(PZSEL===b.dataset.pdel) PZSEL='kebab'; guardaTS(); guardaPZP(); pintar(); return; }
   if(b.dataset.bkr){ delete PZP[b.dataset.bkr]; guardaPZP(); pintar(); return; }
   if(b.dataset.dn!==undefined){ const i=+b.dataset.dn; EL.done[i]=!EL.done[i]; EL.open[i]=false; const P=pasosEL(), nx=P.findIndex((_,k)=>!EL.done[k]); if(nx>=0) EL.open[nx]=true; guardaEL(); pintar(); return; }
   if(b.dataset.tg){ const n=+b.dataset.tg, t=TM[n]||(TM[n]={run:false,rem:DUR[n],end:0}); if(t.run){ t.rem=(t.end-Date.now())/1000; t.run=false; } else { if(t.rem<=0) t.rem=DUR[n]; t.end=Date.now()+t.rem*1000; t.run=true; } pintar(); return; }
@@ -313,7 +382,13 @@ $('main').onclick=e=>{ if(V==='pizza'){ const ac=e.target.closest('[data-ac]'); 
   else if(b.id==='menuCompra'){ let n=0; for(let i=0;i<7;i++) for(const s of ['c','n']){ const r=R.find(x=>x.id===U.menu[i+s]); if(r){ lineas(r.ingredientes).forEach(l=>{ U.compra.push({t:l.replace(/^[-•*·]\s*/,''),ok:false}); n++; }); } } guardaU('compra'); b.textContent='✓ '+n+' ingredientes añadidos'; }
   else if(b.id==='menuBorra'){ U.menu={}; guardaU('menu'); pintar(); } };
 $('main').addEventListener('change',e=>{ if(e.target.id==='frI'&&e.target.value){ EL.fridge=new Date(e.target.value).toISOString(); guardaEL(); pintar(); } });
-$('main').addEventListener('change',e=>{ const t=e.target; if(t.dataset&&t.dataset.bk){ const [pid,k]=t.dataset.bk.split('|'); const v=parseFloat(String(t.value).replace(',','.')); if(isFinite(v)&&v>=0){ (PZP[pid]=PZP[pid]||{})[k]=v; guardaPZP(); } pintar(); } });
+$('main').addEventListener('change',e=>{ const t=e.target; if(!t.dataset) return;
+  if(t.dataset.bk){ const [pid,k]=t.dataset.bk.split('|'); const v=parseFloat(String(t.value).replace(',','.')); if(String(t.value).trim()===''){ if(PZP[pid]) delete PZP[pid][k]; guardaPZP(); } else if(isFinite(v)&&v>=0){ (PZP[pid]=PZP[pid]||{})[k]=v; guardaPZP(); } pintar(); }
+  else if(t.dataset.tg){ const v=String(t.value).trim()===''?null:parseFloat(String(t.value).replace(',','.')); TS.g[t.dataset.tg]=(v!=null&&isFinite(v)&&v>=0)?v:null; guardaTS(); pintar(); }
+  else if(t.dataset.ta){ const v=parseFloat(String(t.value).replace(',','.')); TS.antes=isFinite(v)&&v>=0?v:8; guardaTS(); pintar(); }
+  else if(t.dataset.hr){ EL.hora=t.value; guardaEL(); pintar(); }
+  else if(t.dataset.tn){ TS.nombre=t.value.trim(); guardaTS(); }
+  else if(t.dataset.pz){ PZSEL=t.value; guardaPZP(); pintar(); } });
 $('main').oninput=e=>{ if(e.target.id==='pzH'){ PZ.h=parseFloat(e.target.value); calcPizza(); } };
 $('main').onchange=e=>{ const c=e.target; if(c.type==='checkbox'&&c.dataset.k){ U[c.dataset.k][+c.dataset.i].ok=c.checked; guardaU(c.dataset.k); pintar(); } else if(c.dataset.m){ U.menu[c.dataset.m]=c.value; guardaU('menu'); } };
 $('main').addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='nuevoI') $('addI').click(); });
@@ -324,7 +399,7 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&$('sheet
 <script>
 /* Actualización automática */
 (function(){
-  var BUILD='V2.02', ROOT='../';
+  var BUILD='V2.03', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

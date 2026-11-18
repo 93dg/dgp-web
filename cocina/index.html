@@ -305,7 +305,7 @@ const TOP0=[{k:'mozz',t:'Mozzarella fresca',n:'Mozzarella fresca',fase:'antes',p
  {k:'albahaca',t:'Albahaca',n:'Albahaca fresca',fase:'despues',pos:'superior',est:'crudo',g:null,l:['Añadir fresca al sacar la pizza del horno.']},
  {k:'carne',t:'Carne de kebab',n:'Carne de kebab cocinada',fase:'antes',pos:'media',est:'cocinado',g:90,l:['Utilizarla previamente cocinada.']},
  {k:'salsa',t:'Salsa kebab',n:'Salsa kebab',fase:'split',pos:'superior',est:'cocinado',g:30,antes:8,l:['Reservar la mayor parte para añadirla después del horneado.']}];
-const POSN={superior:'Superior',media:'Media',baja:'Baja'}, ESTN={crudo:'Crudo',cocinado:'Cocinado'}, isBase=k=>TOP0.some(b=>b.k===k), pe=T=>'Posición '+(POSN[T.pos]||'Media').toLowerCase()+' · '+(ESTN[T.est]||'Crudo').toLowerCase();
+const POSN={superior:'Superior',media:'Media',baja:'Baja'}, ESTN={crudo:'Crudo',cocinado:'Cocinado'}, isBase=k=>TOP0.some(b=>b.k===k), posA=T=>{ const a=(Array.isArray(T.pos)?T.pos:[T.pos||'media']).filter(k=>POSN[k]), o=Object.keys(POSN).filter(k=>a.includes(k)); return o.length?o:['media']; }, posT=T=>posA(T).join('–'), pe=T=>'Posición '+posT(T)+' · '+(ESTN[T.est]||'Crudo').toLowerCase();
 const TOPf=()=>{ const u=U.top||[]; return TOP0.map(b=>u.find(x=>x.k===b.k)||b).concat(u.filter(x=>!isBase(x.k))); };
 let TS={sel:[],g:{},f:{},u:{},antes:null,nombre:''}, PZC=[], PZTMP=null;
 try{ Object.assign(TS,JSON.parse(localStorage.getItem('dgp-cocina-pz-ts')||'{}')); PZC=JSON.parse(localStorage.getItem('dgp-cocina-pz-custom')||'[]'); PZTMP=JSON.parse(localStorage.getItem('dgp-cocina-pz-tmp')||'null'); }catch(e){}
@@ -319,7 +319,7 @@ function buildCustom(id,nombre){ const ing=[], antes=[], desp=[], capas=[], name
     if(k==='salsa'){ if(it.g==null) it.g=30; it.antes=Math.min(it.g,tA()); ing.push(it); antes.push({t:'<b>{salsa_antes} g</b> salsa kebab',f:'antes'}); desp.push({t:'<b>{salsa_desp} g</b> salsa kebab (resto)',f:'despues'}); return; }
     ing.push(it);
     const tn=T.t.toLowerCase();
-    const sfx=' <span class="meta">· '+(POSN[T.pos]||'Media').toLowerCase()+' · '+(ESTN[T.est]||'Crudo').toLowerCase()+'</span>'; if(tF(k)==='antes') antes.push({t:(it.g!=null?'<b>{'+k+'_t}</b> '+tn:T.t)+sfx,f:'antes'});
+    const sfx=' <span class="meta">· '+posT(T)+' · '+(ESTN[T.est]||'Crudo').toLowerCase()+'</span>'; if(tF(k)==='antes') antes.push({t:(it.g!=null?'<b>{'+k+'_t}</b> '+tn:T.t)+sfx,f:'antes'});
     else desp.push({t:(it.g!=null?'<b>{'+k+'_t}</b> '+tn:T.t)+sfx,f:'despues'}); });
   const d=names.join(', '); return {id,custom:true,nombre:nombre||'Pizza a medida',desc:d.charAt(0).toUpperCase()+d.slice(1)+'.',capas,base:250,ing,orden:[].concat(antes,[{t:'Hornear',f:'horno'}],desp)}; }
 function editarPizza(p){ if(!TS.editId) TS.prev={sel:TS.sel,g:TS.g,f:TS.f,u:TS.u,antes:TS.antes,nombre:TS.nombre}; TS.editId=p.id; TS.nombre=p.nombre; TS.sel=p.ing.map(i=>i.k); TS.g={}; TS.f={}; TS.u={}; TS.antes=null;
@@ -331,9 +331,9 @@ function formTopping(T){ const sh=$('sheet'); sh.hidden=false; document.body.sty
   '<div class="campo"><label>Nombre</label><input id="n_t" value="'+esc(T.t)+'" placeholder="Ej. Cebolla caramelizada"></div>'+
   '<div class="fila"><div class="campo" style="flex:1"><label>Cantidad por pizza (masa de 250 g), opcional</label><input id="n_g" type="number" inputmode="decimal" min="0" value="'+(T.g==null?'':T.g)+'" placeholder="a ojo"></div><div class="campo" style="flex:1"><label>Unidad</label>'+unSel(T.u,'id="n_u"')+'</div></div><div class="fila">'+
   '<div class="campo" style="flex:1"><label>Se añade</label><select id="n_f"><option value="antes"'+(T.fase==='antes'?' selected':'')+'>Antes de hornear</option><option value="despues"'+(T.fase==='despues'?' selected':'')+'>Después de hornear</option></select></div></div>'+
-  '<div class="fila"><div class="campo" style="flex:1"><label>Posición</label><select id="n_p">'+Object.keys(POSN).map(k=>'<option value="'+k+'"'+((T.pos||'media')===k?' selected':'')+'>'+POSN[k]+'</option>').join('')+'</select></div><div class="campo" style="flex:1"><label>Estado</label><select id="n_e">'+Object.keys(ESTN).map(k=>'<option value="'+k+'"'+((T.est||'crudo')===k?' selected':'')+'>'+ESTN[k]+'</option>').join('')+'</select></div></div>'+
+  '<div class="fila"><div class="campo" style="flex:1"><label>Posición (1 o 2)</label><div class="fila" id="n_p">'+Object.keys(POSN).map(k=>'<button type="button" class="sm'+(posA(T).includes(k)?' pri':'')+'" data-pp="'+k+'">'+POSN[k]+'</button>').join('')+'</div></div><div class="campo" style="flex:1"><label>Estado</label><select id="n_e">'+Object.keys(ESTN).map(k=>'<option value="'+k+'"'+((T.est||'crudo')===k?' selected':'')+'>'+ESTN[k]+'</option>').join('')+'</select></div></div>'+
   '<div class="campo"><label>Preparación (una línea por paso), opcional</label><textarea id="n_l">'+esc((T.l||[]).join('\n'))+'</textarea></div>';
-  sh.onclick=e=>{ const b=e.target.closest('button'); if(!b) return; if(b.id==='x') cerrar2(); else if(b.id==='ok'){ const nombre=$('n_t').value.trim(); if(!nombre) return; const g=parseFloat(String($('n_g').value).replace(',','.')); const o={k:T.k||('x'+Date.now()),t:nombre,n:nombre.charAt(0).toUpperCase()+nombre.slice(1),fase:$('n_f').value,g:isFinite(g)&&g>=0?g:null,l:lineas($('n_l').value),u:$('n_u').value,pos:$('n_p').value,est:$('n_e').value,custom:!isBase(T.k||'')};
+  sh.onclick=e=>{ const b=e.target.closest('button'); if(!b) return; if(b.dataset.pp){ const on=[...document.querySelectorAll('[data-pp].pri')]; if(b.classList.contains('pri')){ if(on.length>1) b.classList.remove('pri'); } else { if(on.length>=2){ on.sort((x,y)=>(+x.dataset.t||0)-(+y.dataset.t||0))[0].classList.remove('pri'); } b.dataset.t=Date.now(); b.classList.add('pri'); } return; } if(b.id==='x') cerrar2(); else if(b.id==='ok'){ const nombre=$('n_t').value.trim(); if(!nombre) return; const g=parseFloat(String($('n_g').value).replace(',','.')); const o={k:T.k||('x'+Date.now()),t:nombre,n:nombre.charAt(0).toUpperCase()+nombre.slice(1),fase:$('n_f').value,g:isFinite(g)&&g>=0?g:null,l:lineas($('n_l').value),u:$('n_u').value,pos:[...document.querySelectorAll('[data-pp].pri')].map(x=>x.dataset.pp),est:$('n_e').value,custom:!isBase(T.k||'')};
       if(T.k&&isBase(T.k)){ o.n=T.n; o.fase=T.fase==="split"?"split":o.fase; o.antes=T.antes; }
       U.top=U.top||[]; const i=U.top.findIndex(x=>x.k===o.k); if(i>=0) U.top[i]=o; else U.top.push(o); guardaU('top'); cerrar2(); } }; }
 function cerrar2(){ $('sheet').hidden=true; $('sheet').innerHTML=''; document.body.style.overflow=''; pintar(); }
@@ -481,7 +481,7 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&$('sheet
 <script>
 /* Actualización automática */
 (function(){
-  var BUILD='V2.13', ROOT='../';
+  var BUILD='V2.14', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

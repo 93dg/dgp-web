@@ -169,7 +169,7 @@ pre{white-space:pre-wrap;font-size:.75rem;color:var(--mut);max-height:160px;over
     </div>
   </section>
   <div class="m" id="diag" style="margin-top:18px;text-align:center;font-size:.75rem"></div>
-  <div class="m" style="margin-top:4px;text-align:center"><span id="version">V2.10</span></div>
+  <div class="m" style="margin-top:4px;text-align:center"><span id="version">V2.11</span></div>
   <pre id="log" hidden></pre>
 </div>
 
@@ -869,7 +869,7 @@ window.__medios={BD,get bucle(){return bucle;},get ctx(){return ctxA;},get prevE
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V2.10', ROOT='../';
+  var BUILD='V2.11', ROOT='../';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

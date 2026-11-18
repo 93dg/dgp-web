@@ -96,7 +96,7 @@ summary{cursor:pointer;font-weight:600;padding:8px 0}
   <details id="det"><summary>Todas las pistas</summary><div id="lh"></div><div id="lv"></div></details>
   <h2>Mis crucigramas</h2>
   <div class="lista" id="lista"></div>
-  <p class="pie"><span id="version">V2.10</span></p>
+  <p class="pie"><span id="version">V2.11</span></p>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 <script>
@@ -1030,7 +1030,7 @@ sincronizar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V2.10', ROOT='../../';
+  var BUILD='V2.11', ROOT='../../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

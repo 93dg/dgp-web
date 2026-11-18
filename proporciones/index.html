@@ -41,6 +41,8 @@ input[type=range]{width:100%}
 #info{position:fixed;left:10px;bottom:calc(10px + env(safe-area-inset-bottom));background:rgba(10,12,17,.82);color:#eef0f5;border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:6px 10px;font-size:.8rem;pointer-events:none;font-variant-numeric:tabular-nums}
 #vacio{position:absolute;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--mut);padding:24px}
 #bLock{position:fixed;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));min-height:40px;width:40px;padding:0;border-radius:50%;font-size:1.1rem;z-index:5;background:rgba(10,12,17,.82);color:#eef0f5;border-color:rgba(255,255,255,.3)}#bLock.on{border-color:var(--ac);background:var(--ac);color:#000}body.bloq #vista{overflow:hidden;touch-action:none}#bLap{position:fixed;right:10px;top:calc(8px + env(safe-area-inset-top));width:40px;min-height:40px;padding:0;border-radius:50%;font-size:1.1rem;z-index:6;background:rgba(10,12,17,.82);color:#eef0f5;border-color:rgba(255,255,255,.3)}#bLap.on{border-color:var(--ac)}header[hidden]{display:none}header{padding-right:58px}body.bloq #bLap,body.bloq header,body.bloq .panel{pointer-events:none;opacity:.35}body.bloq header,body.bloq .panel{display:none}#bVer{position:fixed;right:58px;bottom:calc(10px + env(safe-area-inset-bottom));min-height:40px;width:40px;padding:0;border-radius:50%;z-index:5;display:flex;align-items:center;justify-content:center;background:rgba(10,12,17,.82);color:#eef0f5;border:1px solid rgba(255,255,255,.3)}#bVer.on{border-color:var(--ac);background:var(--ac);color:#000}body.bloq #bVer{pointer-events:none;opacity:.35}#menu{position:fixed;left:0;right:0;top:env(safe-area-inset-top);z-index:4;box-shadow:0 6px 18px rgba(0,0,0,.25)}#menu .panel{max-height:50vh}.ok{color:var(--pos)}.aviso{color:var(--ac);font-size:.85rem}
+
+html.sa{height:calc(100% + env(safe-area-inset-top))}html.sa body{box-sizing:border-box;height:100%}
 </style>
 </head>
 <body>
@@ -79,6 +81,7 @@ input[type=range]{width:100%}
 <div id="vista"><div id="lienzo"><div id="marco" class="cubrir"><img id="img" alt=""><div id="rej"></div></div></div><div id="vacio">Elige una foto y pon las medidas<br>de donde la vas a pintar.</div></div>
 <button id="bVer" aria-pressed="false" aria-label="Ver entera"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
 <button id="bLock" aria-label="Bloquear pantalla"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 017.5-2"/></svg></button>
+<script>if(navigator.standalone)document.documentElement.classList.add('sa');</script>
 <script>
 (function(){
 'use strict';
@@ -158,7 +161,7 @@ idbGet().then(b=>{ if(b) ponerImg(b); });
 <script>
 /* Actualización automática */
 (function(){
-  var BUILD='V2.26', ROOT='../';
+  var BUILD='V2.27', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

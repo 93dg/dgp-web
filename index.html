@@ -8,6 +8,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="DGP">
 <title>DGP</title>
+<script>if(navigator.standalone)document.documentElement.classList.add('sa');</script>
 <script>try{var q=location.search.indexOf('inicio')>-1,u=localStorage.getItem('dgp-ultimo');if(q){localStorage.removeItem('dgp-ultimo');history.replaceState(null,'',location.pathname)}else if(u==='juegos/')location.replace(u)}catch(e){}</script>
 <style>
 :root{--bg:#0a0c11;--s1:#11141b;--s2:#181c26;--bd:rgba(255,255,255,.09);--tx:#eef0f5;--mut:#98a1b5;--ac:#ffb81c;--warn:#ffb81c;--pos:#35d39a;--neg:#ff7070;--r:14px;--glow:rgba(255,184,28,.08);--c1:#6c8cff;--c2:#35d39a;--c3:#ffb81c;--c4:#ff7070}
@@ -170,6 +171,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[t
 @media(min-width:900px){.toast{bottom:28px}}
 @media(max-width:600px){.tab{padding:9px 7px;font-size:.9rem}.tabs{gap:0 2px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+html,body{overscroll-behavior:none}html.sa{min-height:calc(100% + env(safe-area-inset-top))}
 </style>
 </head>
 <body>
@@ -185,7 +188,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[t
   <aside class="side">
     <div class="brand">DGP</div>
     <nav id="nav" aria-label="Secciones"></nav>
-    <div class="foot"><span class="m"><span id="version">V2.26</span></span><button id="out">Salir</button></div>
+    <div class="foot"><span class="m"><span id="version">V2.27</span></span><button id="out">Salir</button></div>
   </aside>
   <div>
   <div class="main">
@@ -949,7 +952,7 @@ iniciar();
 <script>
 /* Actualización automática: compara con version.json y recarga si hay versión nueva */
 (function(){
-  var BUILD='V2.26', ROOT='';
+  var BUILD='V2.27', ROOT='';
   if(/[?&]embed=1/.test(location.search)) return;
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }

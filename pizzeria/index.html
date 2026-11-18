@@ -32,12 +32,12 @@ input,textarea{font:inherit;color:var(--tinta)}
 .hero p{position:relative;margin:0;color:rgba(244,236,223,.8);font-size:.95rem}
 
 /* Selector */
-.seg{position:sticky;top:0;z-index:20;margin:-26px auto 0;padding:10px 16px calc(10px);max-width:560px}
+.seg{position:sticky;top:0;z-index:20;margin:-26px auto 0;padding:10px 16px 8px;max-width:560px}
 .seg div{display:flex;background:var(--papel);border-radius:999px;padding:5px;box-shadow:0 10px 30px rgba(30,58,43,.18),0 0 0 1px var(--linea)}
 .seg button{flex:1;padding:12px 10px;border-radius:999px;font-weight:600;font-size:.95rem;color:var(--gris);transition:background .25s,color .25s}
 .seg button.on{background:var(--verde);color:var(--crema)}
 
-main{max-width:1080px;margin:0 auto;padding:14px 16px 20px}
+main{max-width:1080px;margin:0 auto;padding:4px 16px 20px}
 .intro{text-align:center;margin:18px auto 22px;max-width:520px}
 .intro h2{font-family:"Cormorant Garamond",Georgia,serif;font-weight:600;font-size:2rem;margin:0 0 4px}
 .intro p{margin:0;color:var(--gris)}
@@ -138,14 +138,14 @@ function suma(id,d){ const p=C.pizzas.find(x=>x.id===id); let x=PED.find(q=>q.ti
   if(!x&&d>0){ x={tipo:'carta',id,nombre:p.nombre,n:0}; PED.push(x); } if(!x) return; x.n+=d; if(x.n<=0) PED=PED.filter(q=>q!==x); guarda(); pinta(); }
 
 function carta(){ if(!C.pizzas.length) return '<div class="vacio">La cartta sta arrivando, un momentino…</div>';
-  return '<div class="intro"><h2>La cartta</h2><p>Elige la tua pizza e ponla nel pedidino.</p></div><div class="carta">'+C.pizzas.map((p,i)=>{ const n=enPed(p.id);
+  return '<div class="carta">'+C.pizzas.map((p,i)=>{ const n=enPed(p.id);
     return '<article class="pz" style="animation-delay:'+(i*60)+'ms"><div class="plato">'+(p.foto?'<img src="'+esc(p.foto)+'" alt="'+esc(p.nombre)+'" loading="lazy">':SVG0)+'</div><h3>'+esc(p.nombre)+'</h3>'+(p.desc&&!(p.ing&&p.ing.length)?'<div class="d">'+esc(p.desc)+'</div>':'')+(p.ing&&p.ing.length?'<div class="ing">'+p.ing.map(esc).join(' · ')+'</div>':'')+
       '<div class="pie">'+(n?'<div class="qty"><button data-m="'+esc(p.id)+'" aria-label="Togliere una">−</button><b>'+n+'</b><button data-p="'+esc(p.id)+'" aria-label="Un altra">+</button></div>':'<button class="btn" data-p="'+esc(p.id)+'">Me la pidino</button>')+'</div></article>'; }).join('')+'</div>'; }
 
 function crea(){ if(!C.toppings.length) return '<div class="vacio">Los ingredientinis están llegando, un momentino…</div>';
   const G=TIPOS.map(g=>[g,C.toppings.filter(t=>(t.tipo||'Otros')===g)]).filter(x=>x[1].length);
   const nombres=SEL.map(k=>(C.toppings.find(t=>t.k===k)||{}).t).filter(Boolean);
-  return '<div class="crea"><div class="intro"><h2>Hazzetela tú</h2><p>Elige los ingredientinis y te la hacemo al tuo gustino.</p></div>'+
+  return '<div class="crea">'+
     G.map(([g,ts])=>'<section class="grupo"><h4>'+esc(TIT[g]||g)+'</h4><div class="chips">'+ts.map(t=>'<button class="chip'+(SEL.includes(t.k)?' on':'')+'" data-t="'+esc(t.k)+'"><span class="ico">'+icono(t.o)+'</span>'+esc(t.t)+'</button>').join('')+'</div></section>').join('')+
     '<div class="resumen">'+(nombres.length?'<div class="sel">'+nombres.map(esc).join(', ')+'</div>':'<div class="vac">Toca los ingredientinis que te gustano.</div>')+
     '<input id="nomP" placeholder="Ponle nombrini (opcionale)" maxlength="40" value="'+esc(NOMBRE_P)+'"><button class="btn env" id="addCrea" style="margin-top:0"'+(nombres.length?'':' disabled')+'>Meter al pedidino</button></div></div>'; }
@@ -210,7 +210,7 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden) carga();
 <script>
 /* Actualización automática */
 (function(){
-  var BUILD='V2.41', ROOT='../';
+  var BUILD='V2.42', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

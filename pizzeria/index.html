@@ -117,7 +117,7 @@ footer{text-align:center;color:var(--gris);font-size:.8rem;padding:10px 0 20px;l
 <nav class="seg"><div><button data-v="carta" class="on">La cartta</button><button data-v="crea">Hazzetela tú</button></div></nav>
 <main id="main"><div class="vacio">Preparando la cartta, un momentino…</div></main>
 <footer>Buon appetito, amichi</footer>
-<div class="barra" id="barra"><button id="verPedido"><span><span class="n" id="nPed">0</span>Ver il mio pedidino</span><span>›</span></button></div>
+<div class="barra" id="barra"><button id="verPedido"><span><span class="n" id="nPed">0</span><span id="txtBar">Ver il mio pedidino</span></span><span>›</span></button></div>
 <div class="velo" id="velo"></div>
 <div class="hoja" id="hoja"></div>
 <div class="gracias" id="gracias"></div>
@@ -147,11 +147,13 @@ function crea(){ if(!C.toppings.length) return '<div class="vacio">Los ingredien
   const nombres=SEL.map(k=>(C.toppings.find(t=>t.k===k)||{}).t).filter(Boolean);
   return '<div class="crea">'+
     G.map(([g,ts])=>'<section class="grupo"><h4>'+esc(TIT[g]||g)+'</h4><div class="chips">'+ts.map(t=>'<button class="chip'+(SEL.includes(t.k)?' on':'')+'" data-t="'+esc(t.k)+'"><span class="ico">'+icono(t.o)+'</span>'+esc(t.t)+'</button>').join('')+'</div></section>').join('')+
-    '<div class="resumen">'+(nombres.length?'<div class="sel">'+nombres.map(esc).join(', ')+'</div>':'<div class="vac">Toca los ingredientinis que te gustano.</div>')+
-    '<input id="nomP" placeholder="Ponle nombrini (opcionale)" maxlength="40" value="'+esc(NOMBRE_P)+'"><button class="btn env" id="addCrea" style="margin-top:0"'+(nombres.length?'':' disabled')+'>Meter al pedidino</button></div></div>'; }
+    '</div>'; }
 
 function pinta(){ document.querySelectorAll('.seg button').forEach(b=>b.classList.toggle('on',b.dataset.v===V));
-  $('main').innerHTML=V==='carta'?carta():crea(); const n=nItems(); $('nPed').textContent=n; $('barra').classList.toggle('vis',n>0); }
+  $('main').innerHTML=V==='carta'?carta():crea(); const n=nItems(), mc=V==='crea'&&SEL.length>0; $('nPed').textContent=mc?SEL.length:n; $('txtBar').textContent=mc?'Me la pidino':'Ver il mio pedidino'; $('barra').dataset.m=mc?'crea':'ped'; $('barra').classList.toggle('vis',mc||n>0); }
+function abreCrea(){ const ns=SEL.map(k=>(C.toppings.find(t=>t.k===k)||{}).t).filter(Boolean);
+  $('hoja').innerHTML='<div class="asa"></div><h2>La tua pizza</h2><div class="lin"><div class="t"><small style="font-size:1rem">'+ns.map(esc).join(', ')+'</small></div></div><div class="campo"><label>¿Le pones nombrini?</label><input id="nomP" maxlength="40" placeholder="Opcionale, eh"></div><button class="btn env" id="addCrea">Meter al pedidino</button>';
+  $('velo').classList.add('vis'); $('hoja').classList.add('vis'); }
 
 function abreHoja(){ const nm=(()=>{ try{ return localStorage.getItem('pz-nombre')||''; }catch(e){ return ''; } })();
   $('hoja').innerHTML='<div class="asa"></div><h2>Il tuo pedidino</h2>'+(PED.length?PED.map((x,i)=>'<div class="lin"><div class="t"><b>'+esc(x.nombre)+'</b>'+(x.tipo==='medida'?'<small>'+esc(x.nombres.join(', '))+'</small>':'')+'</div><div class="qty"><button data-hm="'+i+'" aria-label="Togliere una">−</button><b>'+x.n+'</b><button data-hp="'+i+'" aria-label="Un altra">+</button></div></div>').join(''):'<div class="vacio">Todavía no has elegido nientes, amico.</div>')+
@@ -168,8 +170,10 @@ $('main').onclick=e=>{ const b=e.target.closest('button'); if(!b) return;
   else if(b.id==='addCrea'){ const ns=SEL.map(k=>(C.toppings.find(t=>t.k===k)||{}).t).filter(Boolean); if(!ns.length) return;
     PED.push({tipo:'medida',nombre:NOMBRE_P.trim()||'Al mio gustino',tops:SEL.slice(),nombres:ns,n:1}); SEL=[]; NOMBRE_P=''; guarda(); pinta(); abreHoja(); } };
 $('main').oninput=e=>{ if(e.target.id==='nomP') NOMBRE_P=e.target.value; };
-$('verPedido').onclick=abreHoja; $('velo').onclick=cierraHoja;
+$('verPedido').onclick=()=>{ if($('barra').dataset.m==='crea') abreCrea(); else abreHoja(); }; $('velo').onclick=cierraHoja;
 $('hoja').onclick=async e=>{ const b=e.target.closest('button'); if(!b) return;
+  if(b.id==='addCrea'){ const ns=SEL.map(k=>(C.toppings.find(t=>t.k===k)||{}).t).filter(Boolean); if(!ns.length) return; const np=$('nomP').value.trim();
+    PED.push({tipo:'medida',nombre:np||'Al mio gustino',tops:SEL.slice(),nombres:ns,n:1}); SEL=[]; guarda(); pinta(); abreHoja(); return; }
   if(b.dataset.hp||b.dataset.hm){ const i=+(b.dataset.hp||b.dataset.hm), x=PED[i]; if(!x) return; x.n+=b.dataset.hp?1:-1; if(x.n<=0) PED.splice(i,1); guarda(); pinta(); const nm=$('nomC').value, nt=$('nota').value; abreHoja(); $('nomC').value=nm; $('nota').value=nt; if(!PED.length) cierraHoja(); return; }
   if(b.id==='enviar'){ const nom=$('nomC').value.trim(); if(!nom){ $('err').textContent='Ponme il tuo nombre, per favore.'; $('nomC').focus(); return; }
     b.disabled=true; b.textContent='Mandando…'; $('err').textContent='';
@@ -210,7 +214,7 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden) carga();
 <script>
 /* Actualización automática */
 (function(){
-  var BUILD='V2.43', ROOT='../';
+  var BUILD='V2.44', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

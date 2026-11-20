@@ -202,7 +202,7 @@ function pintaHerr(){ $('herr').innerHTML=HERR.map(x=>'<button data-h="'+x[0]+'"
   av.textContent=t; av.hidden=!t; }
 function pintaAccion(){ const a=$('accion'); let h='';
   if(MODO==='cable'&&DIB&&DIB.pts&&DIB.pts.length) h='<button data-a="atras">Quitar último punto</button><button data-a="orto">'+(ORTO?'Recto':'Libre')+'</button><button data-a="cancel">Cancelar</button>';
-  else if(SEL){ if(SEL.k==='e'){ const el=P.els.find(x=>x.id===SEL.id); if(!el){ SEL=null; } else h=(el.t==='texto'?'<button data-a="edit">Editar texto</button>':'')+(el.t==='ench'?'<button data-a="doble">'+(el.n>1?'Sencillo':'Doble')+'</button>':'')+(el.t!=='texto'&&el.t!=='caja'?'<button data-a="lab">Nombre</button>':'')+'<button data-a="menos">−</button><button data-a="mas">+</button><button data-a="rot">Girar</button><button data-a="dup">Duplicar</button><button data-a="del" style="color:var(--neg)">Borrar</button><button data-a="nosel">Listo</button>'; }
+  else if(SEL){ if(SEL.k==='e'){ const el=P.els.find(x=>x.id===SEL.id); if(!el){ SEL=null; } else h=(el.t==='texto'?'<button data-a="edit">Editar texto</button>':'')+(el.t==='ench'?'<button data-a="doble">'+(el.n>1?'Sencillo':'Doble')+'</button>':'')+(el.t!=='texto'?'<button data-a="sus">Sustituir</button>':'')+(el.t!=='texto'&&el.t!=='caja'?'<button data-a="lab">Nombre</button>':'')+'<button data-a="menos">−</button><button data-a="mas">+</button><button data-a="rot">Girar</button><button data-a="dup">Duplicar</button><button data-a="del" style="color:var(--neg)">Borrar</button><button data-a="nosel">Listo</button>'; }
     else if(SEL.k==='c') h=(VSEL!=null?'<button data-a="qv">Quitar punto</button>':'')+'<button data-a="av">Añadir punto</button><button data-a="ret">'+((P.cab.find(x=>x.id===SEL.id)||{}).ret?'Pasar a normal':'Pasar a retorno')+'</button><button data-a="ccol">Cambiar térmico</button><button data-a="flecha">Flecha</button><button data-a="grueso">Grosor</button><button data-a="del" style="color:var(--neg)">Borrar</button><button data-a="nosel">Listo</button>';
     else if(SEL.k==='m') h='<button data-a="del" style="color:var(--neg)">Borrar muro</button><button data-a="nosel">Listo</button>'; }
   a.innerHTML=h; a.hidden=!h; }
@@ -282,6 +282,10 @@ $('accion').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; cons
   else if(a==='nosel'){ SEL=null; pinta(); }
   else if(a==='del'){ snap(); if(SEL.k==='e') P.els=P.els.filter(x=>x.id!==SEL.id); else if(SEL.k==='c') P.cab=P.cab.filter(x=>x.id!==SEL.id); else P.muros=P.muros.filter(x=>x.id!==SEL.id); SEL=null; guarda(); pinta(); }
   else if(SEL&&SEL.k==='e'){ const el=P.els.find(x=>x.id===SEL.id); if(!el) return;
+    if(a==='sus'){ const T=HERR.filter(x=>['caja','luz','int','ench','vent','cuadro','tv'].includes(x[0])&&x[0]!==el.t);
+      hoja('<h3>Sustituir por…</h3><div class="meta" style="margin-bottom:8px">Se mantienen sus cables, posición y nombre.</div><div class="fila">'+T.map(x=>'<button data-st="'+x[0]+'" style="display:flex;flex-direction:column;align-items:center;gap:2px;min-width:86px;min-height:64px">'+IC[x[0]]+'<span style="font-size:.78rem">'+x[1]+'</span></button>').join('')+'</div><div class="fila" style="margin-top:10px"><button id="sX" style="flex:1">Cancelar</button></div>');
+      $('hoja').querySelectorAll('svg').forEach(v=>{ v.style.width='24px'; v.style.height='24px'; });
+      $('hoja').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; if(b.id==='sX') cierra(); if(b.dataset.st){ snap(); el.t=b.dataset.st; delete el.n; if(el.t!=='caja') delete el.txt; guarda(); cierra(); pinta(); } }; return; }
     if(a==='lab'){ hoja('<h3>Nombre del aparato</h3><div class="campo"><input id="lTxt" value="'+esc(el.lab||'')+'" placeholder="Ej. Aire acondicionado, Aerotermia, Placa" maxlength="30"></div><div class="fila"><button class="pri" id="lOk" style="flex:1">Guardar</button><button id="lX">Cancelar</button></div>'); setTimeout(()=>$('lTxt').focus(),60); $('hoja').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; if(b.id==='lX') cierra(); if(b.id==='lOk'){ snap(); el.lab=$('lTxt').value.trim(); guarda(); cierra(); pinta(); } }; return; }
     if(a==='mas'||a==='menos'){ snap(); el.sc=Math.max(.3,Math.min(4,(el.sc||1)*(a==='mas'?1.2:1/1.2))); } else if(a==='rot'){ snap(); el.r=((el.r||0)+90)%360; } else if(a==='dup'){ snap(); const n=Object.assign({},el,{id:uid(),x:el.x+40,y:el.y+40}); P.els.push(n); SEL={k:'e',id:n.id}; }
     else if(a==='doble'){ snap(); el.n=el.n>1?1:2; } else if(a==='edit'){ editaTexto(el); return; } guarda(); pinta(); }
@@ -383,7 +387,7 @@ pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraR
 </script>
 <script>
 (function(){
-  var BUILD='V2.70', ROOT='../';
+  var BUILD='V2.71', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

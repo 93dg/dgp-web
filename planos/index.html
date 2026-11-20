@@ -179,9 +179,9 @@ function pinta(){ P.cab.forEach(sentido); marcadores(); $('nombre').value=P.nomb
   let h='<rect x="0" y="0" width="'+P.w+'" height="'+P.h+'" fill="#fff"/><rect x="0" y="0" width="'+P.w+'" height="'+P.h+'" fill="url(#cuad)"/>';
   if(P.fondo) h+='<image href="'+P.fondo.src+'" x="0" y="0" width="'+P.fondo.w+'" height="'+P.fondo.h+'" opacity="'+P.fop+'"/>';
   h+=P.muros.map(m=>'<line data-k="m" data-id="'+m.id+'" x1="'+m.x1+'" y1="'+m.y1+'" x2="'+m.x2+'" y2="'+m.y2+'" stroke="'+(SEL&&SEL.id===m.id?'#ffb81c':'#8a8a8a')+'" stroke-width="'+(m.g||18)+'" stroke-linecap="square"/>').join('');
-  h+=P.cab.filter(c=>!FIL||c.c===FIL).map(c=>{ const col=colDe(c.c), d=ptsVis(c).map(p=>p[0]+','+p[1]).join(' '); const s=SEL&&SEL.id===c.id;
+  h+=P.cab.filter(c=>!FIL||c.c===FIL).map(c=>{ const col=colDe(c.c), par=c.ret&&P.cab.some(k=>!k.ret&&((k.a===c.a&&k.b===c.b)||(k.a===c.b&&k.b===c.a))), d=ptsVis(c).map(p=>(par&&!CORR?(p[0]+6)+','+(p[1]+6):p[0]+','+p[1])).join(' '); const s=SEL&&SEL.id===c.id;
     return (s?'<polyline points="'+d+'" fill="none" stroke="#ffb81c" stroke-width="12" opacity=".45" stroke-linejoin="round"/>':'')+
-     (CORR?'<polyline points="'+d+'" fill="none" stroke="'+col+'" stroke-opacity=".28" stroke-width="16" stroke-linejoin="round" stroke-linecap="round" pointer-events="none"/><polyline points="'+d+'" fill="none" stroke="'+col+'" stroke-width="1.5" stroke-dasharray="2 4" pointer-events="none" transform="translate(0 -8)"/><polyline points="'+d+'" fill="none" stroke="'+col+'" stroke-width="1.5" stroke-dasharray="2 4" pointer-events="none" transform="translate(0 8)"/>':'')+
+     (CORR&&!par?'<polyline points="'+d+'" fill="none" stroke="'+col+'" stroke-opacity=".28" stroke-width="16" stroke-linejoin="round" stroke-linecap="round" pointer-events="none"/><polyline points="'+d+'" fill="none" stroke="'+col+'" stroke-width="1.5" stroke-dasharray="2 4" pointer-events="none" transform="translate(0 -8)"/><polyline points="'+d+'" fill="none" stroke="'+col+'" stroke-width="1.5" stroke-dasharray="2 4" pointer-events="none" transform="translate(0 8)"/>':'')+
      '<polyline points="'+d+'" fill="none" stroke="transparent" stroke-width="18" data-k="c" data-id="'+c.id+'"/>'+
      '<polyline points="'+d+'" fill="none" stroke="'+col+'" stroke-width="'+(c.g||4)+'" stroke-linejoin="round" stroke-linecap="round"'+(c.ret?' stroke-dasharray="10 7"':'')+' pointer-events="none"'+(c.fl!==false?' marker-end="url(#m'+col.slice(1)+')"':'')+'/>'; }).join('');
   if(DIB&&DIB.pts&&DIB.pts.length){ const col=colDe(DIB.c); h+='<polyline points="'+DIB.pts.map(p=>p[0]+','+p[1]).join(' ')+(DIB.cur?' '+DIB.cur[0]+','+DIB.cur[1]:'')+'" fill="none" stroke="'+col+'" stroke-width="4" stroke-dasharray="'+(DIB.cur?'0':'0')+'" stroke-linejoin="round" pointer-events="none"/>'+DIB.pts.map(p=>'<circle cx="'+p[0]+'" cy="'+p[1]+'" r="5" fill="'+col+'" pointer-events="none"/>').join(''); }
@@ -361,14 +361,23 @@ function addRetornos(Q){ let n=0; Q.els.filter(e=>e.t==='int').forEach(it=>{ if(
     const f=Q.cab.find(c=>c.b===it.id&&!c.ret); if(!f||!f.a) return; const pts=f.pts.slice().reverse().map(p=>[p[0]+8,p[1]+8]);
     Q.cab.push({id:uid(),c:f.c,pts,fl:true,g:3,a:it.id,b:f.a,ret:true}); n++; }); return n; }
 function arreglaCuadro(Q){ let n=0; Q.cab.forEach(c=>{ const ea=Q.els.find(x=>x.id===c.a); if(ea&&ea.t==='cuadro'&&c.pts.length>2&&Math.abs(c.pts[1][1]-c.pts[0][1])<1&&Math.abs(c.pts[1][0]-c.pts[0][0])>0){ c.pts.splice(1,1); c.pa=null; n++; } }); return n; }
-function migraRet(){ let n2=0; PL.forEach(x=>{ n2+=arreglaCuadro(x); }); if(n2) guarda(); let hecho=false; try{ hecho=localStorage.getItem('dgp-planos-ret1')==='1'; }catch(e){} if(hecho) return; let n=0;
+function encadena(Q){ const cu=Q.els.find(e=>e.t==='cuadro'); if(!cu) return 0; const tr=Q.cab.filter(c=>c.a===cu.id&&!c.ret); if(!tr.length) return 0;
+  const porC={}; tr.forEach(c=>{ const b=Q.els.find(e=>e.id===c.b); if(b&&b.t==='caja') (porC[c.c]=porC[c.c]||[]).push(b); });
+  Q.cab=Q.cab.filter(c=>!(c.a===cu.id&&!c.ret&&porC[c.c]));
+  Object.keys(porC).forEach(ci=>{ let pend=porC[ci].slice(), cur=cu, k=0; const off=(Q.circ.findIndex(x=>x.id===ci)-3)*6;
+    while(pend.length){ pend.sort((a,b)=>Math.hypot(a.x-cur.x,a.y-cur.y)-Math.hypot(b.x-cur.x,b.y-cur.y)); const nx=pend.shift();
+      const pts=Math.abs(nx.x-cur.x)<2||Math.abs(nx.y-cur.y)<2?[[cur.x,cur.y],[nx.x,nx.y]]:[[cur.x,cur.y],[cur.x+(k?0:off),nx.y+off],[nx.x,nx.y+off],[nx.x,nx.y]];
+      Q.cab.push({id:uid(),c:ci,pts,fl:true,g:3,a:cur.id,b:nx.id}); cur=nx; k++; } });
+  return 1; }
+function retMismoCamino(Q){ let n=0; Q.cab.filter(c=>c.ret).forEach(c=>{ const f=Q.cab.find(k=>!k.ret&&((k.a===c.b&&k.b===c.a)||(k.a===c.a&&k.b===c.b))); if(f){ c.pts=f.a===c.a?f.pts.map(p=>p.slice()):f.pts.slice().reverse().map(p=>p.slice()); c.pa=null; c.pb=null; n++; } }); return n; }
+function migraRet(){ let h2=false; try{ h2=localStorage.getItem('dgp-planos-enc1')==='1'; }catch(e){} if(!h2){ let n3=0; PL.filter(x=>/^pl-(baja|alta)/.test(x.id)).forEach(x=>{ n3+=encadena(x)+retMismoCamino(x); }); try{ localStorage.setItem('dgp-planos-enc1','1'); }catch(e){} if(n3){ guarda(); pinta(); } } let n2=0; PL.forEach(x=>{ n2+=arreglaCuadro(x); }); if(n2) guarda(); let hecho=false; try{ hecho=localStorage.getItem('dgp-planos-ret1')==='1'; }catch(e){} if(hecho) return; let n=0;
   PL.filter(x=>/^pl-(baja|alta)/.test(x.id)).forEach(x=>{ n+=addRetornos(x); }); try{ localStorage.setItem('dgp-planos-ret1','1'); }catch(e){} if(n){ guarda(); pinta(); } }
 pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraRet);
 })();
 </script>
 <script>
 (function(){
-  var BUILD='V2.65', ROOT='../';
+  var BUILD='V2.66', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

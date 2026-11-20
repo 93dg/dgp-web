@@ -209,7 +209,7 @@ const AI={abierto:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const bi=(a,ic,t,on)=>'<button data-a="'+a+'" aria-label="'+t+'" title="'+t+'" class="ib'+(on?' on':'')+'"'+(a==='del'?' style="color:var(--neg)"':'')+'>'+ic+'</button>';
 function pintaAccion(){ const a=$('accion'); let h='';
   if(MODO==='cable'&&DIB&&DIB.pts&&DIB.pts.length) h='<button data-a="atras">Quitar último punto</button><button data-a="orto">'+(ORTO?'Recto':'Libre')+'</button><button data-a="cancel">Cancelar</button>';
-  else if(SEL){ if(SEL.k==='e'){ const el=P.els.find(x=>x.id===SEL.id); if(!el){ SEL=null; } else h=bi('lock',el.lock?AI.cerrado:AI.abierto,el.lock?'Desbloquear':'Bloquear',el.lock)+(el.t==='texto'?bi('edit',AI.texto,'Editar texto'):'')+(el.t==='ench'?'<span style="display:inline-flex;border:1px solid var(--bd);border-radius:10px;overflow:hidden">'+[1,2,3,4,5].map(n=>'<button data-a="tomas" data-n="'+n+'" class="'+((el.n||1)===n?'on':'')+'" style="border:0;border-radius:0;min-width:40px;padding:0 6px">×'+n+'</button>').join('')+'</span>':'')+(el.t!=='texto'?bi('sus',AI.sus,'Sustituir'):'')+(el.t!=='texto'&&el.t!=='caja'?bi('lab',AI.texto,'Nombre'):'')+bi('menos','−','Más pequeño')+bi('mas','+','Más grande')+bi('rot',AI.rot,'Girar')+bi('dup',AI.dup,'Duplicar')+bi('del',AI.del,'Borrar'); }
+  else if(SEL){ if(SEL.k==='e'){ const el=P.els.find(x=>x.id===SEL.id); if(!el){ SEL=null; } else h=bi('lock',el.lock?AI.cerrado:AI.abierto,el.lock?'Desbloquear':'Bloquear',el.lock)+(el.t==='texto'?bi('edit',AI.texto,'Editar texto'):'')+(el.t==='ench'?'<select id="selTomas" style="height:40px;border:1px solid var(--bd);border-radius:10px;background:var(--panel,#1c1f26);color:inherit;font:inherit;font-weight:600;padding:0 8px">'+[1,2,3,4,5].map(n=>'<option value="'+n+'"'+((el.n||1)===n?' selected':'')+'>×'+n+'</option>').join('')+'</select>':'')+(el.t!=='texto'?bi('sus',AI.sus,'Sustituir'):'')+(el.t!=='texto'&&el.t!=='caja'?bi('lab',AI.texto,'Nombre'):'')+bi('menos','−','Más pequeño')+bi('mas','+','Más grande')+bi('rot',AI.rot,'Girar')+bi('dup',AI.dup,'Duplicar')+bi('del',AI.del,'Borrar'); }
     else if(SEL.k==='c') { const cc=P.cab.find(x=>x.id===SEL.id)||{}; h=bi('lock',cc.lock?AI.cerrado:AI.abierto,cc.lock?'Desbloquear':'Bloquear',cc.lock)+(VSEL!=null?'<button data-a="qv">Quitar punto</button>':'')+'<button data-a="av">Añadir punto</button><button data-a="ret">'+(cc.ret?'Pasar a normal':'Pasar a retorno')+'</button><button data-a="ccol">Cambiar térmico</button><button data-a="flecha">Flecha</button><button data-a="grueso">Grosor</button>'+bi('del',AI.del,'Borrar'); }
     else if(SEL.k==='m') h=''+bi('del',AI.del,'Borrar muro')+''; }
   a.innerHTML=h; a.hidden=!h; }
@@ -283,6 +283,7 @@ $('circs').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; const
   if(DIB&&DIB.pts){ DIB.c=c; CIRC=c; pinta(); return; }
   if(FIL===c){ abreCirc(P.circ.find(x=>x.id===c)); return; }
   FIL=c; CIRC=c; pinta(); };
+$('accion').onchange=e=>{ if(e.target.id!=='selTomas'||!SEL) return; const el=P.els.find(x=>x.id===SEL.id); if(!el) return; snap(); el.n=+e.target.value; guarda(); pinta(); };
 $('accion').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; const a=b.dataset.a;
   if(a==='fin') terminaCable(); else if(a==='atras'){ DIB.pts.pop(); if(!DIB.pts.length) DIB=null; pinta(); } else if(a==='cancel'){ DIB=null; pinta(); }
   else if(a==='orto'){ ORTO=!ORTO; try{ localStorage.setItem('dgp-planos-orto',ORTO?'1':'0'); }catch(e){} pinta(); }
@@ -415,7 +416,7 @@ pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraR
 </script>
 <script>
 (function(){
-  var BUILD='V2.75', ROOT='../';
+  var BUILD='V2.76', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

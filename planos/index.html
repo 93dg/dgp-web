@@ -196,6 +196,8 @@ function conPuerto(p,i,el,sd,c){ const o=c?hueco(el,sd,c):0; let Q=puerto(el,sd)
   const N=i===0?p[1]:p[p.length-2]; const C=(sd==='t'||sd==='b')?[N[0],S[1]]:[S[0],N[1]];
   const ins=[C,S,Q]; if(i===0){ p.splice(0,1,...ins.reverse()); } else { p.splice(p.length-1,1,...ins); } return p; }
 function ptsVis(c){ let p=c.pts.map(q=>q.slice()); if(p.length<2) return p;
+  if(c.a&&c.b&&p.length>2){ const G=P.cab.filter(k=>k.a&&k.b&&((k.a===c.a&&k.b===c.b)||(k.a===c.b&&k.b===c.a))&&!!k.ret===!!c.ret).sort((x,y)=>P.circ.findIndex(q=>q.id===x.c)-P.circ.findIndex(q=>q.id===y.c)||(x.id<y.id?-1:1));
+    if(G.length>1){ const o=(G.indexOf(c)-(G.length-1)/2)*9; for(let i=1;i<p.length-1;i++){ p[i]=[p[i][0]+o,p[i][1]+o]; } } }
   const eb=c.b&&c.pb?P.els.find(x=>x.id===c.b):null, ea=c.a&&c.pa?P.els.find(x=>x.id===c.a):null;
   if(eb) p=conPuerto(p,1,eb,c.pb,c); if(ea) p=conPuerto(p,0,ea,c.pa,c); if(eb&&ea) return p;
   const n=p.length-1;
@@ -585,7 +587,7 @@ pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraR
 </script>
 <script>
 (function(){
-  var BUILD='V2.92', ROOT='../';
+  var BUILD='V2.93', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

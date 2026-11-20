@@ -179,7 +179,7 @@ function pinta(){ P.cab.forEach(sentido); marcadores(); $('nombre').textContent=
   let h='<rect x="0" y="0" width="'+P.w+'" height="'+P.h+'" fill="#fff"/><rect x="0" y="0" width="'+P.w+'" height="'+P.h+'" fill="url(#cuad)"/>';
   if(P.fondo) h+='<image href="'+P.fondo.src+'" x="0" y="0" width="'+P.fondo.w+'" height="'+P.fondo.h+'" opacity="'+P.fop+'"/>';
   h+=P.muros.map(m=>'<line data-k="m" data-id="'+m.id+'" x1="'+m.x1+'" y1="'+m.y1+'" x2="'+m.x2+'" y2="'+m.y2+'" stroke="'+(SEL&&SEL.id===m.id?'#ffb81c':'#8a8a8a')+'" stroke-width="'+(m.g||18)+'" stroke-linecap="square"/>').join('');
-  h+=P.cab.filter(c=>!FIL||c.c===FIL).map(c=>{ const col=colDe(c.c), par=c.ret&&P.cab.some(k=>!k.ret&&((k.a===c.a&&k.b===c.b)||(k.a===c.b&&k.b===c.a))), d=ptsVis(c).map(p=>(par&&!CORR?(p[0]+6)+','+(p[1]+6):p[0]+','+p[1])).join(' '); const s=SEL&&SEL.id===c.id;
+  h+=P.cab.filter(c=>!FIL||c.c===FIL).map(c=>{ const col=colDe(c.c), par=c.ret&&P.cab.some(k=>!k.ret&&((k.a===c.a&&k.b===c.b)||(k.a===c.b&&k.b===c.a))), d=ptsVis(c).map(p=>(par&&!CORR?(p[0]+6)+','+(p[1]+6):p[0]+','+p[1])).join(' '); const s=SEL&&(SEL.id===c.id||(SEL.k==='e'&&(c.a===SEL.id||c.b===SEL.id)));
     return (s?'<polyline points="'+d+'" fill="none" stroke="#ffb81c" stroke-width="12" opacity=".45" stroke-linejoin="round"/>':'')+
      (CORR&&!par?'<polyline points="'+d+'" fill="none" stroke="'+col+'" stroke-opacity=".28" stroke-width="16" stroke-linejoin="round" stroke-linecap="round" pointer-events="none"/><polyline points="'+d+'" fill="none" stroke="'+col+'" stroke-width="1.5" stroke-dasharray="2 4" pointer-events="none" transform="translate(0 -8)"/><polyline points="'+d+'" fill="none" stroke="'+col+'" stroke-width="1.5" stroke-dasharray="2 4" pointer-events="none" transform="translate(0 8)"/>':'')+
      '<polyline points="'+d+'" fill="none" stroke="transparent" stroke-width="18" data-k="c" data-id="'+c.id+'"/>'+
@@ -380,14 +380,20 @@ function encadena(Q){ const cu=Q.els.find(e=>e.t==='cuadro'); if(!cu) return 0; 
 function retMismoCamino(Q){ let n=0; Q.cab.filter(c=>c.ret).forEach(c=>{ const f=Q.cab.find(k=>!k.ret&&((k.a===c.b&&k.b===c.a)||(k.a===c.a&&k.b===c.b))); if(f){ c.pts=f.a===c.a?f.pts.map(p=>p.slice()):f.pts.slice().reverse().map(p=>p.slice()); c.pa=null; c.pb=null; n++; } }); return n; }
 function pegaTextos(Q){ let n=0; Q.els.filter(e=>e.t==='texto').forEach(t=>{ const c=Q.els.filter(e=>e.t!=='texto'&&e.t!=='caja'&&e.t!=='cuadro'&&!e.lab).map(e=>[Math.hypot(e.x-t.x,e.y-t.y),e]).sort((a,b)=>a[0]-b[0])[0];
     if(c&&c[0]<120){ c[1].lab=t.txt; Q.els=Q.els.filter(x=>x!==t); n++; } }); return n; }
-function migraRet(){ let h5=false; try{ h5=localStorage.getItem('dgp-planos-lab1')==='1'; }catch(e){} if(!h5){ let n5=0; PL.filter(x=>/^pl-(baja|alta)/.test(x.id)).forEach(x=>{ n5+=pegaTextos(x); }); try{ localStorage.setItem('dgp-planos-lab1','1'); }catch(e){} if(n5){ guarda(); pinta(); } } let h2=false; try{ h2=localStorage.getItem('dgp-planos-enc1')==='1'; }catch(e){} if(!h2){ let n3=0; PL.filter(x=>/^pl-(baja|alta)/.test(x.id)).forEach(x=>{ n3+=encadena(x)+retMismoCamino(x); }); try{ localStorage.setItem('dgp-planos-enc1','1'); }catch(e){} if(n3){ guarda(); pinta(); } } let n2=0; PL.forEach(x=>{ n2+=arreglaCuadro(x); }); if(n2) guarda(); let hecho=false; try{ hecho=localStorage.getItem('dgp-planos-ret1')==='1'; }catch(e){} if(hecho) return; let n=0;
+function retALuz(Q){ const ints=Q.els.filter(e=>e.t==='int'); if(!ints.length) return 0;
+  Q.cab=Q.cab.filter(c=>!(c.ret&&ints.some(i=>i.id===c.a)&&(Q.els.find(e=>e.id===c.b)||{}).t==='caja'));
+  const usadas=new Set(Q.cab.filter(c=>c.ret).map(c=>c.b)); let n=0;
+  ints.forEach(it=>{ if(Q.cab.some(c=>c.ret&&c.a===it.id)) return; const L=Q.els.filter(e=>e.t==='luz'&&!usadas.has(e.id)).map(e=>[Math.hypot(e.x-it.x,e.y-it.y),e]).sort((a,b)=>a[0]-b[0])[0]; if(!L) return; const lz=L[1]; usadas.add(lz.id);
+    const f=Q.cab.find(c=>c.b===it.id&&!c.ret); const cc=f?f.c:(Q.circ[0]||{}).id;
+    Q.cab.push({id:uid(),c:cc,pts:[[it.x,it.y],[lz.x,it.y],[lz.x,lz.y]],fl:true,g:3,a:it.id,b:lz.id,ret:true}); n++; }); return n; }
+function migraRet(){ let h6=false; try{ h6=localStorage.getItem('dgp-planos-rl1')==='1'; }catch(e){} if(!h6){ let n6=0; PL.filter(x=>/^pl-(baja|alta)/.test(x.id)).forEach(x=>{ n6+=retALuz(x); }); try{ localStorage.setItem('dgp-planos-rl1','1'); }catch(e){} if(n6){ guarda(); pinta(); } } let h5=false; try{ h5=localStorage.getItem('dgp-planos-lab1')==='1'; }catch(e){} if(!h5){ let n5=0; PL.filter(x=>/^pl-(baja|alta)/.test(x.id)).forEach(x=>{ n5+=pegaTextos(x); }); try{ localStorage.setItem('dgp-planos-lab1','1'); }catch(e){} if(n5){ guarda(); pinta(); } } let h2=false; try{ h2=localStorage.getItem('dgp-planos-enc1')==='1'; }catch(e){} if(!h2){ let n3=0; PL.filter(x=>/^pl-(baja|alta)/.test(x.id)).forEach(x=>{ n3+=encadena(x)+retMismoCamino(x); }); try{ localStorage.setItem('dgp-planos-enc1','1'); }catch(e){} if(n3){ guarda(); pinta(); } } let n2=0; PL.forEach(x=>{ n2+=arreglaCuadro(x); }); if(n2) guarda(); let hecho=false; try{ hecho=localStorage.getItem('dgp-planos-ret1')==='1'; }catch(e){} if(hecho) return; let n=0;
   PL.filter(x=>/^pl-(baja|alta)/.test(x.id)).forEach(x=>{ n+=addRetornos(x); }); try{ localStorage.setItem('dgp-planos-ret1','1'); }catch(e){} if(n){ guarda(); pinta(); } }
 pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraRet);
 })();
 </script>
 <script>
 (function(){
-  var BUILD='V2.71', ROOT='../';
+  var BUILD='V2.72', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

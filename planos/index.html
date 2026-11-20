@@ -56,7 +56,7 @@ input,select,textarea{background:var(--s2);border:1px solid var(--bd);border-rad
 <body>
 <div class="top">
   <button id="bPlanos" class="tit"><span id="nombre"></span> <span style="color:var(--ac)">▾</span></button>
-  <button id="bMas" aria-label="Más opciones">⋯</button>
+  <button id="bCuadro" style="margin-left:auto;margin-right:8px;width:auto;padding:0 12px;font-weight:600">Cuadro</button><button id="bMas" aria-label="Más opciones">⋯</button>
 </div>
 <div class="circs" id="circs"></div>
 <div class="lienzo" id="lienzo">
@@ -209,7 +209,7 @@ const AI={abierto:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const bi=(a,ic,t,on)=>'<button data-a="'+a+'" aria-label="'+t+'" title="'+t+'" class="ib'+(on?' on':'')+'"'+(a==='del'?' style="color:var(--neg)"':'')+'>'+ic+'</button>';
 function pintaAccion(){ const a=$('accion'); let h='';
   if(MODO==='cable'&&DIB&&DIB.pts&&DIB.pts.length) h='<button data-a="atras">Quitar último punto</button><button data-a="orto">'+(ORTO?'Recto':'Libre')+'</button><button data-a="cancel">Cancelar</button>';
-  else if(SEL){ if(SEL.k==='e'){ const el=P.els.find(x=>x.id===SEL.id); if(!el){ SEL=null; } else h=bi('lock',el.lock?AI.cerrado:AI.abierto,el.lock?'Desbloquear':'Bloquear',el.lock)+(el.t==='texto'?bi('edit',AI.texto,'Editar texto'):'')+(el.t==='ench'?'<select id="selTomas" style="height:40px;border:1px solid var(--bd);border-radius:10px;background:var(--panel,#1c1f26);color:inherit;font:inherit;font-weight:600;padding:0 8px">'+[1,2,3,4,5].map(n=>'<option value="'+n+'"'+((el.n||1)===n?' selected':'')+'>×'+n+'</option>').join('')+'</select>':'')+(el.t!=='texto'?bi('sus',AI.sus,'Sustituir'):'')+(el.t!=='texto'&&el.t!=='caja'?bi('lab',AI.texto,'Nombre'):'')+bi('menos','−','Más pequeño')+bi('mas','+','Más grande')+bi('rot',AI.rot,'Girar')+bi('dup',AI.dup,'Duplicar')+bi('del',AI.del,'Borrar'); }
+  else if(SEL){ if(SEL.k==='e'){ const el=P.els.find(x=>x.id===SEL.id); if(!el){ SEL=null; } else h=bi('lock',el.lock?AI.cerrado:AI.abierto,el.lock?'Desbloquear':'Bloquear',el.lock)+(el.t==='texto'?bi('edit',AI.texto,'Editar texto'):'')+(el.t==='ench'?'<select id="selTomas" style="flex:0 0 auto;width:auto;min-width:0;height:40px;border:1px solid var(--bd);border-radius:10px;background:var(--panel,#1c1f26);color:inherit;font:inherit;font-weight:600;padding:0 8px">'+[1,2,3,4,5].map(n=>'<option value="'+n+'"'+((el.n||1)===n?' selected':'')+'>×'+n+'</option>').join('')+'</select>':'')+(el.t!=='texto'?bi('sus',AI.sus,'Sustituir'):'')+(el.t!=='texto'&&el.t!=='caja'?bi('lab',AI.texto,'Nombre'):'')+bi('menos','−','Más pequeño')+bi('mas','+','Más grande')+bi('rot',AI.rot,'Girar')+bi('dup',AI.dup,'Duplicar')+bi('del',AI.del,'Borrar'); }
     else if(SEL.k==='c') { const cc=P.cab.find(x=>x.id===SEL.id)||{}; h=bi('lock',cc.lock?AI.cerrado:AI.abierto,cc.lock?'Desbloquear':'Bloquear',cc.lock)+(VSEL!=null?'<button data-a="qv">Quitar punto</button>':'')+'<button data-a="av">Añadir punto</button><button data-a="ret">'+(cc.ret?'Pasar a normal':'Pasar a retorno')+'</button><button data-a="ccol">Cambiar térmico</button><button data-a="flecha">Flecha</button><button data-a="grueso">Grosor</button>'+bi('del',AI.del,'Borrar'); }
     else if(SEL.k==='m') h=''+bi('del',AI.del,'Borrar muro')+''; }
   a.innerHTML=h; a.hidden=!h; }
@@ -346,6 +346,34 @@ $('bPlanos').onclick=()=>{ hoja('<h3>Planos</h3><div class="campo"><label>Nombre
     if(b.dataset.ab){ P=PL.find(x=>x.id===b.dataset.ab); HIST=[]; SEL=null; CIRC=P.circ[0]&&P.circ[0].id; guarda(); cierra(); pinta(); ajustar(); }
     if(b.dataset.cp){ const o=JSON.parse(JSON.stringify(PL.find(x=>x.id===b.dataset.cp))); o.id=uid(); o.nombre+=' (copia)'; PL.push(o); guarda(); $('bPlanos').onclick(); }
     if(b.dataset.bo){ if(b.dataset.ok!=='1'){ b.dataset.ok='1'; b.textContent='¿Seguro?'; return; } PL=PL.filter(x=>x.id!==b.dataset.bo); if(P.id===b.dataset.bo){ P=PL[0]; pinta(); ajustar(); } guarda(); $('bPlanos').onclick(); } }; };
+
+function cuadroSVG(){
+  const cs=P.circ.filter(c=>/^C\d/i.test(c.nom)), mod=46, H=150;
+  const DEF={C1:[10,'1,5'],C2:[16,'2,5'],C3:[25,'6'],C4:[20,'4'],C5:[16,'2,5'],C6:[16,'2,5'],C7:[20,'4'],C8:[16,'2,5']}, df=c=>DEF[(c.nom||'').toUpperCase()]||[16,'2,5'];
+  const amp=c=>{const m=(c.desc||'').match(/(\d+)\s*A\b/);return m?+m[1]:df(c)[0]}, sec=c=>{const m=(c.desc||'').match(/([\d,\.]+)\s*mm/i);return (m?m[1]:df(c)[1])+' mm²'};
+  const grupos=[]; for(let i=0;i<cs.length;i+=5) grupos.push(cs.slice(i,i+5));
+  let items=[{t:'IGA',a:'40A',s:'General',w:2,col:'#444'},{t:'Sobretens.',a:'PCS',s:'Protección',w:2,col:'#444'}];
+  grupos.forEach((g,k)=>{ items.push({t:'ID'+(grupos.length>1?k+1:''),a:'40A 30mA',s:'Diferencial',w:2,col:'#2a6'}); g.forEach(c=>items.push({t:c.nom,a:'C'+amp(c),s:sec(c),d:c.desc,w:1,col:c.col,c})); });
+  const W=items.reduce((n,i)=>n+i.w,0)*mod+40;
+  let x=20, g='';
+  items.forEach((it,i)=>{ const w=it.w*mod-4;
+    g+='<rect x="'+x+'" y="40" width="'+w+'" height="'+H+'" rx="6" fill="#f4f4f2" stroke="#999"/>'+
+      '<rect x="'+x+'" y="40" width="'+w+'" height="8" fill="'+it.col+'"/>'+
+      '<rect x="'+(x+w/2-8)+'" y="95" width="16" height="30" rx="3" fill="#222"/>'+
+      '<text x="'+(x+w/2)+'" y="68" text-anchor="middle" font-size="13" font-weight="700" fill="#111">'+it.t+'</text>'+
+      '<text x="'+(x+w/2)+'" y="150" text-anchor="middle" font-size="11" font-weight="700" fill="#111">'+it.a+'</text>'+
+      '<text x="'+(x+w/2)+'" y="168" text-anchor="middle" font-size="9" fill="#555">'+it.s+'</text>'+
+      '<text x="'+(x+w/2)+'" y="30" text-anchor="middle" font-size="10" fill="#aaa">'+(i+1)+'</text>';
+    if(it.c){ g+='<line x1="'+(x+w/2)+'" y1="'+(40+H)+'" x2="'+(x+w/2)+'" y2="'+(40+H+60)+'" stroke="#2bb34a" stroke-width="3" stroke-dasharray="8 4"/><line x1="'+(x+w/2)+'" y1="'+(40+H)+'" x2="'+(x+w/2)+'" y2="'+(40+H+60)+'" stroke="#e6c200" stroke-width="3" stroke-dasharray="4 8" stroke-dashoffset="-8"/>'; }
+    x+=it.w*mod; });
+  const yT=40+H+60; g+='<rect x="20" y="'+yT+'" width="'+(W-40)+'" height="18" rx="4" fill="#c9a227"/><text x="'+(W/2)+'" y="'+(yT+13)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#111">Borne de tierra · un PE por circuito → tierra de la casa</text>';
+  g+='<rect x="20" y="'+(yT+26)+'" width="'+(W-40)+'" height="18" rx="4" fill="#3f7cf2"/><text x="'+(W/2)+'" y="'+(yT+39)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">Peine de fase y neutro desde cada diferencial a sus térmicos</text>';
+  const tabla=cs.map(c=>'<tr><td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+c.col+'"></span> '+c.nom+'</td><td>C'+amp(c)+'</td><td>'+sec(c)+'</td><td>'+(c.desc||'').replace(/</g,'&lt;')+'</td></tr>').join('');
+  return '<h3>Cuadro</h3><div style="overflow-x:auto;background:#fff;border-radius:12px"><svg width="'+W+'" height="'+(yT+56)+'" viewBox="0 0 '+W+' '+(yT+56)+'">'+g+'</svg></div>'+
+   '<p style="font-size:13px;opacity:.8">Orden de izquierda a derecha: IGA → sobretensiones → diferencial(es) 40A 30mA (máx. 5 térmicos por diferencial) → térmicos. Cada circuito lleva fase, neutro y tierra (verde-amarillo) a la barra de tierras.</p>'+
+   '<table style="width:100%;font-size:13px;border-collapse:collapse"><tr style="opacity:.6"><td>Circuito</td><td>Térmico</td><td>Sección</td><td>Uso</td></tr>'+tabla+'</table>';
+}
+$('bCuadro').onclick=()=>(hoja(cuadroSVG()+'<button id="cCerrar" style="margin-top:12px;width:100%">Cerrar</button>'), $('cCerrar').onclick=cierra);
 $('bMas').onclick=()=>{ hoja('<h3>Plano</h3>'+
   '<div class="campo"><label>Plano de fondo (foto o captura de la casa)</label><div class="fila"><label style="position:relative;overflow:hidden;display:inline-flex"><span class="pri" style="display:inline-flex;align-items:center;min-height:38px;padding:0 12px;border-radius:10px;background:var(--ac);color:#111;font-weight:600">'+(P.fondo?'Cambiar fondo':'Poner fondo')+'</span><input type="file" accept="image/*" id="fFile" style="position:absolute;inset:0;opacity:0;font-size:40px"></label>'+(P.fondo?'<button id="fQuitar">Quitar fondo</button>':'')+'</div></div>'+
   (P.fondo?'<div class="campo"><label>Transparencia del fondo</label><input type="range" id="fOp" min="0.1" max="1" step="0.05" value="'+P.fop+'"></div>':'')+
@@ -416,14 +444,15 @@ pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraR
 </script>
 <script>
 (function(){
-  var BUILD='V2.77', ROOT='../';
+  var BUILD='V2.78', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }
+  function updAviso(v){ if(document.getElementById('dgpUpd')) return; var d=document.createElement('div'); d.id='dgpUpd'; d.style.cssText='position:fixed;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top));z-index:9999;background:#f5b301;color:#111;font:600 15px system-ui;border-radius:14px;padding:10px 14px;display:flex;gap:12px;align-items:center;white-space:nowrap;box-shadow:0 6px 24px rgba(0,0,0,.4)'; d.innerHTML='Nueva versión '+v+' <button style="background:#111;color:#fff;border:0;border-radius:10px;padding:8px 14px;font:600 15px system-ui">Actualizar</button>'; d.querySelector('button').onclick=function(){ intentos(0); recargar(); }; document.body.appendChild(d); }
   async function comprobar(){ if(busy) return; busy=true;
-    try{ var r=await fetch(VJ+'?t='+Date.now(),{cache:'no-store'}); var j=await r.json(); if(j&&j.v&&j.v!==BUILD){ if(Date.now()-t0<8000 && intentos()<2) recargar(); } else intentos(0); }catch(e){}
+    try{ var r=await fetch(VJ+'?t='+Date.now(),{cache:'no-store'}); var j=await r.json(); if(j&&j.v&&j.v!==BUILD){ if(Date.now()-t0<8000 && intentos()<2) recargar(); else updAviso(j.v); } else intentos(0); }catch(e){}
     busy=false; }
-  comprobar(); document.addEventListener('visibilitychange',function(){ if(!document.hidden) comprobar(); });
+  comprobar(); setInterval(comprobar,60000); document.addEventListener('visibilitychange',function(){ if(!document.hidden) comprobar(); });
 })();
 </script>
 </body>

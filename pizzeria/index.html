@@ -214,14 +214,15 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden) carga();
 <script>
 /* Actualización automática */
 (function(){
-  var BUILD='V2.77', ROOT='../';
+  var BUILD='V2.78', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }
+  function aviso(v){ if(document.getElementById('dgpUpd')) return; var d=document.createElement('div'); d.id='dgpUpd'; d.style.cssText='position:fixed;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top));z-index:9999;background:#f5b301;color:#111;font:600 15px system-ui;border-radius:14px;padding:10px 14px;display:flex;gap:12px;align-items:center;box-shadow:0 6px 24px rgba(0,0,0,.4)'; d.innerHTML='Nueva versión '+v+' <button style="background:#111;color:#fff;border:0;border-radius:10px;padding:8px 14px;font:600 15px system-ui">Actualizar</button>'; d.querySelector('button').onclick=function(){ intentos(0); recargar(); }; document.body.appendChild(d); }
   async function comprobar(){
     if(busy) return; busy=true;
     try{ var r=await fetch(VJ+'?t='+Date.now(),{cache:'no-store'}); var j=await r.json();
-      if(j&&j.v&&j.v!==BUILD){ if(Date.now()-t0<8000 && intentos()<2) recargar(); }
+      if(j&&j.v&&j.v!==BUILD){ if(Date.now()-t0<8000 && intentos()<2) recargar(); else aviso(j.v); }
       else intentos(0);
     }catch(e){}
     busy=false;

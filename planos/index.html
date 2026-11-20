@@ -56,7 +56,7 @@ input,select,textarea{background:var(--s2);border:1px solid var(--bd);border-rad
 <body>
 <div class="top">
   <button id="bPlanos" class="tit"><span id="nombre"></span> <span style="color:var(--ac)">▾</span></button>
-  <button id="bCuadro" style="margin-left:auto;margin-right:8px;width:auto;padding:0 12px;font-weight:600">Cuadro</button><button id="bMas" aria-label="Más opciones">⋯</button>
+  <button id="bMuro" style="margin-left:auto;width:auto;padding:0 12px;font-weight:600">Muro</button><button id="bCuadro" style="margin-right:8px;width:auto;padding:0 12px;font-weight:600">Cuadro</button><button id="bMas" aria-label="Más opciones">⋯</button>
 </div>
 <div class="circs" id="circs"></div>
 <div class="lienzo" id="lienzo">
@@ -123,7 +123,7 @@ IC.subida='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-wid
 const TODOS=[['mover','Mover'],['cable','Cable'],['caja','Caja'],['luz','Bombilla'],['int','Interruptor'],['ench','Enchufe'],['vent','Ventilador'],['cuadro','Cuadro'],['tv','TV / Red'],['subida','Subida'],['texto','Texto'],['muro','Muro'],['borrar','Borrar']];
 const PONER=['caja','luz','int','ench','vent','cuadro','tv','subida','texto'];
 const TIPOS=TODOS.filter(x=>PONER.includes(x[0]));
-const HERR=[['mover','Mover'],['anadir','Añadir'],['muro','Muro'],['borrar','Borrar']];
+const HERR=[['mover','Mover'],['anadir','Añadir'],['borrar','Borrar']];
 let CON=null;
 let CORR=false, VSEL=null; let MODO='mover', CIRC=P.circ[0]&&P.circ[0].id, SEL=null, DIB=null, ORTO=true, FIL=null;
 try{ ORTO=localStorage.getItem('dgp-planos-orto')!=='0'; }catch(e){}
@@ -282,7 +282,7 @@ function revisa(){ const R=[], E=P.els.filter(e=>e.t!=='mueble'&&e.t!=='texto'),
     else if(/enchuf|general/.test(d)&&tomas>20) R.push({g:1,t:ci.nom+': '+tomas+' tomas (máx. 20, añade otro circuito)'}); });
   return R; }
 function pintaCircs(){ $('bDeshacer').disabled=!HIST.length; $('bRehacer').disabled=!REDO.length; const cs=P.circ.find(c=>c.id===FIL); const RV=revisa(), ne=RV.filter(r=>r.g===2).length; $('circs').innerHTML='<button class="chip" data-c="rev" style="'+(ne?'border-color:#ef4444;color:#ef4444':RV.length?'border-color:#f59e0b;color:#f59e0b':'border-color:#22c55e;color:#22c55e')+'">'+(RV.length?'⚠ '+RV.length:'✓ OK')+'</button><button class="chip'+(MODO==='mueble'?' on':'')+'" data-c="mob">Mobiliario</button><button class="chip'+(CORR?' on':'')+'" data-c="corr">Corrugados</button><button class="chip" data-c="sel">'+(cs?'<i style="background:'+cs.col+'"></i>'+esc(cs.nom)+(cs.desc?' <span class="meta">'+esc(cs.desc)+'</span>':''):'Térmicos')+' <span style="color:var(--ac)">▾</span></button>'; }
-function pintaHerr(){ $('herr').innerHTML=HERR.map(x=>'<button data-h="'+x[0]+'" class="'+(MODO===x[0]||(x[0]==='anadir'&&PONER.includes(MODO))?'on':'')+'">'+IC[x[0]]+'<span>'+x[1]+'</span></button>').join('');
+function pintaHerr(){ { const bm=$('bMuro'); if(bm){ const on=MODO==='muro'; bm.style.borderColor=on?'var(--ac)':''; bm.style.color=on?'var(--ac)':''; } } $('herr').innerHTML=HERR.map(x=>'<button data-h="'+x[0]+'" class="'+(MODO===x[0]||(x[0]==='anadir'&&PONER.includes(MODO))?'on':'')+'">'+IC[x[0]]+'<span>'+x[1]+'</span></button>').join('');
   const av=$('aviso'); let t='';
   if(REENG) t=REENG.el?'Elige el lado de entrada':'Toca dónde conectarlo (en verde)';
 
@@ -527,6 +527,7 @@ function cuadroSVG(){
    '<p style="font-size:13px;opacity:.8">La salida del IGA entra por abajo en la protección de sobretensiones y en cada diferencial. El peine va enchufado arriba, directamente en el diferencial y en sus térmicos (máx. 5). Cada térmico saca fase y neutro de su circuito; la tierra de cada circuito va directa al borne.</p>';
 }
 function cuadroTap(){ const sv=$('qSvg'); if(!sv) return; sv.onclick=e=>{ const t=e.target.closest('.qc'); const id=t&&t.dataset.c; sv.querySelectorAll('.qc').forEach(n=>n.style.opacity=!id||n.dataset.c===id?1:.15); }; }
+$('bMuro').onclick=()=>{ CON=null; SEL=null; MODO=MODO==='muro'?'mover':'muro'; pinta(); };
 $('bCuadro').onclick=()=>(hoja(cuadroSVG()+'<button id="cCerrar" style="margin-top:12px;width:100%">Cerrar</button>'), $('cCerrar').onclick=cierra, cuadroTap());
 $('bMas').onclick=()=>{ hoja('<h3>Plano</h3>'+
   '<div class="campo"><label>Plano de fondo (foto o captura de la casa)</label><div class="fila"><label style="position:relative;overflow:hidden;display:inline-flex"><span class="pri" style="display:inline-flex;align-items:center;min-height:38px;padding:0 12px;border-radius:10px;background:var(--ac);color:#111;font-weight:600">'+(P.fondo?'Cambiar fondo':'Poner fondo')+'</span><input type="file" accept="image/*" id="fFile" style="position:absolute;inset:0;opacity:0;font-size:40px"></label>'+(P.fondo?'<button id="fQuitar">Quitar fondo</button>':'')+'</div></div>'+
@@ -623,7 +624,7 @@ pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraR
 </script>
 <script>
 (function(){
-  var BUILD='V3.04', ROOT='../';
+  var BUILD='V3.05', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

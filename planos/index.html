@@ -197,7 +197,7 @@ function conPuerto(p,i,el,sd,c){ const o=c?hueco(el,sd,c):0; let Q=puerto(el,sd)
   const N=i===0?p[1]:p[p.length-2]; const C=(sd==='t'||sd==='b')?[N[0],S[1]]:[S[0],N[1]];
   const ins=[C,S,Q]; if(i===0){ p.splice(0,1,...ins.reverse()); } else { p.splice(p.length-1,1,...ins); } return p; }
 function ptsVis(c){ let p=c.pts.map(q=>q.slice()); if(p.length<2) return p;
-  if(c.a&&c.b&&c.pa&&c.pb&&p.length<=3){ const A=P.els.find(x=>x.id===c.a), B=P.els.find(x=>x.id===c.b); if(A&&B){ const V=sd=>sd==='t'||sd==='b', ha=hueco(A,c.pa,c), hb=hueco(B,c.pb,c), pA=puerto(A,c.pa), pB=puerto(B,c.pb);
+  if(c.a&&c.b&&c.pa&&c.pb&&p.length===2){ const A=P.els.find(x=>x.id===c.a), B=P.els.find(x=>x.id===c.b); if(A&&B){ const V=sd=>sd==='t'||sd==='b', ha=hueco(A,c.pa,c), hb=hueco(B,c.pb,c), pA=puerto(A,c.pa), pB=puerto(B,c.pb);
     if(V(c.pa)&&V(c.pb)){ const x=A.x+ha; if(Math.abs(x-B.x)<=semi(B)[0]) return [[x,pA[1]],[x,pB[1]]]; const ym=(pA[1]+pB[1])/2+ha; return [[x,pA[1]],[x,ym],[B.x+hb,ym],[B.x+hb,pB[1]]]; }
     if(!V(c.pa)&&!V(c.pb)){ const y=A.y+ha; if(Math.abs(y-B.y)<=semi(B)[1]) return [[pA[0],y],[pB[0],y]]; const xm=(pA[0]+pB[0])/2+ha; return [[pA[0],y],[xm,y],[xm,B.y+hb],[pB[0],B.y+hb]]; }
     if(V(c.pa)){ const x=A.x+ha, y=B.y+hb; return [[x,pA[1]],[x,y],[pB[0],y]]; }
@@ -217,7 +217,7 @@ function mueveFin(c,i,j,el){ const o=c.pts[i], nb=c.pts[j]; if(nb&&j!==i){ if(Ma
 const esCaja=el=>el&&(el.t==='caja'||el.t==='cuadro'||el.t==='subida');
 function limpiaRuta(c,Q){ Q=Q||P; const A=Q.els.find(x=>x.id===c.a), B=Q.els.find(x=>x.id===c.b); if(!A||!B) return; const dx=B.x-A.x, dy=B.y-A.y, H=dx>0?'r':'l', Vv=dy>0?'b':'t', op={r:'l',l:'r',t:'b',b:'t'};
   if(Math.abs(dy)<25){ c.pa=H; c.pb=op[H]; c.pts=[[A.x,A.y],[B.x,B.y]]; return; } if(Math.abs(dx)<25){ c.pa=Vv; c.pb=op[Vv]; c.pts=[[A.x,A.y],[B.x,B.y]]; return; }
-  const vert=A.t==='cuadro'||A.t==='caja'||A.t==='subida'; if(vert){ c.pa=Vv; c.pb=op[H]; c.pts=[[A.x,A.y],[A.x,B.y],[B.x,B.y]]; } else { c.pa=H; c.pb=op[Vv]; c.pts=[[A.x,A.y],[B.x,A.y],[B.x,B.y]]; } }
+  const vert=A.t==='cuadro'||A.t==='caja'||A.t==='subida'; if(vert){ c.pa=Vv; c.pb=op[H]; c.pts=[[A.x,A.y],[B.x,B.y]]; } else { c.pa=H; c.pb=op[Vv]; c.pts=[[A.x,A.y],[B.x,B.y]]; } }
 function ladoAuto(el,N){ const dx=N[0]-el.x, dy=N[1]-el.y; return Math.abs(dx)>Math.abs(dy)?(dx>0?'r':'l'):(dy>0?'b':'t'); }
 function puertos(c){ if(c.pts.length<2) return; const ea=c.a&&P.els.find(x=>x.id===c.a), eb=c.b&&P.els.find(x=>x.id===c.b);
   if(ea&&!c.pa) c.pa=ladoAuto(ea,c.pts[1]); if(eb&&!c.pb) c.pb=ladoAuto(eb,c.pts[c.pts.length-2]); }
@@ -386,7 +386,7 @@ function sugiereCirc(A,B){ const fin=[A,B].filter(e=>e&&!esCaja(e)&&e.t!=='cuadr
 function conToque(h){ const okE=id=>{ const el=P.els.find(x=>x.id===id); return el&&el.t!=='mueble'&&el.t!=='texto'; };
   if(h&&h.k==='cp'&&CON){ if(CON.st==='pa'){ CON.pa=h.s; CON.st='b'; pinta(); return; }
     if(CON.st==='pb'){ CON.pb=h.s; const A=P.els.find(x=>x.id===CON.a), B=P.els.find(x=>x.id===CON.b), qa=puerto(A,CON.pa), qb=puerto(B,CON.pb);
-      const pts=[qa]; if(qa[0]!==qb[0]&&qa[1]!==qb[1]) pts.push((CON.pa==='t'||CON.pa==='b')?[qa[0],qb[1]]:[qb[0],qa[1]]); pts.push(qb);
+      const pts=[[A.x,A.y],[B.x,B.y]];
       DIB={c:sugiereCirc(A,B),sug:sugiereCirc(A,B),pts,a:CON.a,b:CON.b,pa:CON.pa,pb:CON.pb}; CON=null; pinta(); eligeTipo(); return; } }
   if(h&&h.k==='e'&&okE(h.id)){ if(!CON||CON.st==='pa'&&h.id!==CON.a){ CON={a:h.id,st:'pa'}; }
     else if(CON.st==='b'&&h.id!==CON.a){ CON.b=h.id; CON.st='pb'; } pinta(); return; } }
@@ -590,7 +590,7 @@ const MUEB={baja:[['sillon',650,325,90,90,45],['tvm',429,503,52,170,0],['mesa',5
 function migraMue(){ let f=false; try{ f=localStorage.getItem('dgp-planos-mue2'); }catch(e){} if(f) return; let n=0;
   PL.forEach(x=>{ const k=/^pl-baja/.test(x.id)?'baja':/^pl-alta/.test(x.id)?'alta':null; if(!k) return; x.els=x.els.filter(e=>e.t!=='mueble'); MUEB[k].forEach((a,i)=>x.els.unshift({id:'mu'+k[0]+i,t:'mueble',m:a[0],x:a[1],y:a[2],w:a[3],h:a[4],r:a[5]})); n++; });
   try{ localStorage.setItem('dgp-planos-mue2','1'); }catch(e){} if(n){ guarda(); pinta(); } }
-function limpia1(){ let f=false; try{ f=localStorage.getItem('dgp-planos-lim1'); }catch(e){} if(f) return; PL.forEach(Q=>Q.cab.forEach(c=>{ if(c.a&&c.b) limpiaRuta(c,Q); })); try{ localStorage.setItem('dgp-planos-lim1','1'); }catch(e){} guarda(); pinta(); }
+function limpia1(){ let f=false; try{ f=localStorage.getItem('dgp-planos-lim2'); }catch(e){} if(f) return; PL.forEach(Q=>Q.cab.forEach(c=>{ if(c.a&&c.b) limpiaRuta(c,Q); })); try{ localStorage.setItem('dgp-planos-lim2','1'); }catch(e){} guarda(); pinta(); }
 function reSubida(){ let n=0; PL.filter(x=>/^pl-baja/.test(x.id)).forEach(B=>{ const cu=B.els.find(e=>e.t==='cuadro'), sb=B.els.find(e=>e.t==='subida'); if(!cu||!sb) return;
   ['c1','c2','c8'].filter(c=>B.circ.some(x=>x.id===c)).forEach(c=>{ if(!B.cab.some(k=>k.c===c&&((k.a===cu.id&&k.b===sb.id)||(k.b===cu.id&&k.a===sb.id)))){ B.cab.push({id:uid(),c,pts:[[cu.x,cu.y],[sb.x,cu.y],[sb.x,sb.y]],fl:true,g:3,a:cu.id,b:sb.id}); n++; } }); });
   if(n){ guarda(); pinta(); } }
@@ -599,7 +599,7 @@ pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraR
 </script>
 <script>
 (function(){
-  var BUILD='V2.96', ROOT='../';
+  var BUILD='V2.97', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

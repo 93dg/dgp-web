@@ -190,14 +190,16 @@ function caja2(el){ if(el.t!=='caja') return null; const L=cajaLin(el); return {
 function radio(el){ if(!el) return 0; const b=caja2(el); if(b) return Math.max(b.w,b.h)*1.3/2*0+ (b.h*1.3/2+6); return el.t==='vent'?42:el.t==='cuadro'?48:26; }
 function semi(el){ if(el.t==='mueble'){ const [w,h]=mueDim(el), k=el.sc||1, rr=((el.r||0)%180+180)%180; return rr>45&&rr<135?[h/2*k,w/2*k]:[w/2*k,h/2*k]; } const k=(el.t==='caja'||el.t==='texto'?1.3:1.7)*(el.sc||1), b=caja2(el); if(b) return [(b.w/2)*k,(b.h/2)*k]; const r=(el.t==='vent'?22:el.t==='cuadro'?26:14)*k; return [r,r]; }
 function puerto(el,sd){ const [w,h]=semi(el); return sd==='t'?[el.x,el.y-h]:sd==='b'?[el.x,el.y+h]:sd==='l'?[el.x-w,el.y]:[el.x+w,el.y]; }
-function hueco(el,sd,c){ const L=P.cab.filter(k=>(k.a===el.id&&k.pa===sd)||(k.b===el.id&&k.pb===sd)).sort((x,y)=>P.circ.findIndex(q=>q.id===x.c)-P.circ.findIndex(q=>q.id===y.c)||(x.ret?1:0)-(y.ret?1:0)||(x.id<y.id?-1:1));
+function hueco(el,sd,c){ const otro=k=>{ const id=k.a===el.id&&k.pa===sd?k.b:k.a, o=P.els.find(x=>x.id===id); return o?((sd==='t'||sd==='b')?o.x:o.y):0; };
+  const L=P.cab.filter(k=>(k.a===el.id&&k.pa===sd)||(k.b===el.id&&k.pb===sd)).sort((x,y)=>otro(x)-otro(y)||P.circ.findIndex(q=>q.id===x.c)-P.circ.findIndex(q=>q.id===y.c)||(x.ret?1:0)-(y.ret?1:0)||(x.id<y.id?-1:1));
   const n=L.length; if(n<2) return 0; const [w,h]=semi(el); const lado=(sd==='t'||sd==='b')?w:h; const sp=Math.min(14,(2*lado*.85)/(n-1)); return (L.indexOf(c)-(n-1)/2)*sp; }
-function conPuerto(p,i,el,sd,c){ const o=c?hueco(el,sd,c):0; let Q=puerto(el,sd); Q=(sd==='t'||sd==='b')?[Q[0]+o,Q[1]]:[Q[0],Q[1]+o]; const d=28, S=sd==='t'?[Q[0],Q[1]-d]:sd==='b'?[Q[0],Q[1]+d]:sd==='l'?[Q[0]-d,Q[1]]:[Q[0]+d,Q[1]];
+function conPuerto(p,i,el,sd,c){ const o=c?hueco(el,sd,c):0; let Q=puerto(el,sd); Q=(sd==='t'||sd==='b')?[Q[0]+o,Q[1]]:[Q[0],Q[1]+o]; const N0=i===0?p[1]:p[p.length-2], d=Math.max(8,Math.min(28,Math.hypot(N0[0]-Q[0],N0[1]-Q[1])*.3)), S=sd==='t'?[Q[0],Q[1]-d]:sd==='b'?[Q[0],Q[1]+d]:sd==='l'?[Q[0]-d,Q[1]]:[Q[0]+d,Q[1]];
   const N=i===0?p[1]:p[p.length-2]; const C=(sd==='t'||sd==='b')?[N[0],S[1]]:[S[0],N[1]];
   const ins=[C,S,Q]; if(i===0){ p.splice(0,1,...ins.reverse()); } else { p.splice(p.length-1,1,...ins); } return p; }
 function ptsVis(c){ let p=c.pts.map(q=>q.slice()); if(p.length<2) return p;
-  if(c.a&&c.b&&p.length>2){ const G=P.cab.filter(k=>k.a&&k.b&&((k.a===c.a&&k.b===c.b)||(k.a===c.b&&k.b===c.a))&&!!k.ret===!!c.ret).sort((x,y)=>P.circ.findIndex(q=>q.id===x.c)-P.circ.findIndex(q=>q.id===y.c)||(x.id<y.id?-1:1));
-    if(G.length>1){ const o=(G.indexOf(c)-(G.length-1)/2)*9; for(let i=1;i<p.length-1;i++){ p[i]=[p[i][0]+o,p[i][1]+o]; } } }
+  if(p.length>2){ const ea0=c.a&&c.pa&&P.els.find(x=>x.id===c.a), eb0=c.b&&c.pb&&P.els.find(x=>x.id===c.b), V=sd=>sd==='t'||sd==='b';
+    const ha=ea0?hueco(ea0,c.pa,c):0, hb=eb0?hueco(eb0,c.pb,c):0; let ox=0, oy=0; if(ea0){ if(V(c.pa)) ox=ha; else oy=ha; } if(eb0){ if(V(c.pb)){ if(!ea0||!V(c.pa)) ox=hb; } else { if(!ea0||V(c.pa)) oy=hb; } }
+    if(ox||oy) for(let i=1;i<p.length-1;i++) p[i]=[p[i][0]+ox,p[i][1]+oy]; }
   const eb=c.b&&c.pb?P.els.find(x=>x.id===c.b):null, ea=c.a&&c.pa?P.els.find(x=>x.id===c.a):null;
   if(eb) p=conPuerto(p,1,eb,c.pb,c); if(ea) p=conPuerto(p,0,ea,c.pa,c); if(eb&&ea) return p;
   const n=p.length-1;
@@ -208,6 +210,9 @@ function ptsVis(c){ let p=c.pts.map(q=>q.slice()); if(p.length<2) return p;
 function sigue(el){ P.cab.forEach(c=>{ const n=c.pts.length-1; if(c.a===el.id) mueveFin(c,0,1,el); if(c.b===el.id) mueveFin(c,n,n-1,el); }); }
 function mueveFin(c,i,j,el){ const o=c.pts[i], nb=c.pts[j]; if(nb&&j!==i){ if(Math.abs(nb[0]-o[0])<1&&Math.abs(nb[1]-o[1])>=1) nb[0]=el.x; else if(Math.abs(nb[1]-o[1])<1) nb[1]=el.y; } c.pts[i]=[el.x,el.y]; }
 const esCaja=el=>el&&(el.t==='caja'||el.t==='cuadro'||el.t==='subida');
+function limpiaRuta(c,Q){ Q=Q||P; const A=Q.els.find(x=>x.id===c.a), B=Q.els.find(x=>x.id===c.b); if(!A||!B) return; const dx=B.x-A.x, dy=B.y-A.y, H=dx>0?'r':'l', Vv=dy>0?'b':'t', op={r:'l',l:'r',t:'b',b:'t'};
+  if(Math.abs(dy)<25){ c.pa=H; c.pb=op[H]; c.pts=[[A.x,A.y],[B.x,B.y]]; return; } if(Math.abs(dx)<25){ c.pa=Vv; c.pb=op[Vv]; c.pts=[[A.x,A.y],[B.x,B.y]]; return; }
+  const vert=A.t==='cuadro'||A.t==='caja'||A.t==='subida'; if(vert){ c.pa=Vv; c.pb=op[H]; c.pts=[[A.x,A.y],[A.x,B.y],[B.x,B.y]]; } else { c.pa=H; c.pb=op[Vv]; c.pts=[[A.x,A.y],[B.x,A.y],[B.x,B.y]]; } }
 function ladoAuto(el,N){ const dx=N[0]-el.x, dy=N[1]-el.y; return Math.abs(dx)>Math.abs(dy)?(dx>0?'r':'l'):(dy>0?'b':'t'); }
 function puertos(c){ if(c.pts.length<2) return; const ea=c.a&&P.els.find(x=>x.id===c.a), eb=c.b&&P.els.find(x=>x.id===c.b);
   if(ea&&!c.pa) c.pa=ladoAuto(ea,c.pts[1]); if(eb&&!c.pb) c.pb=ladoAuto(eb,c.pts[c.pts.length-2]); }
@@ -580,15 +585,16 @@ const MUEB={baja:[['sillon',650,325,90,90,45],['tvm',429,503,52,170,0],['mesa',5
 function migraMue(){ let f=false; try{ f=localStorage.getItem('dgp-planos-mue2'); }catch(e){} if(f) return; let n=0;
   PL.forEach(x=>{ const k=/^pl-baja/.test(x.id)?'baja':/^pl-alta/.test(x.id)?'alta':null; if(!k) return; x.els=x.els.filter(e=>e.t!=='mueble'); MUEB[k].forEach((a,i)=>x.els.unshift({id:'mu'+k[0]+i,t:'mueble',m:a[0],x:a[1],y:a[2],w:a[3],h:a[4],r:a[5]})); n++; });
   try{ localStorage.setItem('dgp-planos-mue2','1'); }catch(e){} if(n){ guarda(); pinta(); } }
+function limpia1(){ let f=false; try{ f=localStorage.getItem('dgp-planos-lim1'); }catch(e){} if(f) return; PL.forEach(Q=>Q.cab.forEach(c=>{ if(c.a&&c.b) limpiaRuta(c,Q); })); try{ localStorage.setItem('dgp-planos-lim1','1'); }catch(e){} guarda(); pinta(); }
 function reSubida(){ let n=0; PL.filter(x=>/^pl-baja/.test(x.id)).forEach(B=>{ const cu=B.els.find(e=>e.t==='cuadro'), sb=B.els.find(e=>e.t==='subida'); if(!cu||!sb) return;
   ['c1','c2','c8'].filter(c=>B.circ.some(x=>x.id===c)).forEach(c=>{ if(!B.cab.some(k=>k.c===c&&((k.a===cu.id&&k.b===sb.id)||(k.b===cu.id&&k.a===sb.id)))){ B.cab.push({id:uid(),c,pts:[[cu.x,cu.y],[sb.x,cu.y],[sb.x,sb.y]],fl:true,g:3,a:cu.id,b:sb.id}); n++; } }); });
   if(n){ guarda(); pinta(); } }
-pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraRet).then(migraMue).then(reSubida);
+pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraRet).then(migraMue).then(reSubida).then(limpia1);
 })();
 </script>
 <script>
 (function(){
-  var BUILD='V2.94', ROOT='../';
+  var BUILD='V2.95', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

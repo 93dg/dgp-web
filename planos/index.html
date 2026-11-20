@@ -29,7 +29,7 @@ input,select,textarea{background:var(--s2);border:1px solid var(--bd);border-rad
 .chip i{width:14px;height:14px;border-radius:50%;display:inline-block;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
 .lienzo{flex:1 1 auto;min-height:0;position:relative;background:#2a2e38;touch-action:none;overflow:hidden}
 #svg{width:100%;height:100%;display:block;touch-action:none}
-.herr{flex:0 0 auto;display:flex;gap:2px;overflow-x:auto;padding:6px 6px calc(18px + env(safe-area-inset-bottom));background:var(--s1);border-top:1px solid var(--bd);scrollbar-width:none}
+.herr{flex:0 0 auto;display:flex;justify-content:safe center;gap:2px;overflow-x:auto;padding:6px 6px calc(18px + env(safe-area-inset-bottom));background:var(--s1);border-top:1px solid var(--bd);scrollbar-width:none}
 .herr::-webkit-scrollbar{display:none}
 .herr button{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:62px;min-height:54px;padding:4px 6px;background:transparent;border-color:transparent;font-size:.68rem;color:var(--mut)}
 .herr button svg{width:24px;height:24px}
@@ -550,7 +550,7 @@ pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraR
 </script>
 <script>
 (function(){
-  var BUILD='V2.86', ROOT='../';
+  var BUILD='V2.87', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

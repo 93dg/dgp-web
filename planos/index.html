@@ -238,7 +238,7 @@ function pinta(){ { const fs=P.fondo&&P.fondo.src||null; if(fs!==MURO_SRC){ MURO
     return (s?'<polyline points="'+d+'" fill="none" stroke="#ffb81c" stroke-width="12" opacity=".45" stroke-linejoin="round"/>':'')+
      (CORR&&!par?'<polyline points="'+d+'" fill="none" stroke="'+col+'" stroke-opacity=".28" stroke-width="16" stroke-linejoin="round" stroke-linecap="round" pointer-events="none"/><polyline points="'+d+'" fill="none" stroke="'+col+'" stroke-width="1.5" stroke-dasharray="2 4" pointer-events="none" transform="translate(0 -8)"/><polyline points="'+d+'" fill="none" stroke="'+col+'" stroke-width="1.5" stroke-dasharray="2 4" pointer-events="none" transform="translate(0 8)"/>':'')+
      '<polyline points="'+d+'" fill="none" stroke="transparent" stroke-width="18" data-k="c" data-id="'+c.id+'"/>'+
-     '<polyline points="'+d+'" fill="none" stroke="'+col+'" stroke-width="'+(c.g||4)+'" stroke-linejoin="round" stroke-linecap="round"'+(c.ret?' stroke-dasharray="10 7"':'')+' pointer-events="none"'+(c.fl!==false?' marker-end="url(#m'+col.slice(1)+')"':'')+'/>'; }).join('');
+     '<polyline points="'+d+'" fill="none" stroke="'+col+'" stroke-width="'+(c.g||4)+'" stroke-linejoin="round" stroke-linecap="round"'+(c.ret?' stroke-dasharray="10 7"':'')+' pointer-events="none"'+((c.paso?((P.els.find(x=>x.id===c.b)||{}).t==='luz'):c.fl!==false)?' marker-end="url(#m'+col.slice(1)+')"':'')+'/>'; }).join('');
   if(DIB&&DIB.pts&&DIB.pts.length){ const col=colDe(DIB.c); h+='<polyline points="'+DIB.pts.map(p=>p[0]+','+p[1]).join(' ')+(DIB.cur?' '+DIB.cur[0]+','+DIB.cur[1]:'')+'" fill="none" stroke="'+col+'" stroke-width="4" stroke-dasharray="'+(DIB.cur?'0':'0')+'" stroke-linejoin="round" pointer-events="none"/>'+DIB.pts.map(p=>'<circle cx="'+p[0]+'" cy="'+p[1]+'" r="5" fill="'+col+'" pointer-events="none"/>').join(''); }
   if(DIB&&DIB.muro){ const m=DIB.muro; h+='<line x1="'+m.x1+'" y1="'+m.y1+'" x2="'+m.x2+'" y2="'+m.y2+'" stroke="#8a8a8a" stroke-width="18" opacity=".7" pointer-events="none"/>'; }
   h+=P.els.filter(el=>el.t!=='mueble').map(el=>{ const s=SEL&&SEL.id===el.id, b=caja2(el); return '<g data-k="e" data-id="'+el.id+'" transform="translate('+el.x+' '+el.y+') rotate('+(el.r||0)+') scale('+(el.t==='caja'||el.t==='texto'?1.3:1.7)*(el.sc||1)+')">'+
@@ -607,7 +607,7 @@ pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraR
 </script>
 <script>
 (function(){
-  var BUILD='V3.01', ROOT='../';
+  var BUILD='V3.02', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

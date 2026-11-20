@@ -368,32 +368,51 @@ $('bPlanos').onclick=()=>{ hoja('<h3>Planos</h3><div class="campo"><label>Nombre
     if(b.dataset.bo){ if(b.dataset.ok!=='1'){ b.dataset.ok='1'; b.textContent='¿Seguro?'; return; } PL=PL.filter(x=>x.id!==b.dataset.bo); if(P.id===b.dataset.bo){ P=PL[0]; pinta(); ajustar(); } guarda(); $('bPlanos').onclick(); } }; };
 
 function cuadroSVG(){
-  const cs=P.circ.filter(c=>/^C\d/i.test(c.nom)), mod=46, H=150;
+  const cs=P.circ.filter(c=>/^C\d/i.test(c.nom));
   const DEF={C1:[10,'1,5'],C2:[16,'2,5'],C3:[25,'6'],C4:[20,'4'],C5:[16,'2,5'],C6:[16,'2,5'],C7:[20,'4'],C8:[16,'2,5']}, df=c=>DEF[(c.nom||'').toUpperCase()]||[16,'2,5'];
   const amp=c=>{const m=(c.desc||'').match(/(\d+)\s*A\b/);return m?+m[1]:df(c)[0]}, sec=c=>{const m=(c.desc||'').match(/([\d,\.]+)\s*mm/i);return (m?m[1]:df(c)[1])+' mm²'};
+  const LC='#8b5a2b', NC='#2f6fdc', PW=30, MW=60, G=18, yT=120, yB=250, yUL=30, yUN=44, yPL=70, yPN=84, yOut=330, yPE=420;
   const grupos=[]; for(let i=0;i<cs.length;i+=5) grupos.push(cs.slice(i,i+5));
-  let items=[{t:'IGA',a:'40A',s:'General',w:2,col:'#444'},{t:'Sobretens.',a:'PCS',s:'Protección',w:2,col:'#444'}];
-  grupos.forEach((g,k)=>{ items.push({t:'ID'+(grupos.length>1?k+1:''),a:'40A 30mA',s:'Diferencial',w:2,col:'#2a6'}); g.forEach(c=>items.push({t:c.nom,a:'C'+amp(c),s:sec(c),d:c.desc,w:1,col:c.col,c})); });
-  const W=items.reduce((n,i)=>n+i.w,0)*mod+40;
-  let x=20, g='';
-  items.forEach((it,i)=>{ const w=it.w*mod-4;
-    g+='<rect x="'+x+'" y="40" width="'+w+'" height="'+H+'" rx="6" fill="#f4f4f2" stroke="#999"/>'+
-      '<rect x="'+x+'" y="40" width="'+w+'" height="8" fill="'+it.col+'"/>'+
-      '<rect x="'+(x+w/2-8)+'" y="95" width="16" height="30" rx="3" fill="#222"/>'+
-      '<text x="'+(x+w/2)+'" y="68" text-anchor="middle" font-size="13" font-weight="700" fill="#111">'+it.t+'</text>'+
-      '<text x="'+(x+w/2)+'" y="150" text-anchor="middle" font-size="11" font-weight="700" fill="#111">'+it.a+'</text>'+
-      '<text x="'+(x+w/2)+'" y="168" text-anchor="middle" font-size="9" fill="#555">'+it.s+'</text>'+
-      '<text x="'+(x+w/2)+'" y="30" text-anchor="middle" font-size="10" fill="#aaa">'+(i+1)+'</text>';
-    if(it.c){ g+='<line x1="'+(x+w/2)+'" y1="'+(40+H)+'" x2="'+(x+w/2)+'" y2="'+(40+H+60)+'" stroke="#2bb34a" stroke-width="3" stroke-dasharray="8 4"/><line x1="'+(x+w/2)+'" y1="'+(40+H)+'" x2="'+(x+w/2)+'" y2="'+(40+H+60)+'" stroke="#e6c200" stroke-width="3" stroke-dasharray="4 8" stroke-dashoffset="-8"/>'; }
-    x+=it.w*mod; });
-  const yT=40+H+60; g+='<rect x="20" y="'+yT+'" width="'+(W-40)+'" height="18" rx="4" fill="#c9a227"/><text x="'+(W/2)+'" y="'+(yT+13)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#111">Borne de tierra · un PE por circuito → tierra de la casa</text>';
-  g+='<rect x="20" y="'+(yT+26)+'" width="'+(W-40)+'" height="18" rx="4" fill="#3f7cf2"/><text x="'+(W/2)+'" y="'+(yT+39)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">Peine de fase y neutro desde cada diferencial a sus térmicos</text>';
-  const tabla=cs.map(c=>'<tr><td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+c.col+'"></span> '+c.nom+'</td><td>C'+amp(c)+'</td><td>'+sec(c)+'</td><td>'+(c.desc||'').replace(/</g,'&lt;')+'</td></tr>').join('');
-  return '<h3>Cuadro</h3><div style="overflow-x:auto;background:#fff;border-radius:12px"><svg width="'+W+'" height="'+(yT+56)+'" viewBox="0 0 '+W+' '+(yT+56)+'">'+g+'</svg></div>'+
-   '<p style="font-size:13px;opacity:.8">Orden de izquierda a derecha: IGA → sobretensiones → diferencial(es) 40A 30mA (máx. 5 térmicos por diferencial) → térmicos. Cada circuito lleva fase, neutro y tierra (verde-amarillo) a la barra de tierras.</p>'+
-   '<table style="width:100%;font-size:13px;border-collapse:collapse"><tr style="opacity:.6"><td>Circuito</td><td>Térmico</td><td>Sección</td><td>Uso</td></tr>'+tabla+'</table>';
+  const M=[]; let x=40; const add=o=>{ o.x=x; M.push(o); x+=MW+G; return o; };
+  const iga=add({t:'IGA',a:'40A',s:'General'}), pcs=add({t:'Sobretens.',a:'PCS',s:'Protección'});
+  const G2=grupos.map((g,k)=>({id:add({t:'ID'+(grupos.length>1?k+1:''),a:'40A',s:'30 mA'}),ts:g.map(c=>add({t:c.nom,a:'C'+amp(c),s:sec(c),c}))}));
+  const W=x+20, H=yPE+90;
+  const tx=(m,k)=>m.x+PW*(k+.5);
+  const ln=(pts,col,w,ex)=>'<polyline points="'+pts.map(p=>p.join(',')).join(' ')+'" fill="none" stroke="'+col+'" stroke-width="'+(w||3)+'" stroke-linejoin="round" '+(ex||'')+'/>';
+  const pe=pts=>ln(pts,'#22a34a',4)+ln(pts,'#f2c200',4,'stroke-dasharray="7 7"');
+  let g='';
+  // acometida
+  g+='<text x="'+(iga.x)+'" y="16" font-size="11" fill="#555">Desde contador (L marrón · N azul)</text>';
+  g+=ln([[tx(iga,0),20],[tx(iga,0),yT]],LC)+ln([[tx(iga,1),20],[tx(iga,1),yT]],NC);
+  // IGA salida -> canal superior
+  const gx=iga.x+MW+4;
+  g+=ln([[tx(iga,0),yB],[tx(iga,0),yB+16],[gx+4,yB+16],[gx+4,yUL],[W-30,yUL]],LC)+ln([[tx(iga,1),yB],[tx(iga,1),yB+26],[gx+12,yB+26],[gx+12,yUN],[W-30,yUN]],NC);
+  // pcs e IDs bajan del canal
+  [pcs,...G2.map(q=>q.id)].forEach(m=>{ g+=ln([[tx(m,0),yUL],[tx(m,0),yT]],LC)+ln([[tx(m,1),yUN],[tx(m,1),yT]],NC)+'<circle cx="'+tx(m,0)+'" cy="'+yUL+'" r="4" fill="'+LC+'"/><circle cx="'+tx(m,1)+'" cy="'+yUN+'" r="4" fill="'+NC+'"/>'; });
+  g+=pe([[pcs.x+MW/2,yB],[pcs.x+MW/2,yPE]]);
+  // peines + puente ID -> peine
+  G2.forEach(q=>{ const a=q.ts[0], z=q.ts[q.ts.length-1]; if(!a) return; const x1=tx(a,0)-6, x2=tx(z,1)+6, gx=q.id.x+MW+4;
+    g+=ln([[tx(q.id,0),yB],[tx(q.id,0),yB+16],[gx+4,yB+16],[gx+4,yPL],[x1,yPL]],LC)+ln([[tx(q.id,1),yB],[tx(q.id,1),yB+26],[gx+12,yB+26],[gx+12,yPN],[x1,yPN]],NC);
+    g+='<rect x="'+x1+'" y="'+(yPL-4)+'" width="'+(x2-x1)+'" height="8" rx="3" fill="'+LC+'"/><rect x="'+x1+'" y="'+(yPN-4)+'" width="'+(x2-x1)+'" height="8" rx="3" fill="'+NC+'"/>';
+    g+='<text x="'+x2+'" y="'+(yPL-8)+'" text-anchor="end" font-size="10" fill="#555">Peine fase / neutro</text>';
+    q.ts.forEach(m=>{ g+=ln([[tx(m,0),yPL],[tx(m,0),yT]],LC,4)+ln([[tx(m,1),yPN],[tx(m,1),yT]],NC,4); }); });
+  // salidas
+  G2.forEach(q=>q.ts.forEach(m=>{ const c=m.c; g+='<g class="qc" data-c="'+c.id+'">'+ln([[tx(m,0),yB],[tx(m,0),yOut+40]],LC)+ln([[tx(m,1),yB],[tx(m,1),yOut+40]],NC)+pe([[m.x+MW+6,yPE],[m.x+MW+6,yOut+40]])+
+    '<rect x="'+(m.x-4)+'" y="'+yOut+'" width="'+(MW+16)+'" height="20" rx="6" fill="'+c.col+'"/><text x="'+(m.x+MW/2+4)+'" y="'+(yOut+14)+'" text-anchor="middle" font-size="11" font-weight="800" fill="#fff">'+c.nom+' · '+sec(c)+'</text>'+
+    '<text x="'+(m.x+MW/2)+'" y="'+(yPE+28)+'" text-anchor="middle" font-size="10" fill="#333">'+(c.desc||'').replace(/</g,'&lt;').slice(0,16)+'</text><text x="'+(m.x+MW/2)+'" y="'+(yPE+42)+'" text-anchor="middle" font-size="10" fill="#333">'+(c.desc||'').replace(/</g,'&lt;').slice(16,32)+'</text></g>'; }));
+  // borne tierra
+  g+='<rect x="'+(pcs.x)+'" y="'+(yPE-6)+'" width="'+(W-pcs.x-20)+'" height="12" rx="4" fill="#c9a227"/><text x="'+(pcs.x)+'" y="'+(yPE+24)+'" font-size="10" font-weight="700" fill="#333">Borne de tierra</text>';
+  g+=pe([[20,H-10],[20,yPE],[pcs.x,yPE]])+'<text x="26" y="'+(H-14)+'" font-size="10" fill="#333">Tierra de la casa</text>';
+  // módulos
+  M.forEach((m,k)=>{ g+='<g'+(m.c?' class="qc" data-c="'+m.c.id+'"':'')+'><rect x="'+m.x+'" y="'+(yT-12)+'" width="'+MW+'" height="'+(yB-yT+24)+'" rx="6" fill="#f4f4f2" stroke="#999"/><rect x="'+m.x+'" y="'+(yT-12)+'" width="'+MW+'" height="6" fill="'+(m.c?m.c.col:/^ID/.test(m.t)?'#2a6':'#444')+'"/>'+
+    [0,1].map(q=>'<circle cx="'+tx(m,q)+'" cy="'+yT+'" r="6" fill="#ddd" stroke="#666"/><circle cx="'+tx(m,q)+'" cy="'+yB+'" r="6" fill="#ddd" stroke="#666"/><text x="'+tx(m,q)+'" y="'+(yT+20)+'" text-anchor="middle" font-size="9" fill="#777">'+(q?'N':'L')+'</text>').join('')+
+    '<text x="'+(m.x+MW/2)+'" y="'+(yT+42)+'" text-anchor="middle" font-size="'+(m.t.length>6?10:12)+'" font-weight="800" fill="#111">'+m.t+'</text><rect x="'+(m.x+MW/2-7)+'" y="'+(yT+52)+'" width="14" height="26" rx="3" fill="#222"/>'+
+    '<text x="'+(m.x+MW/2)+'" y="'+(yT+96)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#111">'+m.a+'</text><text x="'+(m.x+MW/2)+'" y="'+(yT+110)+'" text-anchor="middle" font-size="9" fill="#555">'+m.s+'</text></g>'; });
+  return '<h3>Cuadro</h3><p style="font-size:13px;opacity:.75;margin:4px 0 8px">Toca un circuito para resaltar su cableado. Marrón = fase · Azul = neutro · Verde-amarillo = tierra.</p><div id="qWrap" style="overflow:auto;background:#fff;border-radius:12px;touch-action:pan-x pan-y"><svg id="qSvg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="display:block">'+g+'</svg></div>'+
+   '<p style="font-size:13px;opacity:.8">IGA → sobretensiones y diferenciales en paralelo desde la salida del IGA. Cada diferencial alimenta su peine (máx. 5 térmicos). Cada térmico saca fase y neutro de su circuito; la tierra de cada circuito va directa al borne.</p>';
 }
-$('bCuadro').onclick=()=>(hoja(cuadroSVG()+'<button id="cCerrar" style="margin-top:12px;width:100%">Cerrar</button>'), $('cCerrar').onclick=cierra);
+function cuadroTap(){ const sv=$('qSvg'); if(!sv) return; sv.onclick=e=>{ const t=e.target.closest('.qc'); const id=t&&t.dataset.c; sv.querySelectorAll('.qc').forEach(n=>n.style.opacity=!id||n.dataset.c===id?1:.15); }; }
+$('bCuadro').onclick=()=>(hoja(cuadroSVG()+'<button id="cCerrar" style="margin-top:12px;width:100%">Cerrar</button>'), $('cCerrar').onclick=cierra, cuadroTap());
 $('bMas').onclick=()=>{ hoja('<h3>Plano</h3>'+
   '<div class="campo"><label>Plano de fondo (foto o captura de la casa)</label><div class="fila"><label style="position:relative;overflow:hidden;display:inline-flex"><span class="pri" style="display:inline-flex;align-items:center;min-height:38px;padding:0 12px;border-radius:10px;background:var(--ac);color:#111;font-weight:600">'+(P.fondo?'Cambiar fondo':'Poner fondo')+'</span><input type="file" accept="image/*" id="fFile" style="position:absolute;inset:0;opacity:0;font-size:40px"></label>'+(P.fondo?'<button id="fQuitar">Quitar fondo</button>':'')+'</div></div>'+
   (P.fondo?'<div class="campo"><label>Transparencia del fondo</label><input type="range" id="fOp" min="0.1" max="1" step="0.05" value="'+P.fop+'"></div>':'')+
@@ -464,7 +483,7 @@ pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraR
 </script>
 <script>
 (function(){
-  var BUILD='V2.79', ROOT='../';
+  var BUILD='V2.80', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

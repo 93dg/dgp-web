@@ -168,7 +168,7 @@ function pinta(){ marcadores(); $('nombre').value=P.nombre||'';
   h+=P.cab.filter(c=>!FIL||c.c===FIL).map(c=>{ const col=colDe(c.c), d=ptsVis(c).map(p=>p[0]+','+p[1]).join(' '); const s=SEL&&SEL.id===c.id;
     return (s?'<polyline points="'+d+'" fill="none" stroke="#ffb81c" stroke-width="12" opacity=".45" stroke-linejoin="round"/>':'')+
      '<polyline points="'+d+'" fill="none" stroke="transparent" stroke-width="18" data-k="c" data-id="'+c.id+'"/>'+
-     '<polyline points="'+d+'" fill="none" stroke="'+col+'" stroke-width="'+(c.g||4)+'" stroke-linejoin="round" stroke-linecap="round" pointer-events="none"'+(c.fl!==false?' marker-end="url(#m'+col.slice(1)+')"':'')+'/>'; }).join('');
+     '<polyline points="'+d+'" fill="none" stroke="'+col+'" stroke-width="'+(c.g||4)+'" stroke-linejoin="round" stroke-linecap="round"'+(c.ret?' stroke-dasharray="10 7"':'')+' pointer-events="none"'+(c.fl!==false?' marker-end="url(#m'+col.slice(1)+')"':'')+'/>'; }).join('');
   if(DIB&&DIB.pts&&DIB.pts.length){ const col=colDe(DIB.c); h+='<polyline points="'+DIB.pts.map(p=>p[0]+','+p[1]).join(' ')+(DIB.cur?' '+DIB.cur[0]+','+DIB.cur[1]:'')+'" fill="none" stroke="'+col+'" stroke-width="4" stroke-dasharray="'+(DIB.cur?'0':'0')+'" stroke-linejoin="round" pointer-events="none"/>'+DIB.pts.map(p=>'<circle cx="'+p[0]+'" cy="'+p[1]+'" r="5" fill="'+col+'" pointer-events="none"/>').join(''); }
   if(DIB&&DIB.muro){ const m=DIB.muro; h+='<line x1="'+m.x1+'" y1="'+m.y1+'" x2="'+m.x2+'" y2="'+m.y2+'" stroke="#8a8a8a" stroke-width="18" opacity=".7" pointer-events="none"/>'; }
   h+=P.els.map(el=>{ const s=SEL&&SEL.id===el.id, b=caja2(el); return '<g data-k="e" data-id="'+el.id+'" transform="translate('+el.x+' '+el.y+') rotate('+(el.r||0)+') scale('+(el.t==='caja'||el.t==='texto'?1.3:1.7)+')">'+
@@ -178,15 +178,15 @@ function pinta(){ marcadores(); $('nombre').value=P.nombre||'';
 function pintaCircs(){ $('circs').innerHTML='<button class="chip'+(!FIL?' on':'')+'" data-c="*">Todos</button>'+P.circ.map(c=>'<button class="chip'+(FIL===c.id?' on':'')+'" data-c="'+c.id+'"><i style="background:'+c.col+'"></i>'+esc(c.nom)+(c.desc?' <span class="meta">'+esc(c.desc)+'</span>':'')+'</button>').join('')+'<button class="chip" data-c="+">+ Térmico</button>'; }
 function pintaHerr(){ $('herr').innerHTML=HERR.map(x=>'<button data-h="'+x[0]+'" class="'+(MODO===x[0]?'on':'')+'">'+IC[x[0]]+'<span>'+x[1]+'</span></button>').join('');
   const av=$('aviso'); let t='';
-  if(MODO==='cable') t=DIB&&DIB.pts&&DIB.pts.length?'Toca para seguir el cable · '+(ORTO?'recto':'libre'):'Toca donde empieza el cable';
+  if(MODO==='cable') t=DIB&&DIB.pts&&DIB.pts.length?'Toca el aparato de destino (o puntos de paso)':'Toca el aparato o caja de origen';
   else if(MODO==='muro') t='Arrastra para dibujar un muro';
   else if(MODO==='borrar') t='Toca lo que quieras borrar';
   else if(['caja','luz','int','ench','vent','cuadro','tv','texto'].includes(MODO)) t='Toca el plano para colocarlo';
   av.textContent=t; av.hidden=!t; }
 function pintaAccion(){ const a=$('accion'); let h='';
-  if(MODO==='cable'&&DIB&&DIB.pts&&DIB.pts.length) h='<button data-a="fin" class="pri">Terminar cable</button><button data-a="atras">Quitar último punto</button><button data-a="orto">'+(ORTO?'Recto':'Libre')+'</button><button data-a="cancel">Cancelar</button>';
+  if(MODO==='cable'&&DIB&&DIB.pts&&DIB.pts.length) h='<button data-a="atras">Quitar último punto</button><button data-a="orto">'+(ORTO?'Recto':'Libre')+'</button><button data-a="cancel">Cancelar</button>';
   else if(SEL){ if(SEL.k==='e'){ const el=P.els.find(x=>x.id===SEL.id); if(!el){ SEL=null; } else h=(el.t==='texto'?'<button data-a="edit">Editar texto</button>':'')+(el.t==='ench'?'<button data-a="doble">'+(el.n>1?'Sencillo':'Doble')+'</button>':'')+'<button data-a="rot">Girar</button><button data-a="dup">Duplicar</button><button data-a="del" style="color:var(--neg)">Borrar</button><button data-a="nosel">Listo</button>'; }
-    else if(SEL.k==='c') h='<button data-a="ccol">Cambiar térmico</button><button data-a="flecha">Flecha</button><button data-a="grueso">Grosor</button><button data-a="del" style="color:var(--neg)">Borrar</button><button data-a="nosel">Listo</button>';
+    else if(SEL.k==='c') h='<button data-a="ret">'+((P.cab.find(x=>x.id===SEL.id)||{}).ret?'Pasar a normal':'Pasar a retorno')+'</button><button data-a="ccol">Cambiar térmico</button><button data-a="flecha">Flecha</button><button data-a="grueso">Grosor</button><button data-a="del" style="color:var(--neg)">Borrar</button><button data-a="nosel">Listo</button>';
     else if(SEL.k==='m') h='<button data-a="del" style="color:var(--neg)">Borrar muro</button><button data-a="nosel">Listo</button>'; }
   a.innerHTML=h; a.hidden=!h; }
 
@@ -226,7 +226,8 @@ function fin(e){ PTR.delete(e.pointerId); if(PINCH){ if(PTR.size<2) PINCH=null; 
     if(MODO==='cable'){ if(!CIRC){ abreCirc(); return; } if(!DIB) DIB={c:CIRC,pts:[]};
       const prev=DIB.pts[DIB.pts.length-1]; const he=h&&h.k==='e'?P.els.find(x=>x.id===h.id):null;
       if(he){ const t=[he.x,he.y]; if(!prev){ DIB.a=he.id; DIB.pts.push(t); pinta(); return; }
-        if(ORTO&&prev[0]!==t[0]&&prev[1]!==t[1]) DIB.pts.push([t[0],prev[1]]); DIB.pts.push(t); DIB.b=he.id; terminaCable(); return; }
+        if(he.id===DIB.a) return; if(ORTO&&prev[0]!==t[0]&&prev[1]!==t[1]) DIB.pts.push([t[0],prev[1]]); DIB.pts.push(t); DIB.b=he.id; pinta(); eligeTipo(); return; }
+      if(!prev){ aviso('Empieza tocando un aparato o una caja'); return; }
       const nq=ortoPt(prev,q);
       if(prev&&Math.hypot(nq[0]-prev[0],nq[1]-prev[1])<8){ terminaCable(); return; }
       DIB.pts.push(nq); DIB.cur=null; pinta(); return; }
@@ -237,7 +238,16 @@ function fin(e){ PTR.delete(e.pointerId); if(PINCH){ if(PTR.size<2) PINCH=null; 
 svg.addEventListener('pointerup',fin); svg.addEventListener('pointercancel',fin);
 svg.addEventListener('wheel',e=>{ e.preventDefault(); const r=svg.getBoundingClientRect(); zoomEn(e.deltaY<0?1.12:1/1.12,e.clientX-r.left,e.clientY-r.top); },{passive:false});
 svg.addEventListener('dblclick',e=>{ if(MODO==="cable"&&DIB&&DIB.pts) terminaCable(); });
-function terminaCable(){ if(DIB&&DIB.pts&&DIB.pts.length>1){ snap(); P.cab.push({id:uid(),c:DIB.c,pts:DIB.pts,fl:true,g:4,a:DIB.a||null,b:DIB.b||null}); guarda(); } DIB=null; pinta(); }
+function eligeTipo(){ hoja('<h3>Conectar</h3><div class="campo"><label>Circuito</label><div class="fila">'+P.circ.map(c=>'<button class="chip'+(c.id===DIB.c?' on':'')+'" data-tc="'+c.id+'"><i style="background:'+c.col+'"></i>'+esc(c.nom)+'</button>').join('')+'</div></div>'+
+  '<div class="campo"><label>Tipo de cable</label><div class="fila"><button class="chip on" data-tt="n">Normal</button><button class="chip" data-tt="r">Retorno (interruptor → bombilla)</button></div></div>'+
+  '<div class="fila"><button class="pri" id="tcOk" style="flex:1">Conectar</button><button id="tcX">Cancelar</button></div>');
+  let tipo='n';
+  $('hoja').onclick=e=>{ const b=e.target.closest('button'); if(!b) return;
+    if(b.dataset.tc){ DIB.c=b.dataset.tc; CIRC=DIB.c; document.querySelectorAll('[data-tc]').forEach(x=>x.classList.toggle('on',x===b)); return; }
+    if(b.dataset.tt){ tipo=b.dataset.tt; document.querySelectorAll('[data-tt]').forEach(x=>x.classList.toggle('on',x===b)); return; }
+    if(b.id==='tcX'){ cierra(); DIB=null; pinta(); }
+    if(b.id==='tcOk'){ DIB.ret=tipo==='r'; cierra(); terminaCable(); } }; }
+function terminaCable(){ if(DIB&&DIB.pts&&DIB.pts.length>1){ snap(); P.cab.push({id:uid(),c:DIB.c,pts:DIB.pts,fl:true,g:4,a:DIB.a||null,b:DIB.b||null,ret:!!DIB.ret}); guarda(); } DIB=null; pinta(); }
 
 $('herr').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; if(DIB&&DIB.pts) terminaCable(); MODO=b.dataset.h; if(MODO!=='mover') SEL=null; pinta(); };
 $('circs').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; const c=b.dataset.c; if(c==='+'){ abreCirc(); return; }
@@ -255,7 +265,7 @@ $('accion').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; cons
     if(a==='rot'){ snap(); el.r=((el.r||0)+90)%360; } else if(a==='dup'){ snap(); const n=Object.assign({},el,{id:uid(),x:el.x+40,y:el.y+40}); P.els.push(n); SEL={k:'e',id:n.id}; }
     else if(a==='doble'){ snap(); el.n=el.n>1?1:2; } else if(a==='edit'){ editaTexto(el); return; } guarda(); pinta(); }
   else if(SEL&&SEL.k==='c'){ const c=P.cab.find(x=>x.id===SEL.id); if(!c) return;
-    if(a==='flecha'){ snap(); c.fl=c.fl===false; } else if(a==='grueso'){ snap(); c.g=c.g>=8?3:(c.g||4)+2; } else if(a==='ccol'){ aviso('Toca arriba el térmico que quieras para este cable'); return; } guarda(); pinta(); } };
+    if(a==='ret'){ snap(); c.ret=!c.ret; } else if(a==='flecha'){ snap(); c.fl=c.fl===false; } else if(a==='grueso'){ snap(); c.g=c.g>=8?3:(c.g||4)+2; } else if(a==='ccol'){ aviso('Toca arriba el térmico que quieras para este cable'); return; } guarda(); pinta(); } };
 let tAv=0; function aviso(t){ const a=$('aviso'); a.textContent=t; a.hidden=false; clearTimeout(tAv); tAv=setTimeout(pintaHerr,2500); }
 $('zMas').onclick=()=>zoomEn(1.25); $('zMenos').onclick=()=>zoomEn(1/1.25); $('zAjustar').onclick=ajustar;
 $('bDeshacer').onclick=deshacer;
@@ -328,7 +338,7 @@ pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas);
 </script>
 <script>
 (function(){
-  var BUILD='V2.54', ROOT='../';
+  var BUILD='V2.55', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

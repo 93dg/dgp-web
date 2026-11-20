@@ -156,12 +156,14 @@ function caja2(el){ if(el.t!=='caja') return null; const L=cajaLin(el); return {
 function radio(el){ if(!el) return 0; const b=caja2(el); if(b) return Math.max(b.w,b.h)*1.3/2*0+ (b.h*1.3/2+6); return el.t==='vent'?42:el.t==='cuadro'?48:26; }
 function semi(el){ const k=(el.t==='caja'||el.t==='texto'?1.3:1.7)*(el.sc||1), b=caja2(el); if(b) return [(b.w/2)*k,(b.h/2)*k]; const r=(el.t==='vent'?22:el.t==='cuadro'?26:14)*k; return [r,r]; }
 function puerto(el,sd){ const [w,h]=semi(el); return sd==='t'?[el.x,el.y-h]:sd==='b'?[el.x,el.y+h]:sd==='l'?[el.x-w,el.y]:[el.x+w,el.y]; }
-function conPuerto(p,i,el,sd){ const Q=puerto(el,sd), d=28, S=sd==='t'?[Q[0],Q[1]-d]:sd==='b'?[Q[0],Q[1]+d]:sd==='l'?[Q[0]-d,Q[1]]:[Q[0]+d,Q[1]];
+function hueco(el,sd,c){ const L=P.cab.filter(k=>(k.a===el.id&&k.pa===sd)||(k.b===el.id&&k.pb===sd)).sort((x,y)=>P.circ.findIndex(q=>q.id===x.c)-P.circ.findIndex(q=>q.id===y.c)||(x.ret?1:0)-(y.ret?1:0)||(x.id<y.id?-1:1));
+  const n=L.length; if(n<2) return 0; const [w,h]=semi(el); const lado=(sd==='t'||sd==='b')?w:h; const sp=Math.min(14,(2*lado*.85)/(n-1)); return (L.indexOf(c)-(n-1)/2)*sp; }
+function conPuerto(p,i,el,sd,c){ const o=c?hueco(el,sd,c):0; let Q=puerto(el,sd); Q=(sd==='t'||sd==='b')?[Q[0]+o,Q[1]]:[Q[0],Q[1]+o]; const d=28, S=sd==='t'?[Q[0],Q[1]-d]:sd==='b'?[Q[0],Q[1]+d]:sd==='l'?[Q[0]-d,Q[1]]:[Q[0]+d,Q[1]];
   const N=i===0?p[1]:p[p.length-2]; const C=(sd==='t'||sd==='b')?[N[0],S[1]]:[S[0],N[1]];
   const ins=[C,S,Q]; if(i===0){ p.splice(0,1,...ins.reverse()); } else { p.splice(p.length-1,1,...ins); } return p; }
 function ptsVis(c){ let p=c.pts.map(q=>q.slice()); if(p.length<2) return p;
   const eb=c.b&&c.pb?P.els.find(x=>x.id===c.b):null, ea=c.a&&c.pa?P.els.find(x=>x.id===c.a):null;
-  if(eb) p=conPuerto(p,1,eb,c.pb); if(ea) p=conPuerto(p,0,ea,c.pa); if(eb&&ea) return p;
+  if(eb) p=conPuerto(p,1,eb,c.pb,c); if(ea) p=conPuerto(p,0,ea,c.pa,c); if(eb&&ea) return p;
   const n=p.length-1;
   const cut=(i,j,r)=>{ const dx=p[i][0]-p[j][0], dy=p[i][1]-p[j][1], L=Math.hypot(dx,dy); if(L>r+2){ p[i]=[p[j][0]+dx*(L-r)/L,p[j][1]+dy*(L-r)/L]; } };
   if(c.b&&!eb) cut(n,n-1,radio(P.els.find(x=>x.id===c.b)));
@@ -377,7 +379,7 @@ pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraR
 </script>
 <script>
 (function(){
-  var BUILD='V2.66', ROOT='../';
+  var BUILD='V2.67', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

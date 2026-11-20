@@ -37,7 +37,7 @@ input,select,textarea{background:var(--s2);border:1px solid var(--bd);border-rad
 .accion{position:absolute;left:50%;transform:translateX(-50%);bottom:10px;display:flex;gap:6px;background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.4);max-width:calc(100% - 20px);overflow-x:auto}
 .accion button{white-space:nowrap}
 .aviso{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:rgba(15,17,23,.92);border:1px solid var(--bd);border-radius:12px;padding:7px 12px;font-size:.85rem;color:var(--mut);pointer-events:none;white-space:nowrap}
-.zoom{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:6px}
+.hist{position:absolute;left:10px;top:10px;display:flex;gap:6px;z-index:2}.hist button{width:44px;padding:0;font-size:1.25rem;background:rgba(23,26,34,.92)}.hist button:disabled{opacity:.35}.zoom{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:6px}
 .zoom button{width:40px;padding:0;background:rgba(23,26,34,.92)}
 .velo{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:40}
 .hoja{position:fixed;left:0;right:0;bottom:0;z-index:41;max-width:560px;margin:0 auto;background:var(--s1);border-radius:18px 18px 0 0;padding:14px 16px calc(16px + env(safe-area-inset-bottom));max-height:86vh;overflow:auto;border:1px solid var(--bd)}
@@ -57,7 +57,6 @@ input,select,textarea{background:var(--s2);border:1px solid var(--bd);border-rad
 <div class="top">
   <b style="color:var(--ac);white-space:nowrap">Planos</b>
   <input id="nombre" placeholder="Nombre del plano" maxlength="60">
-  <button id="bDeshacer" aria-label="Deshacer" title="Deshacer">↶</button>
   <button id="bCorr">Corrugados</button><button id="bPlanos">Planos</button>
   <button id="bMas" aria-label="Más opciones">⋯</button>
 </div>
@@ -65,7 +64,7 @@ input,select,textarea{background:var(--s2);border:1px solid var(--bd);border-rad
 <div class="lienzo" id="lienzo">
   <svg id="svg" xmlns="http://www.w3.org/2000/svg"><defs id="defs"></defs><g id="vista"></g></svg>
   <div class="aviso" id="aviso" hidden></div>
-  <div class="zoom"><button id="zMas" aria-label="Acercar">+</button><button id="zMenos" aria-label="Alejar">−</button><button id="zAjustar" aria-label="Ver entero">⤢</button></div>
+  <div class="hist"><button id="bDeshacer" aria-label="Deshacer">↶</button><button id="bRehacer" aria-label="Rehacer">↷</button></div><div class="zoom"><button id="zMas" aria-label="Acercar">+</button><button id="zMenos" aria-label="Alejar">−</button><button id="zAjustar" aria-label="Ver entero">⤢</button></div>
   <div class="accion" id="accion" hidden></div>
 </div>
 <div class="herr" id="herr"></div>
@@ -104,8 +103,9 @@ async function cargaSrv(){  const r=await api('ui_estado?clave=eq.planos_electri
   srv.forEach(x=>{ const l=loc.get(x.id); if(!l||(x.act||0)>(l.act||0)) loc.set(x.id,x); }); PL=[...loc.values()]; P=PL.find(x=>x.id===P.id)||PL[0]; pinta(); ajustar(); } }
 
 /* ---------- deshacer ---------- */
-let HIST=[]; function snap(){ HIST.push(JSON.stringify(P)); if(HIST.length>60) HIST.shift(); }
-function deshacer(){ if(!HIST.length) return; const o=JSON.parse(HIST.pop()); const i=PL.findIndex(x=>x.id===o.id); PL[i]=o; P=o; SEL=null; guarda(); pinta(); }
+let HIST=[], REDO=[]; function snap(){ HIST.push(JSON.stringify(P)); if(HIST.length>60) HIST.shift(); REDO=[]; }
+function rehacer(){ if(!REDO.length) return; HIST.push(JSON.stringify(P)); const o=JSON.parse(REDO.pop()); const i=PL.findIndex(x=>x.id===o.id); PL[i]=o; P=o; SEL=null; guarda(); pinta(); }
+function deshacer(){ if(!HIST.length) return; REDO.push(JSON.stringify(P)); const o=JSON.parse(HIST.pop()); const i=PL.findIndex(x=>x.id===o.id); PL[i]=o; P=o; SEL=null; guarda(); pinta(); }
 
 /* ---------- herramientas ---------- */
 const IC={
@@ -192,7 +192,7 @@ function pinta(){ P.cab.forEach(sentido); marcadores(); $('nombre').value=P.nomb
       h+='<circle data-k="pt" data-id="'+c.id+'" data-w="'+w+'" data-s="'+sd+'" cx="'+(q[0]+o[0])+'" cy="'+(q[1]+o[1])+'" r="10" fill="'+(cur===sd?'#ffb81c':'#ffffff')+'" fill-opacity="'+(cur===sd?1:.15)+'" stroke="#ffb81c" stroke-width="3"/>'; }); }); }
   if(SEL&&SEL.k==='c'){ const c=P.cab.find(x=>x.id===SEL.id); if(c) h+=c.pts.map((p,i)=>((i===0&&c.a)||(i===c.pts.length-1&&c.b))?'':'<circle data-k="v" data-id="'+c.id+'" data-i="'+i+'" cx="'+p[0]+'" cy="'+p[1]+'" r="9" fill="'+(VSEL===i?'#0b5cd6':'#38bdf8')+'" stroke="#ffffff" stroke-width="3"/>').join(''); }
   vista.innerHTML=h; pintaCircs(); pintaHerr(); pintaAccion(); }
-function pintaCircs(){ $('bCorr').classList.toggle('on',CORR); $('circs').innerHTML='<button class="chip'+(!FIL?' on':'')+'" data-c="*">Todos</button>'+P.circ.map(c=>'<button class="chip'+(FIL===c.id?' on':'')+'" data-c="'+c.id+'"><i style="background:'+c.col+'"></i>'+esc(c.nom)+(c.desc?' <span class="meta">'+esc(c.desc)+'</span>':'')+'</button>').join('')+'<button class="chip" data-c="+">+ Térmico</button>'; }
+function pintaCircs(){ $('bDeshacer').disabled=!HIST.length; $('bRehacer').disabled=!REDO.length; $('bCorr').classList.toggle('on',CORR); $('circs').innerHTML='<button class="chip'+(!FIL?' on':'')+'" data-c="*">Todos</button>'+P.circ.map(c=>'<button class="chip'+(FIL===c.id?' on':'')+'" data-c="'+c.id+'"><i style="background:'+c.col+'"></i>'+esc(c.nom)+(c.desc?' <span class="meta">'+esc(c.desc)+'</span>':'')+'</button>').join('')+'<button class="chip" data-c="+">+ Térmico</button>'; }
 function pintaHerr(){ $('herr').innerHTML=HERR.map(x=>'<button data-h="'+x[0]+'" class="'+(MODO===x[0]?'on':'')+'">'+IC[x[0]]+'<span>'+x[1]+'</span></button>').join('');
   const av=$('aviso'); let t='';
   if(MODO==='cable') t=DIB&&DIB.pts&&DIB.pts.length?'Toca el aparato de destino (o puntos de paso)':'Toca el aparato o caja de origen';
@@ -290,7 +290,7 @@ $('accion').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; cons
     else if(a==='ret'){ snap(); c.ret=!c.ret; } else if(a==='flecha'){ snap(); c.fl=c.fl===false; } else if(a==='grueso'){ snap(); c.g=c.g>=8?3:(c.g||4)+2; } else if(a==='ccol'){ aviso('Toca arriba el térmico que quieras para este cable'); return; } guarda(); pinta(); } };
 let tAv=0; function aviso(t){ const a=$('aviso'); a.textContent=t; a.hidden=false; clearTimeout(tAv); tAv=setTimeout(pintaHerr,2500); }
 $('zMas').onclick=()=>zoomEn(1.25); $('zMenos').onclick=()=>zoomEn(1/1.25); $('zAjustar').onclick=ajustar;
-$('bDeshacer').onclick=deshacer;
+$('bDeshacer').onclick=deshacer; $('bRehacer').onclick=rehacer;
 $('bCorr').onclick=()=>{ CORR=!CORR; pinta(); if(CORR){ const U=P.circ.filter(c=>P.cab.some(k=>k.c===c.id));
   aviso(U.length?U.length+' corrugados: uno por térmico ('+U.map(c=>c.nom).join(', ')+')':'Aún no hay cables'); } };
 $('nombre').onchange=()=>{ P.nombre=$('nombre').value.trim()||'Plano'; guarda(); };
@@ -360,14 +360,15 @@ async function plantillas(){ let hecho=false; try{ hecho=localStorage.getItem('d
 function addRetornos(Q){ let n=0; Q.els.filter(e=>e.t==='int').forEach(it=>{ if(Q.cab.some(c=>c.ret&&(c.a===it.id||c.b===it.id))) return;
     const f=Q.cab.find(c=>c.b===it.id&&!c.ret); if(!f||!f.a) return; const pts=f.pts.slice().reverse().map(p=>[p[0]+8,p[1]+8]);
     Q.cab.push({id:uid(),c:f.c,pts,fl:true,g:3,a:it.id,b:f.a,ret:true}); n++; }); return n; }
-function migraRet(){ let hecho=false; try{ hecho=localStorage.getItem('dgp-planos-ret1')==='1'; }catch(e){} if(hecho) return; let n=0;
+function arreglaCuadro(Q){ let n=0; Q.cab.forEach(c=>{ const ea=Q.els.find(x=>x.id===c.a); if(ea&&ea.t==='cuadro'&&c.pts.length>2&&Math.abs(c.pts[1][1]-c.pts[0][1])<1&&Math.abs(c.pts[1][0]-c.pts[0][0])>0){ c.pts.splice(1,1); c.pa=null; n++; } }); return n; }
+function migraRet(){ let n2=0; PL.forEach(x=>{ n2+=arreglaCuadro(x); }); if(n2) guarda(); let hecho=false; try{ hecho=localStorage.getItem('dgp-planos-ret1')==='1'; }catch(e){} if(hecho) return; let n=0;
   PL.filter(x=>/^pl-(baja|alta)/.test(x.id)).forEach(x=>{ n+=addRetornos(x); }); try{ localStorage.setItem('dgp-planos-ret1','1'); }catch(e){} if(n){ guarda(); pinta(); } }
 pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraRet);
 })();
 </script>
 <script>
 (function(){
-  var BUILD='V2.64', ROOT='../';
+  var BUILD='V2.65', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

@@ -243,7 +243,7 @@ function pinta(){ { const fs=P.fondo&&P.fondo.src||null; if(fs!==MURO_SRC){ MURO
     if(REENG.el){ const el=P.els.find(x=>x.id===REENG.el); if(el) ['t','r','b','l'].forEach(sd=>{ const q=puerto(el,sd), o=sd==='t'?[0,-16]:sd==='b'?[0,16]:sd==='l'?[-16,0]:[16,0]; h+='<circle data-k="rp" data-id="'+el.id+'" data-s="'+sd+'" cx="'+(q[0]+o[0])+'" cy="'+(q[1]+o[1])+'" r="14" fill="#22c55e" stroke="#fff" stroke-width="3"/>'; }); }
   } }
   vista.innerHTML=h; pintaCircs(); pintaHerr(); pintaAccion(); }
-function pintaCircs(){ $('bDeshacer').disabled=!HIST.length; $('bRehacer').disabled=!REDO.length; const cs=P.circ.find(c=>c.id===FIL); $('circs').innerHTML='<button class="chip'+(MODO==='mueble'?' on':'')+'" data-c="mob">Mobiliario</button><button class="chip'+(CORR?' on':'')+'" data-c="corr">Corrugados</button><span class="chip" style="position:relative;padding:0 30px 0 12px">'+(cs?'<i style="background:'+cs.col+'"></i>'+esc(cs.nom)+(cs.desc?' <span class="meta">'+esc(cs.desc)+'</span>':''):'Todos los térmicos')+' ▾<select id="selCirc" style="position:absolute;inset:0;opacity:0;width:100%;font-size:16px"><option value="*"'+(!FIL?' selected':'')+'>Todos los térmicos</option>'+P.circ.map(c=>'<option value="'+c.id+'"'+(FIL===c.id?' selected':'')+'>'+esc(c.nom)+(c.desc?' · '+esc(c.desc):'')+'</option>').join('')+'<option value="+">+ Añadir térmico</option></select></span>'+(cs?'<button class="chip" data-c="'+cs.id+'">Editar</button>':''); }
+function pintaCircs(){ $('bDeshacer').disabled=!HIST.length; $('bRehacer').disabled=!REDO.length; const cs=P.circ.find(c=>c.id===FIL); $('circs').innerHTML='<button class="chip'+(MODO==='mueble'?' on':'')+'" data-c="mob">Mobiliario</button><button class="chip'+(CORR?' on':'')+'" data-c="corr">Corrugados</button><button class="chip" data-c="sel">'+(cs?'<i style="background:'+cs.col+'"></i>'+esc(cs.nom)+(cs.desc?' <span class="meta">'+esc(cs.desc)+'</span>':''):'Todos los térmicos')+' <span style="color:var(--ac)">▾</span></button>'; }
 function pintaHerr(){ $('herr').innerHTML=HERR.map(x=>'<button data-h="'+x[0]+'" class="'+(MODO===x[0]||(x[0]==='anadir'&&PONER.includes(MODO))?'on':'')+'">'+IC[x[0]]+'<span>'+x[1]+'</span></button>').join('');
   const av=$('aviso'); let t='';
   if(REENG) t=REENG.el?'Elige el lado de entrada':'Toca dónde conectarlo (en verde)';
@@ -357,6 +357,8 @@ $('herr').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; if(DIB
   MODO=b.dataset.h; if(MODO!=='mover') SEL=null; pinta(); };
 $('circs').onchange=e=>{ if(e.target.id!=='selCirc') return; const v=e.target.value, o={dataset:{c:v}}; $('circs').onclick({target:{closest:()=>o}}); };
 $('circs').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; const c=b.dataset.c; if(c==='+'){ abreCirc(); return; }
+  if(c==='sel'){ hoja('<h3>Térmicos</h3><div style="display:flex;flex-direction:column;gap:6px"><button data-f="*" style="justify-content:flex-start;'+(!FIL?'border-color:var(--ac);color:var(--ac)':'')+'">Todos los térmicos</button>'+P.circ.map(c=>'<div style="display:flex;gap:6px"><button data-f="'+c.id+'" style="flex:1;display:flex;align-items:center;gap:10px;justify-content:flex-start;'+(FIL===c.id?'border-color:'+c.col:'')+'"><i style="display:inline-block;width:14px;height:14px;border-radius:50%;background:'+c.col+'"></i><b style="color:'+c.col+'">'+esc(c.nom)+'</b><span class="meta">'+esc(c.desc||'')+'</span></button><button data-ed="'+c.id+'" aria-label="Editar" style="width:48px">✎</button></div>').join('')+'<button data-f="+">+ Añadir térmico</button></div>');
+    $('hoja').onclick=ev=>{ const q=ev.target.closest('button'); if(!q) return; cierra(); if(q.dataset.ed){ abreCirc(P.circ.find(x=>x.id===q.dataset.ed)); return; } const v=q.dataset.f; if(v==='+'){ abreCirc(); return; } if(v==='*'){ FIL=null; pinta(); return; } const o={dataset:{c:v}}; if(FIL===v) FIL=null; $('circs').onclick({target:{closest:()=>o}}); }; return; }
   if(c==='mob'){ MODO=MODO==='mueble'?'mover':'mueble'; SEL=null; CON=null; pinta(); return; } if(c==='*'){ FIL=null; pinta(); return; } if(c==='corr'){ togCorr(); return; }
   if(SEL&&SEL.k==='c'){ snap(); const k=P.cab.find(x=>x.id===SEL.id); if(k) k.c=c; CIRC=c; guarda(); pinta(); return; }
   if(DIB&&DIB.pts){ DIB.c=c; CIRC=c; pinta(); return; }
@@ -548,7 +550,7 @@ pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraR
 </script>
 <script>
 (function(){
-  var BUILD='V2.85', ROOT='../';
+  var BUILD='V2.86', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

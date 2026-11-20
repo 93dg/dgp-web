@@ -357,12 +357,17 @@ async function plantillas(){ let hecho=false; try{ hecho=localStorage.getItem('d
     PL=PL.filter(x=>x.els.length||x.cab.length||x.muros.length||x.fondo);
     L.forEach(x=>{ const i=PL.findIndex(y=>y.id===x.id); if(i<0) PL.push(x); else if(!PL[i].act||PL[i].act<=1795600000000) PL[i]=x; else { x.id=x.id+'-v2'; x.nombre+=' (nuevo)'; if(!PL.some(y=>y.id===x.id)) PL.push(x); } }); P=PL.find(x=>x.id===L[0].id+'-v2')||PL.find(x=>x.id===L[0].id)||PL[0]; CIRC=P.circ[0]&&P.circ[0].id;
     try{ localStorage.setItem('dgp-planos-pl3','1'); }catch(e){} guarda(); pinta(); ajustar(); }catch(e){} }
-pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas);
+function addRetornos(Q){ let n=0; Q.els.filter(e=>e.t==='int').forEach(it=>{ if(Q.cab.some(c=>c.ret&&(c.a===it.id||c.b===it.id))) return;
+    const f=Q.cab.find(c=>c.b===it.id&&!c.ret); if(!f||!f.a) return; const pts=f.pts.slice().reverse().map(p=>[p[0]+8,p[1]+8]);
+    Q.cab.push({id:uid(),c:f.c,pts,fl:true,g:3,a:it.id,b:f.a,ret:true}); n++; }); return n; }
+function migraRet(){ let hecho=false; try{ hecho=localStorage.getItem('dgp-planos-ret1')==='1'; }catch(e){} if(hecho) return; let n=0;
+  PL.filter(x=>/^pl-(baja|alta)/.test(x.id)).forEach(x=>{ n+=addRetornos(x); }); try{ localStorage.setItem('dgp-planos-ret1','1'); }catch(e){} if(n){ guarda(); pinta(); } }
+pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraRet);
 })();
 </script>
 <script>
 (function(){
-  var BUILD='V2.63', ROOT='../';
+  var BUILD='V2.64', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

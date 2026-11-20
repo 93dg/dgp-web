@@ -20,7 +20,7 @@ button.pri{background:var(--ac);color:#111;border-color:var(--ac);font-weight:60
 button.on{border-color:var(--ac);color:var(--ac);background:rgba(255,184,28,.12)}
 input,select,textarea{background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:8px 10px;min-height:40px;width:100%;-webkit-user-select:text;user-select:text}
 .top{flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--s1);border-bottom:1px solid var(--bd)}
-.top a{color:var(--ac);text-decoration:none;font-weight:600;white-space:nowrap}
+.top .tit{flex:1;min-width:0;text-align:left;background:transparent;border:0;font-weight:700;font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px}.top a{color:var(--ac);text-decoration:none;font-weight:600;white-space:nowrap}
 #nombre{flex:1;min-width:60px;background:transparent;border:0;font-weight:600;font-size:1.02rem;padding:4px}
 .top button{min-height:36px;padding:0 10px}
 .circs{flex:0 0 auto;display:flex;gap:6px;overflow-x:auto;padding:7px 10px;background:var(--s1);border-bottom:1px solid var(--bd);scrollbar-width:none}
@@ -55,9 +55,7 @@ input,select,textarea{background:var(--s2);border:1px solid var(--bd);border-rad
 </head>
 <body>
 <div class="top">
-  <b style="color:var(--ac);white-space:nowrap">Planos</b>
-  <input id="nombre" placeholder="Nombre del plano" maxlength="60">
-  <button id="bCorr">Corrugados</button><button id="bPlanos">Planos</button>
+  <button id="bPlanos" class="tit"><span id="nombre"></span> <span style="color:var(--ac)">▾</span></button>
   <button id="bMas" aria-label="Más opciones">⋯</button>
 </div>
 <div class="circs" id="circs"></div>
@@ -177,7 +175,7 @@ function puertos(c){ if(c.pts.length<2) return; const ea=c.a&&P.els.find(x=>x.id
   if(ea&&!c.pa) c.pa=ladoAuto(ea,c.pts[1]); if(eb&&!c.pb) c.pb=ladoAuto(eb,c.pts[c.pts.length-2]); }
 function sentido(c){ if(!c.ret){ const ea0=P.els.find(x=>x.id===c.a), eb0=P.els.find(x=>x.id===c.b); if(eb0&&esCaja(eb0)&&ea0&&!esCaja(ea0)){ c.pts.reverse(); [c.a,c.b]=[c.b,c.a]; [c.pa,c.pb]=[c.pb,c.pa]; } } puertos(c); return; const ea=P.els.find(x=>x.id===c.a), eb=P.els.find(x=>x.id===c.b);
   if(eb&&esCaja(eb)&&ea&&!esCaja(ea)){ c.pts.reverse(); [c.a,c.b]=[c.b,c.a]; [c.pa,c.pb]=[c.pb,c.pa]; } }
-function pinta(){ P.cab.forEach(sentido); marcadores(); $('nombre').value=P.nombre||'';
+function pinta(){ P.cab.forEach(sentido); marcadores(); $('nombre').textContent=P.nombre||'Plano';
   let h='<rect x="0" y="0" width="'+P.w+'" height="'+P.h+'" fill="#fff"/><rect x="0" y="0" width="'+P.w+'" height="'+P.h+'" fill="url(#cuad)"/>';
   if(P.fondo) h+='<image href="'+P.fondo.src+'" x="0" y="0" width="'+P.fondo.w+'" height="'+P.fondo.h+'" opacity="'+P.fop+'"/>';
   h+=P.muros.map(m=>'<line data-k="m" data-id="'+m.id+'" x1="'+m.x1+'" y1="'+m.y1+'" x2="'+m.x2+'" y2="'+m.y2+'" stroke="'+(SEL&&SEL.id===m.id?'#ffb81c':'#8a8a8a')+'" stroke-width="'+(m.g||18)+'" stroke-linecap="square"/>').join('');
@@ -194,7 +192,7 @@ function pinta(){ P.cab.forEach(sentido); marcadores(); $('nombre').value=P.nomb
       h+='<circle data-k="pt" data-id="'+c.id+'" data-w="'+w+'" data-s="'+sd+'" cx="'+(q[0]+o[0])+'" cy="'+(q[1]+o[1])+'" r="10" fill="'+(cur===sd?'#ffb81c':'#ffffff')+'" fill-opacity="'+(cur===sd?1:.15)+'" stroke="#ffb81c" stroke-width="3"/>'; }); }); }
   if(SEL&&SEL.k==='c'){ const c=P.cab.find(x=>x.id===SEL.id); if(c) h+=c.pts.map((p,i)=>((i===0&&c.a)||(i===c.pts.length-1&&c.b))?'':'<circle data-k="v" data-id="'+c.id+'" data-i="'+i+'" cx="'+p[0]+'" cy="'+p[1]+'" r="9" fill="'+(VSEL===i?'#0b5cd6':'#38bdf8')+'" stroke="#ffffff" stroke-width="3"/>').join(''); }
   vista.innerHTML=h; pintaCircs(); pintaHerr(); pintaAccion(); }
-function pintaCircs(){ $('bDeshacer').disabled=!HIST.length; $('bRehacer').disabled=!REDO.length; $('bCorr').classList.toggle('on',CORR); $('circs').innerHTML='<button class="chip'+(!FIL?' on':'')+'" data-c="*">Todos</button>'+P.circ.map(c=>'<button class="chip'+(FIL===c.id?' on':'')+'" data-c="'+c.id+'"><i style="background:'+c.col+'"></i>'+esc(c.nom)+(c.desc?' <span class="meta">'+esc(c.desc)+'</span>':'')+'</button>').join('')+'<button class="chip" data-c="+">+ Térmico</button>'; }
+function pintaCircs(){ $('bDeshacer').disabled=!HIST.length; $('bRehacer').disabled=!REDO.length; $('circs').innerHTML='<button class="chip'+(CORR?' on':'')+'" data-c="corr">Corrugados</button><button class="chip'+(!FIL?' on':'')+'" data-c="*">Todos</button>'+P.circ.map(c=>'<button class="chip'+(FIL===c.id?' on':'')+'" data-c="'+c.id+'"><i style="background:'+c.col+'"></i>'+esc(c.nom)+(c.desc?' <span class="meta">'+esc(c.desc)+'</span>':'')+'</button>').join('')+'<button class="chip" data-c="+">+ Térmico</button>'; }
 function pintaHerr(){ $('herr').innerHTML=HERR.map(x=>'<button data-h="'+x[0]+'" class="'+(MODO===x[0]?'on':'')+'">'+IC[x[0]]+'<span>'+x[1]+'</span></button>').join('');
   const av=$('aviso'); let t='';
   if(MODO==='cable') t=DIB&&DIB.pts&&DIB.pts.length?'Toca el aparato de destino (o puntos de paso)':'Toca el aparato o caja de origen';
@@ -273,7 +271,7 @@ function terminaCable(){ if(DIB&&DIB.pts&&DIB.pts.length>1){ snap(); P.cab.push(
 
 $('herr').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; if(DIB&&DIB.pts) terminaCable(); MODO=b.dataset.h; if(MODO!=='mover') SEL=null; pinta(); };
 $('circs').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; const c=b.dataset.c; if(c==='+'){ abreCirc(); return; }
-  if(c==='*'){ FIL=null; pinta(); return; }
+  if(c==='*'){ FIL=null; pinta(); return; } if(c==='corr'){ togCorr(); return; }
   if(SEL&&SEL.k==='c'){ snap(); const k=P.cab.find(x=>x.id===SEL.id); if(k) k.c=c; CIRC=c; guarda(); pinta(); return; }
   if(DIB&&DIB.pts){ DIB.c=c; CIRC=c; pinta(); return; }
   if(FIL===c){ abreCirc(P.circ.find(x=>x.id===c)); return; }
@@ -293,9 +291,9 @@ $('accion').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; cons
 let tAv=0; function aviso(t){ const a=$('aviso'); a.textContent=t; a.hidden=false; clearTimeout(tAv); tAv=setTimeout(pintaHerr,2500); }
 $('zMas').onclick=()=>zoomEn(1.25); $('zMenos').onclick=()=>zoomEn(1/1.25); $('zAjustar').onclick=ajustar;
 $('bDeshacer').onclick=deshacer; $('bRehacer').onclick=rehacer;
-$('bCorr').onclick=()=>{ CORR=!CORR; pinta(); if(CORR){ const U=P.circ.filter(c=>P.cab.some(k=>k.c===c.id));
+const togCorr=()=>{ CORR=!CORR; pinta(); if(CORR){ const U=P.circ.filter(c=>P.cab.some(k=>k.c===c.id));
   aviso(U.length?U.length+' corrugados: uno por térmico ('+U.map(c=>c.nom).join(', ')+')':'Aún no hay cables'); } };
-$('nombre').onchange=()=>{ P.nombre=$('nombre').value.trim()||'Plano'; guarda(); };
+
 addEventListener('resize',()=>aplicaVista());
 document.addEventListener('keydown',e=>{ if(/INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
   if((e.key==='Delete'||e.key==='Backspace')&&SEL){ $('accion').querySelector('[data-a=del]')&&$('accion').querySelector('[data-a=del]').click(); }
@@ -325,9 +323,10 @@ function editaTexto(el){ hoja('<h3>'+(el.t==='caja'?'Texto de la caja':'Texto')+
     if(b.dataset.ins){ const t=$('tTxt'); t.value=(t.value.trim()?t.value.replace(/\s*$/,'')+'\n':'')+b.dataset.ins+' - 3 x 1.5'; t.focus(); return; }
     if(b.id==='tX') cierra();
     if(b.id==='tOk'){ snap(); el.txt=$('tTxt').value.trim(); if($('tFs')) el.fs=+$('tFs').value; guarda(); cierra(); pinta(); } }; }
-$('bPlanos').onclick=()=>{ hoja('<h3>Tus planos</h3><div class="lista">'+PL.slice().sort((a,b)=>(b.act||0)-(a.act||0)).map(x=>'<div class="it"><b>'+esc(x.nombre)+'</b><span class="meta">'+new Date(x.act||Date.now()).toLocaleDateString('es-ES')+'</span><button data-ab="'+x.id+'"'+(x.id===P.id?' class="on"':'')+'>'+(x.id===P.id?'Abierto':'Abrir')+'</button><button data-cp="'+x.id+'">Copiar</button>'+(PL.length>1?'<button data-bo="'+x.id+'" style="color:var(--neg)">Borrar</button>':'')+'</div>').join('')+'</div><div class="fila" style="margin-top:12px"><button class="pri" id="pNuevo" style="flex:1">+ Plano nuevo</button><button id="pX">Cerrar</button></div>');
+$('bPlanos').onclick=()=>{ hoja('<h3>Planos</h3><div class="campo"><label>Nombre del plano abierto</label><input id="pNom" value="'+esc(P.nombre||'')+'" maxlength="60"></div><div class="lista">'+PL.slice().sort((a,b)=>(b.act||0)-(a.act||0)).map(x=>'<div class="it"><b>'+esc(x.nombre)+'</b><span class="meta">'+new Date(x.act||Date.now()).toLocaleDateString('es-ES')+'</span><button data-ab="'+x.id+'"'+(x.id===P.id?' class="on"':'')+'>'+(x.id===P.id?'Abierto':'Abrir')+'</button><button data-cp="'+x.id+'">Copiar</button>'+(PL.length>1?'<button data-bo="'+x.id+'" style="color:var(--neg)">Borrar</button>':'')+'</div>').join('')+'</div><div class="fila" style="margin-top:12px"><button class="pri" id="pNuevo" style="flex:1">+ Plano nuevo</button><button id="pX">Cerrar</button></div>');
+  $('pNom').onchange=()=>{ const v=$('pNom').value.trim(); if(v){ P.nombre=v; guarda(); pinta(); } };
   $('hoja').onclick=e=>{ const b=e.target.closest('button'); if(!b) return;
-    if(b.id==='pX') cierra();
+    if(b.id==='pX'||0){ const v=$('pNom').value.trim(); if(v&&v!==P.nombre){ P.nombre=v; guarda(); pinta(); } cierra(); }
     if(b.id==='pNuevo'){ const n=planoNuevo(); PL.push(n); P=n; HIST=[]; SEL=null; CIRC=n.circ[0].id; guarda(); cierra(); pinta(); ajustar(); }
     if(b.dataset.ab){ P=PL.find(x=>x.id===b.dataset.ab); HIST=[]; SEL=null; CIRC=P.circ[0]&&P.circ[0].id; guarda(); cierra(); pinta(); ajustar(); }
     if(b.dataset.cp){ const o=JSON.parse(JSON.stringify(PL.find(x=>x.id===b.dataset.cp))); o.id=uid(); o.nombre+=' (copia)'; PL.push(o); guarda(); $('bPlanos').onclick(); }
@@ -337,12 +336,14 @@ $('bMas').onclick=()=>{ hoja('<h3>Plano</h3>'+
   (P.fondo?'<div class="campo"><label>Transparencia del fondo</label><input type="range" id="fOp" min="0.1" max="1" step="0.05" value="'+P.fop+'"></div>':'')+
   '<div class="fila"><div class="campo" style="flex:1"><label>Ancho</label><input type="number" id="pW" value="'+P.w+'"></div><div class="campo" style="flex:1"><label>Alto</label><input type="number" id="pH" value="'+P.h+'"></div></div>'+
   '<div class="fila" style="margin-bottom:10px"><button id="xPng" class="pri" style="flex:1">Descargar imagen</button><button id="xSvg">SVG</button></div>'+
-  '<div class="fila"><button id="mX" style="flex:1">Cerrar</button></div>');
+  '<div class="fila" style="margin-bottom:10px"><button id="mCp" style="flex:1">Copiar este plano</button><button id="mBo" style="flex:1;color:var(--neg)">Borrar este plano</button></div><div class="fila"><button id="mX" style="flex:1">Cerrar</button></div>');
   $('fFile').onchange=e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ const im=new Image(); im.onload=()=>{ const M=2000, k=Math.min(1,M/Math.max(im.width,im.height)), c=document.createElement('canvas'); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k); c.getContext('2d').drawImage(im,0,0,c.width,c.height);
       snap(); const s=Math.min(1,1600/c.width); P.fondo={src:c.toDataURL('image/jpeg',.82),w:Math.round(c.width*s*(1600/Math.max(c.width*s,1))),h:0}; P.fondo.w=1600; P.fondo.h=Math.round(c.height*1600/c.width); P.w=1600; P.h=Math.max(P.h,P.fondo.h); guarda(); cierra(); pinta(); ajustar(); }; im.src=r.result; }; r.readAsDataURL(f); };
   if($('fOp')) $('fOp').oninput=e=>{ P.fop=+e.target.value; pinta(); }, $('fOp').onchange=()=>guarda();
   $('pW').onchange=$('pH').onchange=()=>{ snap(); P.w=Math.max(400,+$('pW').value||1600); P.h=Math.max(300,+$('pH').value||1100); guarda(); pinta(); ajustar(); };
   $('hoja').onclick=e=>{ const b=e.target.closest('button'); if(!b) return;
+    if(b.id==='mCp'){ const o=JSON.parse(JSON.stringify(P)); o.id=uid(); o.nombre+=' (copia)'; PL.push(o); P=o; HIST=[]; REDO=[]; guarda(); cierra(); pinta(); ajustar(); return; }
+    if(b.id==='mBo'){ if(PL.length<2){ b.textContent='Es el único plano'; return; } if(b.dataset.ok!=='1'){ b.dataset.ok='1'; b.textContent='¿Seguro? Toca otra vez'; return; } PL=PL.filter(x=>x.id!==P.id); P=PL[0]; HIST=[]; REDO=[]; guarda(); cierra(); pinta(); ajustar(); return; }
     if(b.id==='mX') cierra(); if(b.id==='fQuitar'){ snap(); P.fondo=null; guarda(); cierra(); pinta(); }
     if(b.id==='xSvg') descarga(new Blob([svgTexto()],{type:'image/svg+xml'}),(P.nombre||'plano')+'.svg');
     if(b.id==='xPng') exportaPng(); }; };
@@ -379,7 +380,7 @@ pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraR
 </script>
 <script>
 (function(){
-  var BUILD='V2.67', ROOT='../';
+  var BUILD='V2.68', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

@@ -262,7 +262,7 @@ function revisa(){ const R=[], E=P.els.filter(e=>e.t!=='mueble'&&e.t!=='texto'),
     if(/cocina|bano/.test(d)&&tomas>6) R.push({g:1,t:ci.nom+': '+tomas+' tomas (máx. 6)'});
     else if(/enchuf|general/.test(d)&&tomas>20) R.push({g:1,t:ci.nom+': '+tomas+' tomas (máx. 20, añade otro circuito)'}); });
   return R; }
-function pintaCircs(){ $('bDeshacer').disabled=!HIST.length; $('bRehacer').disabled=!REDO.length; const cs=P.circ.find(c=>c.id===FIL); const RV=revisa(), ne=RV.filter(r=>r.g===2).length; $('circs').innerHTML='<button class="chip" data-c="rev" style="'+(ne?'border-color:#ef4444;color:#ef4444':RV.length?'border-color:#f59e0b;color:#f59e0b':'border-color:#22c55e;color:#22c55e')+'">'+(RV.length?'⚠ '+RV.length:'✓ OK')+'</button><button class="chip'+(MODO==='mueble'?' on':'')+'" data-c="mob">Mobiliario</button><button class="chip'+(CORR?' on':'')+'" data-c="corr">Corrugados</button><button class="chip" data-c="sel">'+(cs?'<i style="background:'+cs.col+'"></i>'+esc(cs.nom)+(cs.desc?' <span class="meta">'+esc(cs.desc)+'</span>':''):'Todos los térmicos')+' <span style="color:var(--ac)">▾</span></button>'; }
+function pintaCircs(){ $('bDeshacer').disabled=!HIST.length; $('bRehacer').disabled=!REDO.length; const cs=P.circ.find(c=>c.id===FIL); const RV=revisa(), ne=RV.filter(r=>r.g===2).length; $('circs').innerHTML='<button class="chip" data-c="rev" style="'+(ne?'border-color:#ef4444;color:#ef4444':RV.length?'border-color:#f59e0b;color:#f59e0b':'border-color:#22c55e;color:#22c55e')+'">'+(RV.length?'⚠ '+RV.length:'✓ OK')+'</button><button class="chip'+(MODO==='mueble'?' on':'')+'" data-c="mob">Mobiliario</button><button class="chip'+(CORR?' on':'')+'" data-c="corr">Corrugados</button><button class="chip" data-c="sel">'+(cs?'<i style="background:'+cs.col+'"></i>'+esc(cs.nom)+(cs.desc?' <span class="meta">'+esc(cs.desc)+'</span>':''):'Térmicos')+' <span style="color:var(--ac)">▾</span></button>'; }
 function pintaHerr(){ $('herr').innerHTML=HERR.map(x=>'<button data-h="'+x[0]+'" class="'+(MODO===x[0]||(x[0]==='anadir'&&PONER.includes(MODO))?'on':'')+'">'+IC[x[0]]+'<span>'+x[1]+'</span></button>').join('');
   const av=$('aviso'); let t='';
   if(REENG) t=REENG.el?'Elige el lado de entrada':'Toca dónde conectarlo (en verde)';
@@ -581,7 +581,7 @@ pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraR
 </script>
 <script>
 (function(){
-  var BUILD='V2.90', ROOT='../';
+  var BUILD='V2.91', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

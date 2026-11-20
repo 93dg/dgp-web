@@ -55,7 +55,7 @@ input,select,textarea{background:var(--s2);border:1px solid var(--bd);border-rad
 </head>
 <body>
 <div class="top">
-  <a href="../">‹ DGP</a>
+  <b style="color:var(--ac);white-space:nowrap">Planos</b>
   <input id="nombre" placeholder="Nombre del plano" maxlength="60">
   <button id="bDeshacer" aria-label="Deshacer" title="Deshacer">↶</button>
   <button id="bCorr">Corrugados</button><button id="bPlanos">Planos</button>
@@ -333,17 +333,17 @@ function descarga(blob,nombre){ const f=new File([blob],nombre,{type:blob.type})
   if(navigator.canShare&&navigator.canShare({files:[f]})){ navigator.share({files:[f],title:nombre}).catch(()=>{}); return; }
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=nombre; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500); }
 
-async function plantillas(){ let hecho=false; try{ hecho=localStorage.getItem('dgp-planos-pl2')==='1'; }catch(e){} if(hecho) return;
+async function plantillas(){ let hecho=false; try{ hecho=localStorage.getItem('dgp-planos-pl3')==='1'; }catch(e){} if(hecho) return;
   try{ const r=await fetch('plantillas.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return; const L=await r.json();
     PL=PL.filter(x=>x.els.length||x.cab.length||x.muros.length||x.fondo);
-    L.forEach(x=>{ const i=PL.findIndex(y=>y.id===x.id); if(i>=0) PL[i]=x; else PL.push(x); }); P=PL.find(x=>x.id===L[0].id)||PL[0]; CIRC=P.circ[0]&&P.circ[0].id;
-    try{ localStorage.setItem('dgp-planos-pl2','1'); }catch(e){} guarda(); pinta(); ajustar(); }catch(e){} }
+    L.forEach(x=>{ const i=PL.findIndex(y=>y.id===x.id); if(i<0) PL.push(x); else if(!PL[i].act||PL[i].act<=1795600000000) PL[i]=x; else { x.id=x.id+'-v2'; x.nombre+=' (nuevo)'; if(!PL.some(y=>y.id===x.id)) PL.push(x); } }); P=PL.find(x=>x.id===L[0].id+'-v2')||PL.find(x=>x.id===L[0].id)||PL[0]; CIRC=P.circ[0]&&P.circ[0].id;
+    try{ localStorage.setItem('dgp-planos-pl3','1'); }catch(e){} guarda(); pinta(); ajustar(); }catch(e){} }
 pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas);
 })();
 </script>
 <script>
 (function(){
-  var BUILD='V2.57', ROOT='../';
+  var BUILD='V2.58', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

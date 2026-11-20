@@ -190,8 +190,11 @@ function caja2(el){ if(el.t!=='caja') return null; const L=cajaLin(el); return {
 function radio(el){ if(!el) return 0; const b=caja2(el); if(b) return Math.max(b.w,b.h)*1.3/2*0+ (b.h*1.3/2+6); return el.t==='vent'?42:el.t==='cuadro'?48:26; }
 function semi(el){ if(el.t==='mueble'){ const [w,h]=mueDim(el), k=el.sc||1, rr=((el.r||0)%180+180)%180; return rr>45&&rr<135?[h/2*k,w/2*k]:[w/2*k,h/2*k]; } const k=(el.t==='caja'||el.t==='texto'?1.3:1.7)*(el.sc||1), b=caja2(el); if(b) return [(b.w/2)*k,(b.h/2)*k]; const r=(el.t==='vent'?22:el.t==='cuadro'?26:14)*k; return [r,r]; }
 function puerto(el,sd){ const [w,h]=semi(el); return sd==='t'?[el.x,el.y-h]:sd==='b'?[el.x,el.y+h]:sd==='l'?[el.x-w,el.y]:[el.x+w,el.y]; }
+function giro(k){ const U={t:[0,-1],b:[0,1],l:[-1,0],r:[1,0]}, W={l:[1,0],r:[-1,0],t:[0,1],b:[0,-1]}, V=x=>x==='t'||x==='b'; if(!k.pa||!k.pb) return 1; const u=U[k.pa], v=W[k.pb];
+  if(V(k.pa)&&!V(k.pb)) return -(u[1]*v[0])||1; if(!V(k.pa)&&V(k.pb)) return -(u[0]*v[1])||1; return 1; }
 function hueco(el,sd,c){ const otro=k=>{ const id=k.a===el.id&&k.pa===sd?k.b:k.a, o=P.els.find(x=>x.id===id); return o?((sd==='t'||sd==='b')?o.x:o.y):0; };
-  const L=P.cab.filter(k=>(k.a===el.id&&k.pa===sd)||(k.b===el.id&&k.pb===sd)).sort((x,y)=>otro(x)-otro(y)||P.circ.findIndex(q=>q.id===x.c)-P.circ.findIndex(q=>q.id===y.c)||(x.ret?1:0)-(y.ret?1:0)||(x.id<y.id?-1:1));
+  const rk=k=>{ const r=P.circ.findIndex(q=>q.id===k.c)*2+(k.ret?1:0); return (k.b===el.id&&k.pb===sd)?r*giro(k):r; };
+  const L=P.cab.filter(k=>(k.a===el.id&&k.pa===sd)||(k.b===el.id&&k.pb===sd)).sort((x,y)=>otro(x)-otro(y)||rk(x)-rk(y)||(x.id<y.id?-1:1));
   const n=L.length; if(n<2) return 0; const [w,h]=semi(el); const lado=(sd==='t'||sd==='b')?w:h; const sp=Math.min(14,(2*lado*.85)/(n-1)); return (L.indexOf(c)-(n-1)/2)*sp; }
 function conPuerto(p,i,el,sd,c){ const o=c?hueco(el,sd,c):0; let Q=puerto(el,sd); Q=(sd==='t'||sd==='b')?[Q[0]+o,Q[1]]:[Q[0],Q[1]+o]; const N0=i===0?p[1]:p[p.length-2], d=Math.max(8,Math.min(28,Math.hypot(N0[0]-Q[0],N0[1]-Q[1])*.3)), S=sd==='t'?[Q[0],Q[1]-d]:sd==='b'?[Q[0],Q[1]+d]:sd==='l'?[Q[0]-d,Q[1]]:[Q[0]+d,Q[1]];
   const N=i===0?p[1]:p[p.length-2]; const C=(sd==='t'||sd==='b')?[N[0],S[1]]:[S[0],N[1]];
@@ -599,7 +602,7 @@ pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraR
 </script>
 <script>
 (function(){
-  var BUILD='V2.97', ROOT='../';
+  var BUILD='V2.98', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

@@ -193,11 +193,18 @@ function pinta(){ P.cab.forEach(sentido); marcadores(); $('nombre').textContent=
   if(SEL&&SEL.k==='c'){ const c=P.cab.find(x=>x.id===SEL.id); if(c) [['a',c.a,c.pa],['b',c.b,c.pb]].forEach(([w,id,cur])=>{ const el=id&&P.els.find(x=>x.id===id); if(!el) return; ['t','r','b','l'].forEach(sd=>{ const q=puerto(el,sd), o=sd==='t'?[0,-14]:sd==='b'?[0,14]:sd==='l'?[-14,0]:[14,0];
       h+='<circle data-k="pt" data-id="'+c.id+'" data-w="'+w+'" data-s="'+sd+'" cx="'+(q[0]+o[0])+'" cy="'+(q[1]+o[1])+'" r="10" fill="'+(cur===sd?'#ffb81c':'#ffffff')+'" fill-opacity="'+(cur===sd?1:.15)+'" stroke="#ffb81c" stroke-width="3"/>'; }); }); }
   if(SEL&&SEL.k==='c'){ const c=P.cab.find(x=>x.id===SEL.id); if(c) h+=c.pts.map((p,i)=>((i===0&&c.a)||(i===c.pts.length-1&&c.b))?'':'<circle data-k="v" data-id="'+c.id+'" data-i="'+i+'" cx="'+p[0]+'" cy="'+p[1]+'" r="9" fill="'+(VSEL===i?'#0b5cd6':'#38bdf8')+'" stroke="#ffffff" stroke-width="3"/>').join(''); }
+  if(REENG){ const c=P.cab.find(x=>x.id===REENG.id); if(!c) REENG=null; else {
+    reCand(c,REENG.w).forEach(el=>{ const [w2,h2]=semi(el), on=REENG.el===el.id; h+='<rect data-k="re" data-id="'+el.id+'" x="'+(el.x-w2-10)+'" y="'+(el.y-h2-10)+'" width="'+(2*w2+20)+'" height="'+(2*h2+20)+'" rx="10" fill="'+(on?'rgba(34,197,94,.25)':'rgba(34,197,94,.10)')+'" stroke="#22c55e" stroke-width="3" stroke-dasharray="'+(on?'0':'8 6')+'"/>'; });
+    if(REENG.drag){ const e0=REENG.w==='a'?c.pts[1]||c.pts[0]:c.pts[c.pts.length-2]||c.pts[0]; h+='<line x1="'+e0[0]+'" y1="'+e0[1]+'" x2="'+REENG.drag[0]+'" y2="'+REENG.drag[1]+'" stroke="#22c55e" stroke-width="4" stroke-dasharray="10 6" pointer-events="none"/><circle cx="'+REENG.drag[0]+'" cy="'+REENG.drag[1]+'" r="12" fill="#22c55e" pointer-events="none"/>'; }
+    if(REENG.el){ const el=P.els.find(x=>x.id===REENG.el); if(el) ['t','r','b','l'].forEach(sd=>{ const q=puerto(el,sd), o=sd==='t'?[0,-16]:sd==='b'?[0,16]:sd==='l'?[-16,0]:[16,0]; h+='<circle data-k="rp" data-id="'+el.id+'" data-s="'+sd+'" cx="'+(q[0]+o[0])+'" cy="'+(q[1]+o[1])+'" r="14" fill="#22c55e" stroke="#fff" stroke-width="3"/>'; }); }
+  } }
   vista.innerHTML=h; pintaCircs(); pintaHerr(); pintaAccion(); }
 function pintaCircs(){ $('bDeshacer').disabled=!HIST.length; $('bRehacer').disabled=!REDO.length; $('circs').innerHTML='<button class="chip'+(CORR?' on':'')+'" data-c="corr">Corrugados</button><button class="chip'+(!FIL?' on':'')+'" data-c="*">Todos</button>'+P.circ.map(c=>'<button class="chip'+(FIL===c.id?' on':'')+'" data-c="'+c.id+'"><i style="background:'+c.col+'"></i>'+esc(c.nom)+(c.desc?' <span class="meta">'+esc(c.desc)+'</span>':'')+'</button>').join('')+'<button class="chip" data-c="+">+ Térmico</button>'; }
 function pintaHerr(){ $('herr').innerHTML=HERR.map(x=>'<button data-h="'+x[0]+'" class="'+(MODO===x[0]?'on':'')+'">'+IC[x[0]]+'<span>'+x[1]+'</span></button>').join('');
   const av=$('aviso'); let t='';
-  if(MODO==='cable') t=DIB&&DIB.pts&&DIB.pts.length?'Toca el aparato de destino (o puntos de paso)':'Toca el aparato o caja de origen';
+  if(REENG) t=REENG.el?'Elige el lado de entrada':'Toca dónde conectarlo (en verde)';
+  else if(SEL&&SEL.k==='c') t='Arrastra o toca la entrada naranja para moverla';
+  else if(MODO==='cable') t=DIB&&DIB.pts&&DIB.pts.length?'Toca el aparato de destino (o puntos de paso)':'Toca el aparato o caja de origen';
   else if(MODO==='muro') t='Arrastra para dibujar un muro';
   else if(MODO==='borrar') t='Toca lo que quieras borrar';
   else if(['caja','luz','int','ench','vent','cuadro','tv','texto','subida'].includes(MODO)) t='Toca el plano para colocarlo';
@@ -215,12 +222,22 @@ function pintaAccion(){ const a=$('accion'); let h='';
   a.innerHTML=h; a.hidden=!h; }
 
 /* ---------- interacción ---------- */
+let REENG=null;
+function reCand(c,w){ const otro=w==='a'?c.b:c.a; return P.els.filter(el=>el.id!==otro&&el.t!=='texto'); }
+function reAplica(c,w,elId,sd){ snap(); const el=P.els.find(x=>x.id===elId); if(!el) return; const q=puerto(el,sd);
+  if(w==='a'){ c.a=elId; c.pa=sd; c.pts[0]=q; } else { c.b=elId; c.pb=sd; c.pts[c.pts.length-1]=q; }
+  REENG=null; guarda(); pinta(); }
+function reLado(el,x,y){ const dx=x-el.x, dy=y-el.y; return Math.abs(dx)>Math.abs(dy)?(dx>0?'r':'l'):(dy>0?'b':'t'); }
 const PTR=new Map(); let ARR=null, PINCH=null, MOV=false;
 function hit(e){ const t=e.target.closest&&e.target.closest('[data-k]'); return t?{k:t.dataset.k,id:t.dataset.id,i:t.dataset.i!=null?+t.dataset.i:null,w:t.dataset.w,s:t.dataset.s}:null; }
 function ortoPt(prev,p){ if(!ORTO||!prev) return p; return Math.abs(p[0]-prev[0])>Math.abs(p[1]-prev[1])?[p[0],prev[1]]:[prev[0],p[1]]; }
 svg.addEventListener('pointerdown',e=>{ svg.setPointerCapture(e.pointerId); PTR.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(PTR.size===2){ const [a,b]=[...PTR.values()]; PINCH={d:Math.hypot(a.x-b.x,a.y-b.y),cx:(a.x+b.x)/2,cy:(a.y+b.y)/2,vx:VX,vy:VY,vs:VS}; ARR=null; if(DIB&&DIB.muro) DIB=null; return; }
   const p=aPlano(e), h=hit(e); MOV=false;
+  if(h&&h.k==='rp'&&REENG){ const c=P.cab.find(x=>x.id===REENG.id); if(c) reAplica(c,REENG.w,h.id,h.s); return; }
+  if(h&&h.k==='re'&&REENG){ REENG.el=h.id; pinta(); return; }
+  if(REENG&&!(h&&h.k==='pt')){ REENG=null; pinta(); }
+  if(h&&h.k==='pt'){ const c0=P.cab.find(x=>x.id===h.id); if(c0&&(h.w==='a'?c0.pa:c0.pb)===h.s){ ARR={tipo:'re',id:h.id,w:h.w,sx:e.clientX,sy:e.clientY}; return; } }
   if(h&&h.k==='pt'){ const c=P.cab.find(x=>x.id===h.id); if(c){ snap(); const k=h.w==='a'?'pa':'pb'; c[k]=h.s; guarda(); pinta(); } return; }
   if(h&&h.k==='rz'&&!(P.els.find(x=>x.id===h.id)||{}).lock){ const el=P.els.find(x=>x.id===h.id); snap(); ARR={tipo:'rz',id:h.id,d0:Math.max(8,Math.hypot(p.x-el.x,p.y-el.y)),s0:el.sc||1}; return; }
   if(MODO==='mover'){
@@ -236,6 +253,7 @@ svg.addEventListener('pointermove',e=>{ if(!PTR.has(e.pointerId)) return; PTR.se
   if(!ARR){ if(MODO==='cable'&&DIB&&DIB.pts&&DIB.pts.length&&e.pointerType==='mouse'){ const p=aPlano(e); DIB.cur=ortoPt(DIB.pts[DIB.pts.length-1],[rej(p.x),rej(p.y)]); pinta(); } return; }
   const p=aPlano(e);
   if(ARR.tipo==='pan'||ARR.tipo==='tap'){ const dx=e.clientX-ARR.sx, dy=e.clientY-ARR.sy; if(Math.hypot(dx,dy)>6){ MOV=true; if(ARR.tipo==='tap') ARR={tipo:'pan',sx:ARR.sx,sy:ARR.sy,vx:ARR.vx,vy:ARR.vy}; VX=ARR.vx+dx; VY=ARR.vy+dy; aplicaVista(); } return; }
+  if(ARR.tipo==='re'){ if(Math.hypot(e.clientX-ARR.sx,e.clientY-ARR.sy)>6){ MOV=true; REENG={id:ARR.id,w:ARR.w,drag:[p.x,p.y]}; const c=P.cab.find(x=>x.id===ARR.id); const t=c&&reCand(c,ARR.w).find(el=>{ const [a,b]=semi(el); return Math.abs(p.x-el.x)<a+30&&Math.abs(p.y-el.y)<b+30; }); REENG.el=t?t.id:null; pinta(); } return; }
   if(ARR.tipo==='muro'){ const m=DIB.muro; let q=[rej(p.x),rej(p.y)]; q=ortoPt([m.x1,m.y1],q); m.x2=q[0]; m.y2=q[1]; pinta(); return; }
   if(ARR.tipo==='rz'){ const el=P.els.find(x=>x.id===ARR.id); el.sc=Math.max(.3,Math.min(4,ARR.s0*Math.hypot(p.x-el.x,p.y-el.y)/ARR.d0)); MOV=true; pinta(); return; }
   if(ARR.tipo==='v'){ const c=P.cab.find(x=>x.id===ARR.id); if(!c) return; let q=[rej(p.x),rej(p.y)]; c.pts[ARR.i]=q; MOV=true; pinta(); return; }
@@ -245,6 +263,8 @@ svg.addEventListener('pointermove',e=>{ if(!PTR.has(e.pointerId)) return; PTR.se
     else { const m=P.muros.find(x=>x.id===ARR.id); m.x1=o.x1+dx; m.y1=o.y1+dy; m.x2=o.x2+dx; m.y2=o.y2+dy; }
     pinta(); } });
 function fin(e){ PTR.delete(e.pointerId); if(PINCH){ if(PTR.size<2) PINCH=null; ARR=null; return; } const A=ARR; ARR=null; if(!A) return;
+  if(A.tipo==='re'){ const c=P.cab.find(x=>x.id===A.id); if(!c){ REENG=null; return; } if(!MOV){ REENG={id:A.id,w:A.w}; pinta(); return; }
+    if(REENG&&REENG.el&&REENG.drag){ const el=P.els.find(x=>x.id===REENG.el); reAplica(c,A.w,el.id,reLado(el,REENG.drag[0],REENG.drag[1])); } else { REENG=null; pinta(); } return; }
   if(A.tipo==='pan'){ if(A.desel&&!MOV&&SEL){ SEL=null; pinta(); } return; }
   if(A.tipo==='muro'){ const m=DIB.muro; DIB=null; if(Math.hypot(m.x2-m.x1,m.y2-m.y1)>10){ snap(); P.muros.push(Object.assign({id:uid(),g:18},m)); guarda(); } pinta(); return; }
   if(A.tipo==='v'||A.tipo==='obj'||A.tipo==='rz'){ if(MOV) guarda(); else HIST.pop(); return; }
@@ -444,7 +464,7 @@ pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraR
 </script>
 <script>
 (function(){
-  var BUILD='V2.78', ROOT='../';
+  var BUILD='V2.79', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

@@ -154,7 +154,7 @@ function simb(el){ const t=el.t, k='#111';
    case 'subida': return '<circle r="15" fill="#fff" stroke="'+k+'" stroke-width="2.4"/><path d="M0 9V-8M-6-2l6-7 6 7" stroke="'+k+'" stroke-width="2.4" fill="none"/>';
    case 'texto': return '<text x="0" y="5" text-anchor="middle" font-size="'+(el.fs||18)+'" fill="'+(el.col||'#111')+'" font-family="Inter,Arial,sans-serif" font-weight="600">'+esc(el.txt||'Texto')+'</text>';
   } return ''; }
-function cajaLin(el){ const M={}; P.cab.forEach(c=>{ if(c.a===el.id||c.b===el.id) M[c.c]=(M[c.c]||0)+1; });
+function cajaLin(el){ const M={}; P.cab.forEach(c=>{ if(!c.paso&&(c.a===el.id||c.b===el.id)) M[c.c]=(M[c.c]||0)+1; });
   return P.circ.filter(c=>M[c.id]).map(c=>({t:c.nom+' - '+M[c.id],col:c.col})); }
 const MUE={cama2:['Cama doble',135,225],cama1:['Cama individual',95,200],sofa:['Sofá',200,90],sofaL:['Sofá en L',260,350],sillon:['Sillón',90,90],mesa:['Mesa',110,150],comedor:['Mesa con sillas',280,160],escritorio:['Escritorio',170,140],silla:['Silla',45,45],mesita:['Mesita',50,50],armario:['Armario',220,85],tvm:['Mueble TV',52,170],encimera:['Encimera',72,600],placa:['Placa',62,70],fregadero:['Fregadero',55,100],lavavajillas:['Lavavajillas / horno',62,72],lavadora:['Lavadora',77,75],secadora:['Secadora',77,72],frigo:['Frigorífico',75,75],inodoro:['Inodoro',66,50],lavabo:['Lavabo',80,50],ducha:['Ducha / bañera',100,200],radiador:['Radiador',128,24],otro:['Otro',100,100]};
 let MURO=null;
@@ -267,7 +267,7 @@ function revisa(){ const R=[], E=P.els.filter(e=>e.t!=='mueble'&&e.t!=='texto'),
     if(!mis.length){ R.push({g:2,id:e.id,t:nom(e)+': sin conectar'}); return; }
     if(esCaja(e)) return;
     const cs=[...new Set(mis.filter(c=>!c.ret).map(c=>c.c))]; if(cs.length>1) R.push({g:2,id:e.id,t:nom(e)+': mezcla '+cs.map(cn).join(' y ')+' (cortocircuito entre circuitos)'});
-    if(e.t==='luz'){ const ret=mis.filter(c=>c.ret); const fed=cs.some(c=>vivo[c]&&vivo[c].has(e.id)); const viaInt=ret.some(c=>{ const o=P.els.find(x=>x.id===(c.a===e.id?c.b:c.a)); return o&&o.t==='int'&&P.cab.some(k=>!k.ret&&(k.a===o.id||k.b===o.id)&&vivo[k.c]&&vivo[k.c].has(o.id)); });
+    if(e.t==='luz'){ const ret=mis.filter(c=>c.ret); const fed=cs.some(c=>vivo[c]&&vivo[c].has(e.id)); const viaInt=ret.some(c=>c.rl===e.id&&(()=>{ const o=P.els.find(x=>x.id===c.ri); return o&&P.cab.some(k=>!k.ret&&(k.a===o.id||k.b===o.id)&&vivo[k.c]&&vivo[k.c].has(o.id)); })())||ret.some(c=>{ const o=P.els.find(x=>x.id===(c.a===e.id?c.b:c.a)); return o&&o.t==='int'&&P.cab.some(k=>!k.ret&&(k.a===o.id||k.b===o.id)&&vivo[k.c]&&vivo[k.c].has(o.id)); });
       if(!fed&&!viaInt) R.push({g:2,id:e.id,t:nom(e)+': no le llega corriente'}); else if(!ret.length) R.push({g:1,id:e.id,t:nom(e)+': sin interruptor (siempre encendida)'}); return; }
     if(e.t==='int'){ if(!mis.some(c=>c.ret)) R.push({g:1,id:e.id,t:nom(e)+': no tiene retorno a ninguna bombilla'}); if(!cs.some(c=>vivo[c]&&vivo[c].has(e.id))) R.push({g:2,id:e.id,t:nom(e)+': no le llega fase'}); return; }
     if(!cs.some(c=>vivo[c]&&vivo[c].has(e.id))) R.push({g:2,id:e.id,t:nom(e)+': no le llega corriente desde el cuadro'}); });
@@ -393,7 +393,7 @@ function conToque(h){ const okE=id=>{ const el=P.els.find(x=>x.id===id); return 
       DIB={c:sugiereCirc(A,B),sug:sugiereCirc(A,B),pts,a:CON.a,b:CON.b,pa:CON.pa,pb:CON.pb}; CON=null; pinta(); eligeTipo(); return; } }
   if(h&&h.k==='e'&&okE(h.id)){ if(!CON||CON.st==='pa'&&h.id!==CON.a){ CON={a:h.id,st:'pa'}; }
     else if(CON.st==='b'&&h.id!==CON.a){ CON.b=h.id; CON.st='pb'; } pinta(); return; } }
-function terminaCable(){ if(DIB&&DIB.pts&&DIB.pts.length>1){ snap(); P.cab.push(Object.assign({id:uid(),c:DIB.c,pts:DIB.pts,fl:true,g:4,a:DIB.a||null,b:DIB.b||null,ret:!!DIB.ret},DIB.pa?{pa:DIB.pa,pb:DIB.pb}:{})); sentido(P.cab[P.cab.length-1]); guarda(); } DIB=null; if(MODO==='cable') MODO='mover'; pinta(); }
+function terminaCable(){ if(DIB&&DIB.pts&&DIB.pts.length>1){ snap(); P.cab.push(Object.assign({id:uid(),c:DIB.c,pts:DIB.pts,fl:true,g:4,a:DIB.a||null,b:DIB.b||null,ret:!!DIB.ret},DIB.pa?{pa:DIB.pa,pb:DIB.pb}:{})); { const nc=P.cab[P.cab.length-1]; sentido(nc); retPorCaja(P,nc); } guarda(); } DIB=null; if(MODO==='cable') MODO='mover'; pinta(); }
 
 $('herr').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; if(DIB&&DIB.pts) terminaCable(); CON=null;
   if(b.dataset.h==='anadir'){ const MB=MODO==='mueble'; hoja(MB?'<h3>Añadir mueble</h3><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'+Object.keys(MUE).map(k=>'<button data-mue="'+k+'" style="height:48px;font-size:13px">'+MUE[k][0]+'</button>').join('')+'</div><button id="ponX" style="margin-top:10px;width:100%">Cerrar</button>':'<h3>Añadir</h3><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'+TIPOS.map(x=>'<button data-pon="'+x[0]+'" style="height:78px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px">'+IC[x[0]]+'<span style="font-size:13px">'+x[1]+'</span></button>').join('')+'</div><button id="ponX" style="margin-top:10px;width:100%">Cerrar</button>');
@@ -593,16 +593,21 @@ const MUEB={baja:[['sillon',650,325,90,90,45],['tvm',429,503,52,170,0],['mesa',5
 function migraMue(){ let f=false; try{ f=localStorage.getItem('dgp-planos-mue2'); }catch(e){} if(f) return; let n=0;
   PL.forEach(x=>{ const k=/^pl-baja/.test(x.id)?'baja':/^pl-alta/.test(x.id)?'alta':null; if(!k) return; x.els=x.els.filter(e=>e.t!=='mueble'); MUEB[k].forEach((a,i)=>x.els.unshift({id:'mu'+k[0]+i,t:'mueble',m:a[0],x:a[1],y:a[2],w:a[3],h:a[4],r:a[5]})); n++; });
   try{ localStorage.setItem('dgp-planos-mue2','1'); }catch(e){} if(n){ guarda(); pinta(); } }
+function retPorCaja(Q,c){ if(!c.ret||c.paso) return 0; const a=Q.els.find(x=>x.id===c.a), b=Q.els.find(x=>x.id===c.b); if(!a||!b) return 0; const I=a.t==='int'?a:b.t==='int'?b:null, L=a.t==='luz'?a:b.t==='luz'?b:null; if(!I||!L) return 0;
+  const f=Q.cab.find(k=>!k.ret&&(k.a===I.id||k.b===I.id)&&esCaja(Q.els.find(x=>x.id===(k.a===I.id?k.b:k.a))||{})); if(!f) return 0; const K=f.a===I.id?f.b:f.a;
+  const c1=Object.assign({},c,{id:uid(),a:I.id,b:K,paso:true,ri:I.id,rl:L.id}), c2=Object.assign({},c,{id:uid(),a:K,b:L.id,paso:true,ri:I.id,rl:L.id}); limpiaRuta(c1,Q); limpiaRuta(c2,Q);
+  const i=Q.cab.indexOf(c); Q.cab.splice(i,1,c1,c2); return 1; }
+function rpc1(){ let f=false; try{ f=localStorage.getItem('dgp-planos-rpc1'); }catch(e){} if(f) return; let n=0; PL.forEach(Q=>Q.cab.filter(c=>c.ret).forEach(c=>n+=retPorCaja(Q,c))); try{ localStorage.setItem('dgp-planos-rpc1','1'); }catch(e){} if(n){ guarda(); pinta(); } }
 function limpia1(){ let f=false; try{ f=localStorage.getItem('dgp-planos-lim2'); }catch(e){} if(f) return; PL.forEach(Q=>Q.cab.forEach(c=>{ if(c.a&&c.b) limpiaRuta(c,Q); })); try{ localStorage.setItem('dgp-planos-lim2','1'); }catch(e){} guarda(); pinta(); }
 function reSubida(){ let n=0; PL.filter(x=>/^pl-baja/.test(x.id)).forEach(B=>{ const cu=B.els.find(e=>e.t==='cuadro'), sb=B.els.find(e=>e.t==='subida'); if(!cu||!sb) return;
   ['c1','c2','c8'].filter(c=>B.circ.some(x=>x.id===c)).forEach(c=>{ if(!B.cab.some(k=>k.c===c&&((k.a===cu.id&&k.b===sb.id)||(k.b===cu.id&&k.a===sb.id)))){ B.cab.push({id:uid(),c,pts:[[cu.x,cu.y],[sb.x,cu.y],[sb.x,sb.y]],fl:true,g:3,a:cu.id,b:sb.id}); n++; } }); });
   if(n){ guarda(); pinta(); } }
-pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraRet).then(migraMue).then(reSubida).then(limpia1);
+pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraRet).then(migraMue).then(reSubida).then(limpia1).then(rpc1);
 })();
 </script>
 <script>
 (function(){
-  var BUILD='V2.99', ROOT='../';
+  var BUILD='V3.00', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

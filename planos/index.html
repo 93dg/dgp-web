@@ -388,20 +388,19 @@ function cuadroSVG(){
   const pe=pts=>ln(pts,'#22a34a',4)+ln(pts,'#f2c200',4,'stroke-dasharray="7 7"');
   let g='';
   // acometida
-  g+='<text x="'+(iga.x)+'" y="16" font-size="11" fill="#555">Desde contador (L marrón · N azul)</text>';
-  g+=ln([[tx(iga,0),20],[tx(iga,0),yT]],LC)+ln([[tx(iga,1),20],[tx(iga,1),yT]],NC);
-  // IGA salida -> canal superior
-  const gx=iga.x+MW+4;
-  g+=ln([[tx(iga,0),yB],[tx(iga,0),yB+16],[gx+4,yB+16],[gx+4,yUL],[W-30,yUL]],LC)+ln([[tx(iga,1),yB],[tx(iga,1),yB+26],[gx+12,yB+26],[gx+12,yUN],[W-30,yUN]],NC);
-  // pcs e IDs bajan del canal
-  [pcs,...G2.map(q=>q.id)].forEach(m=>{ g+=ln([[tx(m,0),yUL],[tx(m,0),yT]],LC)+ln([[tx(m,1),yUN],[tx(m,1),yT]],NC)+'<circle cx="'+tx(m,0)+'" cy="'+yUL+'" r="4" fill="'+LC+'"/><circle cx="'+tx(m,1)+'" cy="'+yUN+'" r="4" fill="'+NC+'"/>'; });
+  g+='<text x="'+(iga.x)+'" y="'+(yPL-10)+'" font-size="11" fill="#555">Desde contador</text>';
+  g+=ln([[tx(iga,0),yPL],[tx(iga,0),yT]],LC)+ln([[tx(iga,1),yPL],[tx(iga,1),yT]],NC);
+  // IGA salida -> canal inferior que alimenta PCS e IDs por abajo
+  const yCL=yB+22, yCN=yB+36, xe=Math.max(...[pcs,...G2.map(q=>q.id)].map(m=>tx(m,1)));
+  g+=ln([[tx(iga,0),yB],[tx(iga,0),yCL],[tx(G2.length?G2[G2.length-1].id:pcs,0),yCL]],LC)+ln([[tx(iga,1),yB],[tx(iga,1),yCN],[xe,yCN]],NC);
+  [pcs,...G2.map(q=>q.id)].forEach(m=>{ g+=ln([[tx(m,0),yCL],[tx(m,0),yB]],LC)+ln([[tx(m,1),yCN],[tx(m,1),yB]],NC)+'<circle cx="'+tx(m,0)+'" cy="'+yCL+'" r="4" fill="'+LC+'"/><circle cx="'+tx(m,1)+'" cy="'+yCN+'" r="4" fill="'+NC+'"/>'; });
+  g+='<text x="'+(tx(iga,0))+'" y="'+(yCN+16)+'" font-size="10" fill="#555">Del IGA a la entrada (abajo) del diferencial</text>';
   g+=pe([[pcs.x+MW/2,yB],[pcs.x+MW/2,yPE]]);
-  // peines + puente ID -> peine
-  G2.forEach(q=>{ const a=q.ts[0], z=q.ts[q.ts.length-1]; if(!a) return; const x1=tx(a,0)-6, x2=tx(z,1)+6, gx=q.id.x+MW+4;
-    g+=ln([[tx(q.id,0),yB],[tx(q.id,0),yB+16],[gx+4,yB+16],[gx+4,yPL],[x1,yPL]],LC)+ln([[tx(q.id,1),yB],[tx(q.id,1),yB+26],[gx+12,yB+26],[gx+12,yPN],[x1,yPN]],NC);
+  // peines: enchufado directo arriba del diferencial y sus térmicos
+  G2.forEach(q=>{ const z=q.ts[q.ts.length-1]; if(!z) return; const x1=tx(q.id,0)-8, x2=tx(z,1)+8;
     g+='<rect x="'+x1+'" y="'+(yPL-4)+'" width="'+(x2-x1)+'" height="8" rx="3" fill="'+LC+'"/><rect x="'+x1+'" y="'+(yPN-4)+'" width="'+(x2-x1)+'" height="8" rx="3" fill="'+NC+'"/>';
-    g+='<text x="'+x2+'" y="'+(yPL-8)+'" text-anchor="end" font-size="10" fill="#555">Peine fase / neutro</text>';
-    q.ts.forEach(m=>{ g+=ln([[tx(m,0),yPL],[tx(m,0),yT]],LC,4)+ln([[tx(m,1),yPN],[tx(m,1),yT]],NC,4); }); });
+    g+='<text x="'+x1+'" y="'+(yPL-10)+'" font-size="11" font-weight="700" fill="#333">Peine '+q.id.t+' (fase / neutro)</text>';
+    [q.id,...q.ts].forEach(m=>{ g+=ln([[tx(m,0),yPL],[tx(m,0),yT]],LC,4)+ln([[tx(m,1),yPN],[tx(m,1),yT]],NC,4); }); });
   // salidas
   G2.forEach(q=>q.ts.forEach(m=>{ const c=m.c; g+='<g class="qc" data-c="'+c.id+'">'+ln([[tx(m,0),yB],[tx(m,0),yOut+40]],LC)+ln([[tx(m,1),yB],[tx(m,1),yOut+40]],NC)+pe([[m.x+MW+6,yPE],[m.x+MW+6,yOut+40]])+
     '<rect x="'+(m.x-4)+'" y="'+yOut+'" width="'+(MW+16)+'" height="20" rx="6" fill="'+c.col+'"/><text x="'+(m.x+MW/2+4)+'" y="'+(yOut+14)+'" text-anchor="middle" font-size="11" font-weight="800" fill="#fff">'+c.nom+' · '+sec(c)+'</text>'+
@@ -414,8 +413,8 @@ function cuadroSVG(){
     [0,1].map(q=>'<circle cx="'+tx(m,q)+'" cy="'+yT+'" r="6" fill="#ddd" stroke="#666"/><circle cx="'+tx(m,q)+'" cy="'+yB+'" r="6" fill="#ddd" stroke="#666"/><text x="'+tx(m,q)+'" y="'+(yT+20)+'" text-anchor="middle" font-size="9" fill="#777">'+(q?'N':'L')+'</text>').join('')+
     '<text x="'+(m.x+MW/2)+'" y="'+(yT+42)+'" text-anchor="middle" font-size="'+(m.t.length>6?10:12)+'" font-weight="800" fill="#111">'+m.t+'</text><rect x="'+(m.x+MW/2-7)+'" y="'+(yT+52)+'" width="14" height="26" rx="3" fill="#222"/>'+
     '<text x="'+(m.x+MW/2)+'" y="'+(yT+96)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#111">'+m.a+'</text><text x="'+(m.x+MW/2)+'" y="'+(yT+110)+'" text-anchor="middle" font-size="9" fill="#555">'+m.s+'</text></g>'; });
-  return '<h3>Cuadro</h3><p style="font-size:13px;opacity:.75;margin:4px 0 8px">Toca un circuito para resaltar su cableado. Marrón = fase · Azul = neutro · Verde-amarillo = tierra.</p><div id="qWrap" style="overflow:auto;background:#fff;border-radius:12px;touch-action:pan-x pan-y"><svg id="qSvg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="display:block">'+g+'</svg></div>'+
-   '<p style="font-size:13px;opacity:.8">IGA → sobretensiones y diferenciales en paralelo desde la salida del IGA. Cada diferencial alimenta su peine (máx. 5 térmicos). Cada térmico saca fase y neutro de su circuito; la tierra de cada circuito va directa al borne.</p>';
+  return '<h3>Cuadro</h3><p style="font-size:13px;opacity:.75;margin:4px 0 8px">Toca un circuito para resaltar su cableado. Marrón = fase · Azul = neutro · Verde-amarillo = tierra.</p><div id="qWrap" style="overflow:auto;background:#fff;border-radius:12px;touch-action:pan-x pan-y"><svg id="qSvg" viewBox="0 0 '+W+' '+H+'" style="display:block;width:100%;height:auto">'+g+'</svg></div>'+
+   '<p style="font-size:13px;opacity:.8">La salida del IGA entra por abajo en la protección de sobretensiones y en cada diferencial. El peine va enchufado arriba, directamente en el diferencial y en sus térmicos (máx. 5). Cada térmico saca fase y neutro de su circuito; la tierra de cada circuito va directa al borne.</p>';
 }
 function cuadroTap(){ const sv=$('qSvg'); if(!sv) return; sv.onclick=e=>{ const t=e.target.closest('.qc'); const id=t&&t.dataset.c; sv.querySelectorAll('.qc').forEach(n=>n.style.opacity=!id||n.dataset.c===id?1:.15); }; }
 $('bCuadro').onclick=()=>(hoja(cuadroSVG()+'<button id="cCerrar" style="margin-top:12px;width:100%">Cerrar</button>'), $('cCerrar').onclick=cierra, cuadroTap());
@@ -492,7 +491,7 @@ pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraR
 </script>
 <script>
 (function(){
-  var BUILD='V2.81', ROOT='../';
+  var BUILD='V2.82', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

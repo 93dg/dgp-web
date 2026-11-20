@@ -232,6 +232,8 @@ function pinta(){ { const fs=P.fondo&&P.fondo.src||null; if(fs!==MURO_SRC){ MURO
   if(SEL&&SEL.k==='c'){ const c=P.cab.find(x=>x.id===SEL.id); if(c) [['a',c.a,c.pa],['b',c.b,c.pb]].forEach(([w,id,cur])=>{ const el=id&&P.els.find(x=>x.id===id); if(!el) return; ['t','r','b','l'].forEach(sd=>{ const q=puerto(el,sd), o=sd==='t'?[0,-14]:sd==='b'?[0,14]:sd==='l'?[-14,0]:[14,0];
       h+='<circle data-k="pt" data-id="'+c.id+'" data-w="'+w+'" data-s="'+sd+'" cx="'+(q[0]+o[0])+'" cy="'+(q[1]+o[1])+'" r="10" fill="'+(cur===sd?'#ffb81c':'#ffffff')+'" fill-opacity="'+(cur===sd?1:.15)+'" stroke="#ffb81c" stroke-width="3"/>'; }); }); }
   if(SEL&&SEL.k==='c'){ const c=P.cab.find(x=>x.id===SEL.id); if(c) h+=c.pts.map((p,i)=>((i===0&&c.a)||(i===c.pts.length-1&&c.b))?'':'<circle data-k="v" data-id="'+c.id+'" data-i="'+i+'" cx="'+p[0]+'" cy="'+p[1]+'" r="9" fill="'+(VSEL===i?'#0b5cd6':'#38bdf8')+'" stroke="#ffffff" stroke-width="3"/>').join(''); }
+  if(MODO!=='mueble'){ const RV=revisa(), m={}; RV.forEach(r=>{ if(r.id) m[r.id]=Math.max(m[r.id]||0,r.g); }); Object.keys(m).forEach(id=>{ const el=P.els.find(x=>x.id===id); if(!el) return; const [w2,h2]=semi(el), col=m[id]===2?'#ef4444':'#f59e0b'; h+='<rect pointer-events="none" x="'+(el.x-w2-12)+'" y="'+(el.y-h2-12)+'" width="'+(2*w2+24)+'" height="'+(2*h2+24)+'" rx="10" fill="none" stroke="'+col+'" stroke-width="3.5" stroke-dasharray="9 6"/><circle pointer-events="none" cx="'+(el.x+w2+12)+'" cy="'+(el.y-h2-12)+'" r="11" fill="'+col+'"/><text pointer-events="none" x="'+(el.x+w2+12)+'" y="'+(el.y-h2-7)+'" text-anchor="middle" font-size="15" font-weight="900" fill="#fff">!</text>'; }); }
+  if(MODO==='cable'&&!CON){ P.els.filter(x=>x.t!=='mueble'&&x.t!=='texto').forEach(el=>{ const [w2,h2]=semi(el); h+='<rect data-k="e" data-id="'+el.id+'" x="'+(el.x-w2-10)+'" y="'+(el.y-h2-10)+'" width="'+(2*w2+20)+'" height="'+(2*h2+20)+'" rx="10" fill="rgba(34,197,94,.08)" stroke="#22c55e" stroke-width="3" stroke-dasharray="8 6"/>'; }); }
   if(CON&&MODO==='cable'){ const box=(el,on,k)=>{ const [w2,h2]=semi(el); return '<rect '+(k?'data-k="e" data-id="'+el.id+'" ':'pointer-events="none" ')+'x="'+(el.x-w2-10)+'" y="'+(el.y-h2-10)+'" width="'+(2*w2+20)+'" height="'+(2*h2+20)+'" rx="10" fill="'+(on?'rgba(34,197,94,.22)':'rgba(34,197,94,.08)')+'" stroke="#22c55e" stroke-width="3" stroke-dasharray="'+(on?'0':'8 6')+'"/>'; };
     const ports=el=>['t','r','b','l'].map(sd=>{ const q=puerto(el,sd), o=sd==='t'?[0,-16]:sd==='b'?[0,16]:sd==='l'?[-16,0]:[16,0]; return '<circle data-k="cp" data-id="'+el.id+'" data-s="'+sd+'" cx="'+(q[0]+o[0])+'" cy="'+(q[1]+o[1])+'" r="14" fill="#22c55e" stroke="#fff" stroke-width="3"/>'; }).join('');
     const A=P.els.find(x=>x.id===CON.a); if(A){ h+=box(A,true,false); if(CON.st==='pa') h+=ports(A); else { const q=puerto(A,CON.pa); h+='<circle cx="'+q[0]+'" cy="'+q[1]+'" r="10" fill="#22c55e" pointer-events="none"/>'; } }
@@ -265,7 +267,7 @@ function pintaHerr(){ $('herr').innerHTML=HERR.map(x=>'<button data-h="'+x[0]+'"
   const av=$('aviso'); let t='';
   if(REENG) t=REENG.el?'Elige el lado de entrada':'Toca dónde conectarlo (en verde)';
   else if(SEL&&SEL.k==='c') t='Arrastra o toca la entrada naranja para moverla';
-  else if(MODO==='cable') t=!CON?'Conectar: toca el primer aparato':CON.st==='pa'?(CON.nuevo?'¿Con qué lo conectas? Elige por dónde sale':'Elige por dónde sale el cable'):CON.st==='b'?'Toca el aparato con el que conectarlo':'Elige por dónde entra';
+  else if(MODO==='cable') t=CON&&CON.nuevo&&CON.st==='pa'?'¿Con qué lo conectas?':'';
   else if(MODO==='cable_viejo') t=DIB&&DIB.pts&&DIB.pts.length?'Toca el aparato de destino (o puntos de paso)':'Toca el aparato o caja de origen';
   else if(MODO==='muro') t='Arrastra para dibujar un muro';
   else if(MODO==='borrar') t='Toca lo que quieras borrar';
@@ -579,7 +581,7 @@ pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraR
 </script>
 <script>
 (function(){
-  var BUILD='V2.89', ROOT='../';
+  var BUILD='V2.90', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

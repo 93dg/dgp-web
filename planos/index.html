@@ -106,7 +106,7 @@ function rehacer(){ if(!REDO.length) return; HIST.push(JSON.stringify(P)); const
 function deshacer(){ if(!HIST.length) return; REDO.push(JSON.stringify(P)); const o=JSON.parse(HIST.pop()); const i=PL.findIndex(x=>x.id===o.id); PL[i]=o; P=o; SEL=null; guarda(); pinta(); }
 
 /* ---------- herramientas ---------- */
-const IC={
+const IC={mueble:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18V8M3 14h18v4M21 14v-2a3 3 0 0 0-3-3h-7v5"/><circle cx="7" cy="11" r="2"/></svg>',
  mover:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></svg>',
  muro:'<svg viewBox="0 0 24 24"><rect x="2" y="9" width="20" height="6" fill="currentColor"/></svg>',
  cable:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M3 20V8h10V4h7"/><path d="M17 1l3 3-3 3"/></svg>',
@@ -120,7 +120,7 @@ const IC={
  texto:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 5h14M12 5v15"/></svg>',
  borrar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>'};
 IC.subida='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 17V7M8 11l4-4 4 4"/></svg>';
-const HERR=[['mover','Mover'],['cable','Cable'],['caja','Caja'],['luz','Bombilla'],['int','Interruptor'],['ench','Enchufe'],['vent','Ventilador'],['cuadro','Cuadro'],['tv','TV / Red'],['subida','Subida'],['texto','Texto'],['muro','Muro'],['borrar','Borrar']];
+const HERR=[['mover','Mover'],['cable','Cable'],['caja','Caja'],['luz','Bombilla'],['int','Interruptor'],['ench','Enchufe'],['vent','Ventilador'],['cuadro','Cuadro'],['tv','TV / Red'],['subida','Subida'],['texto','Texto'],['mueble','Mueble'],['muro','Muro'],['borrar','Borrar']];
 let CORR=false, VSEL=null; let MODO='mover', CIRC=P.circ[0]&&P.circ[0].id, SEL=null, DIB=null, ORTO=true, FIL=null;
 try{ ORTO=localStorage.getItem('dgp-planos-orto')!=='0'; }catch(e){}
 
@@ -144,6 +144,11 @@ function simb(el){ const t=el.t, k='#111';
    case 'ench': { const n=Math.max(1,Math.min(5,el.n||1)), w=22; let g=''; for(let q=0;q<n;q++){ const x0=(q-(n-1)/2)*w; g+='<path d="M'+(x0-9)+' -3a9 9 0 0 0 18 0M'+x0+' 6v12M'+(x0-11)+' -3h22" stroke="'+k+'" stroke-width="2.4" fill="none"/>'; } return g; }
    case 'vent': return '<circle r="22" fill="#fff" stroke="'+k+'" stroke-width="2.2"/><g fill="none" stroke="'+k+'" stroke-width="2"><path d="M0 0c0-11 9-14 11-9S5 0 0 0z"/><path d="M0 0c9 6 7 15 2 15S-3 6 0 0z"/><path d="M0 0c-9 5-18 1-16-4S-4-3 0 0z"/></g><circle r="2.5" fill="'+k+'"/>';
    case 'cuadro': return '<rect x="-20" y="-26" width="40" height="52" rx="3" fill="#fff" stroke="'+k+'" stroke-width="2.4"/><path d="M-12-14h24M-12-4h24M-12 6h24M-12 16h14" stroke="'+k+'" stroke-width="2"/>';
+   case 'mueble': { const d=MUE[el.m||'cama2'], w=d[1], h=d[2], st='fill="#ffffff" fill-opacity=".3" stroke="#4b5563" stroke-width="1.6"'; let g='<rect x="'+(-w/2)+'" y="'+(-h/2)+'" width="'+w+'" height="'+h+'" rx="3" '+st+'/>';
+     if(/^cama/.test(el.m||'cama2')){ const n=(el.m||'cama2')==='cama2'?2:1, pw=(w-12)/n; for(let q=0;q<n;q++) g+='<rect x="'+(-w/2+5+q*(pw+2))+'" y="'+(-h/2+5)+'" width="'+(pw-2)+'" height="22" rx="4" '+st+'/>'; g+='<path d="M'+(-w/2)+' '+(-h/2+34)+'h'+w+'" stroke="#6b7280" stroke-width="1.2"/>'; }
+     else if(el.m==='sofa') g+='<rect x="'+(-w/2+4)+'" y="'+(-h/2+4)+'" width="'+(w-8)+'" height="14" rx="3" '+st+'/>';
+     else if(el.m==='armario') g+='<path d="M0 '+(-h/2)+'v'+h+'" stroke="#6b7280" stroke-width="1.2"/>';
+     return g; }
    case 'tv': return '<rect x="-13" y="-13" width="26" height="26" rx="2" fill="#fff" stroke="#e11ea8" stroke-width="3"/><rect x="-7" y="-7" width="14" height="14" fill="none" stroke="'+k+'" stroke-width="1.6"/><path d="M-4-1h8M-4 3h8" stroke="'+k+'" stroke-width="1.4"/>';
    case 'caja': { const L=cajaLin(el), b=caja2(el), w=b.w, h=b.h;
      return '<rect x="'+(-w/2)+'" y="'+(-h/2)+'" width="'+w+'" height="'+h+'" rx="3" fill="#3b3f47" stroke="#26292f" stroke-width="2"/>'+L.map((l,i)=>'<text x="0" y="'+(-h/2+21+i*20)+'" text-anchor="middle" font-size="14" font-weight="700" fill="'+l.col+'" font-family="Inter,Arial,sans-serif">'+esc(l.t)+'</text>').join(''); }
@@ -152,7 +157,8 @@ function simb(el){ const t=el.t, k='#111';
   } return ''; }
 function cajaLin(el){ const M={}; P.cab.forEach(c=>{ if(c.a===el.id||c.b===el.id) M[c.c]=(M[c.c]||0)+1; });
   return P.circ.filter(c=>M[c.id]).map(c=>({t:c.nom+' - '+M[c.id],col:c.col})); }
-function caja2(el){ if(el.t!=='caja') return null; const L=cajaLin(el); return {w:Math.max(70,...L.map(l=>l.t.length*8+20)),h:Math.max(40,L.length*20+14)}; }
+const MUE={cama2:['Cama doble',106,141],cama1:['Cama individual',62,141],sofa:['Sofá',130,55],mesa:['Mesa',95,55],armario:['Armario',75,36],mesita:['Mesita',26,26]};
+function caja2(el){ if(el.t==='mueble'){ const d=MUE[el.m||'cama2']; return {w:d[1],h:d[2]}; } if(el.t!=='caja') return null; const L=cajaLin(el); return {w:Math.max(70,...L.map(l=>l.t.length*8+20)),h:Math.max(40,L.length*20+14)}; }
 function radio(el){ if(!el) return 0; const b=caja2(el); if(b) return Math.max(b.w,b.h)*1.3/2*0+ (b.h*1.3/2+6); return el.t==='vent'?42:el.t==='cuadro'?48:26; }
 function semi(el){ const k=(el.t==='caja'||el.t==='texto'?1.3:1.7)*(el.sc||1), b=caja2(el); if(b) return [(b.w/2)*k,(b.h/2)*k]; const r=(el.t==='vent'?22:el.t==='cuadro'?26:14)*k; return [r,r]; }
 function puerto(el,sd){ const [w,h]=semi(el); return sd==='t'?[el.x,el.y-h]:sd==='b'?[el.x,el.y+h]:sd==='l'?[el.x-w,el.y]:[el.x+w,el.y]; }
@@ -207,7 +213,7 @@ function pintaHerr(){ $('herr').innerHTML=HERR.map(x=>'<button data-h="'+x[0]+'"
   else if(MODO==='cable') t=DIB&&DIB.pts&&DIB.pts.length?'Toca el aparato de destino (o puntos de paso)':'Toca el aparato o caja de origen';
   else if(MODO==='muro') t='Arrastra para dibujar un muro';
   else if(MODO==='borrar') t='Toca lo que quieras borrar';
-  else if(['caja','luz','int','ench','vent','cuadro','tv','texto','subida'].includes(MODO)) t='Toca el plano para colocarlo';
+  else if(['caja','luz','int','ench','vent','cuadro','tv','texto','subida','mueble'].includes(MODO)) t='Toca el plano para colocarlo';
   av.textContent=t; av.hidden=!t; }
 const AI={abierto:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>',cerrado:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
  sus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg>',texto:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V5h16v2M12 5v14M9 19h6"/></svg>',
@@ -216,14 +222,14 @@ const AI={abierto:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const bi=(a,ic,t,on)=>'<button data-a="'+a+'" aria-label="'+t+'" title="'+t+'" class="ib'+(on?' on':'')+'"'+(a==='del'?' style="color:var(--neg)"':'')+'>'+ic+'</button>';
 function pintaAccion(){ const a=$('accion'); let h='';
   if(MODO==='cable'&&DIB&&DIB.pts&&DIB.pts.length) h='<button data-a="atras">Quitar último punto</button><button data-a="orto">'+(ORTO?'Recto':'Libre')+'</button><button data-a="cancel">Cancelar</button>';
-  else if(SEL){ if(SEL.k==='e'){ const el=P.els.find(x=>x.id===SEL.id); if(!el){ SEL=null; } else h=bi('lock',el.lock?AI.cerrado:AI.abierto,el.lock?'Desbloquear':'Bloquear',el.lock)+(el.t==='texto'?bi('edit',AI.texto,'Editar texto'):'')+(el.t==='ench'?'<select id="selTomas" style="flex:0 0 auto;width:auto;min-width:0;height:40px;border:1px solid var(--bd);border-radius:10px;background:var(--panel,#1c1f26);color:inherit;font:inherit;font-weight:600;padding:0 8px">'+[1,2,3,4,5].map(n=>'<option value="'+n+'"'+((el.n||1)===n?' selected':'')+'>×'+n+'</option>').join('')+'</select>':'')+(el.t!=='texto'?bi('sus',AI.sus,'Sustituir'):'')+(el.t!=='texto'&&el.t!=='caja'?bi('lab',AI.texto,'Nombre'):'')+bi('menos','−','Más pequeño')+bi('mas','+','Más grande')+bi('rot',AI.rot,'Girar')+bi('dup',AI.dup,'Duplicar')+bi('del',AI.del,'Borrar'); }
+  else if(SEL){ if(SEL.k==='e'){ const el=P.els.find(x=>x.id===SEL.id); if(!el){ SEL=null; } else h=bi('lock',el.lock?AI.cerrado:AI.abierto,el.lock?'Desbloquear':'Bloquear',el.lock)+(el.t==='texto'?bi('edit',AI.texto,'Editar texto'):'')+(el.t==='mueble'?'<select id="selMue" style="flex:0 0 auto;width:auto;height:40px;border:1px solid var(--bd);border-radius:10px;background:var(--panel,#1c1f26);color:inherit;font:inherit;font-weight:600;padding:0 8px">'+Object.keys(MUE).map(k=>'<option value="'+k+'"'+((el.m||'cama2')===k?' selected':'')+'>'+MUE[k][0]+'</option>').join('')+'</select>':'')+(el.t==='ench'?'<select id="selTomas" style="flex:0 0 auto;width:auto;min-width:0;height:40px;border:1px solid var(--bd);border-radius:10px;background:var(--panel,#1c1f26);color:inherit;font:inherit;font-weight:600;padding:0 8px">'+[1,2,3,4,5].map(n=>'<option value="'+n+'"'+((el.n||1)===n?' selected':'')+'>×'+n+'</option>').join('')+'</select>':'')+(el.t!=='texto'?bi('sus',AI.sus,'Sustituir'):'')+(el.t!=='texto'&&el.t!=='caja'?bi('lab',AI.texto,'Nombre'):'')+bi('menos','−','Más pequeño')+bi('mas','+','Más grande')+bi('rot',AI.rot,'Girar')+bi('dup',AI.dup,'Duplicar')+bi('del',AI.del,'Borrar'); }
     else if(SEL.k==='c') { const cc=P.cab.find(x=>x.id===SEL.id)||{}; h=bi('lock',cc.lock?AI.cerrado:AI.abierto,cc.lock?'Desbloquear':'Bloquear',cc.lock)+(VSEL!=null?'<button data-a="qv">Quitar punto</button>':'')+'<button data-a="av">Añadir punto</button><button data-a="ret">'+(cc.ret?'Pasar a normal':'Pasar a retorno')+'</button><button data-a="ccol">Cambiar térmico</button><button data-a="flecha">Flecha</button><button data-a="grueso">Grosor</button>'+bi('del',AI.del,'Borrar'); }
     else if(SEL.k==='m') h=''+bi('del',AI.del,'Borrar muro')+''; }
   a.innerHTML=h; a.hidden=!h; }
 
 /* ---------- interacción ---------- */
 let REENG=null;
-function reCand(c,w){ const otro=w==='a'?c.b:c.a; return P.els.filter(el=>el.id!==otro&&el.t!=='texto'); }
+function reCand(c,w){ const otro=w==='a'?c.b:c.a; return P.els.filter(el=>el.id!==otro&&el.t!=='texto'&&el.t!=='mueble'); }
 function reAplica(c,w,elId,sd){ snap(); const el=P.els.find(x=>x.id===elId); if(!el) return; const q=puerto(el,sd);
   if(w==='a'){ c.a=elId; c.pa=sd; c.pts[0]=q; } else { c.b=elId; c.pb=sd; c.pts[c.pts.length-1]=q; }
   REENG=null; guarda(); pinta(); }
@@ -271,14 +277,14 @@ function fin(e){ PTR.delete(e.pointerId); if(PINCH){ if(PTR.size<2) PINCH=null; 
   if(A.tipo==='tap'){ const p=A.p, h=A.h, q=[rej(p.x),rej(p.y)];
     if(MODO==='borrar'){ if(h&&h.k!=='v'){ snap(); if(h.k==='e'){ P.els=P.els.filter(x=>x.id!==h.id); P.cab.forEach(c=>{ if(c.a===h.id) c.a=null; if(c.b===h.id) c.b=null; }); } else if(h.k==='c') P.cab=P.cab.filter(x=>x.id!==h.id); else P.muros=P.muros.filter(x=>x.id!==h.id); guarda(); pinta(); } return; }
     if(MODO==='cable'){ if(!CIRC){ abreCirc(); return; } if(!DIB) DIB={c:CIRC,pts:[]};
-      const prev=DIB.pts[DIB.pts.length-1]; const he=h&&h.k==='e'?P.els.find(x=>x.id===h.id):null;
+      const prev=DIB.pts[DIB.pts.length-1]; const he=h&&h.k==='e'?P.els.find(x=>x.id===h.id&&x.t!=='mueble'):null;
       if(he){ const t=[he.x,he.y]; if(!prev){ DIB.a=he.id; DIB.pts.push(t); pinta(); return; }
         if(he.id===DIB.a) return; if(ORTO&&prev[0]!==t[0]&&prev[1]!==t[1]) DIB.pts.push([t[0],prev[1]]); DIB.pts.push(t); DIB.b=he.id; pinta(); eligeTipo(); return; }
       if(!prev){ aviso('Empieza tocando un aparato o una caja'); return; }
       const nq=ortoPt(prev,q);
       if(prev&&Math.hypot(nq[0]-prev[0],nq[1]-prev[1])<8){ terminaCable(); return; }
       DIB.pts.push(nq); DIB.cur=null; pinta(); return; }
-    if(['caja','luz','int','ench','vent','cuadro','tv','texto','subida'].includes(MODO)){ snap(); const el={id:uid(),t:MODO,x:q[0],y:q[1],r:0};
+    if(['caja','luz','int','ench','vent','cuadro','tv','texto','subida','mueble'].includes(MODO)){ snap(); const el={id:uid(),t:MODO,x:q[0],y:q[1],r:0}; if(MODO==='mueble') el.m='cama2';
       
       if(MODO==='texto') el.txt='Texto';
       P.els.push(el); SEL={k:'e',id:el.id}; guarda(); pinta(); if(MODO==='texto') editaTexto(el); return; } } }
@@ -303,7 +309,7 @@ $('circs').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; const
   if(DIB&&DIB.pts){ DIB.c=c; CIRC=c; pinta(); return; }
   if(FIL===c){ abreCirc(P.circ.find(x=>x.id===c)); return; }
   FIL=c; CIRC=c; pinta(); };
-$('accion').onchange=e=>{ if(e.target.id!=='selTomas'||!SEL) return; const el=P.els.find(x=>x.id===SEL.id); if(!el) return; snap(); el.n=+e.target.value; guarda(); pinta(); };
+$('accion').onchange=e=>{ if(e.target.id==='selMue'&&SEL){ const el=P.els.find(x=>x.id===SEL.id); if(el){ snap(); el.m=e.target.value; guarda(); pinta(); } return; } if(e.target.id!=='selTomas'||!SEL) return; const el=P.els.find(x=>x.id===SEL.id); if(!el) return; snap(); el.n=+e.target.value; guarda(); pinta(); };
 $('accion').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; const a=b.dataset.a;
   if(a==='fin') terminaCable(); else if(a==='atras'){ DIB.pts.pop(); if(!DIB.pts.length) DIB=null; pinta(); } else if(a==='cancel'){ DIB=null; pinta(); }
   else if(a==='orto'){ ORTO=!ORTO; try{ localStorage.setItem('dgp-planos-orto',ORTO?'1':'0'); }catch(e){} pinta(); }
@@ -478,12 +484,15 @@ function subidas(){ const B=PL.find(x=>x.id==='pl-baja-v2')||PL.find(x=>x.id==='
   return 1; }
 function migraRet(){ let h7=false; try{ h7=localStorage.getItem('dgp-planos-sub1')==='1'; }catch(e){} if(!h7){ const n7=subidas(); try{ localStorage.setItem('dgp-planos-sub1','1'); }catch(e){} if(n7){ guarda(); pinta(); } } let h6=false; try{ h6=localStorage.getItem('dgp-planos-rl1')==='1'; }catch(e){} if(!h6){ let n6=0; PL.filter(x=>/^pl-(baja|alta)/.test(x.id)).forEach(x=>{ n6+=retALuz(x); }); try{ localStorage.setItem('dgp-planos-rl1','1'); }catch(e){} if(n6){ guarda(); pinta(); } } let h5=false; try{ h5=localStorage.getItem('dgp-planos-lab1')==='1'; }catch(e){} if(!h5){ let n5=0; PL.filter(x=>/^pl-(baja|alta)/.test(x.id)).forEach(x=>{ n5+=pegaTextos(x); }); try{ localStorage.setItem('dgp-planos-lab1','1'); }catch(e){} if(n5){ guarda(); pinta(); } } let h2=false; try{ h2=localStorage.getItem('dgp-planos-enc1')==='1'; }catch(e){} if(!h2){ let n3=0; PL.filter(x=>/^pl-(baja|alta)/.test(x.id)).forEach(x=>{ n3+=encadena(x)+retMismoCamino(x); }); try{ localStorage.setItem('dgp-planos-enc1','1'); }catch(e){} if(n3){ guarda(); pinta(); } } let n2=0; PL.forEach(x=>{ n2+=arreglaCuadro(x); }); if(n2) guarda(); let hecho=false; try{ hecho=localStorage.getItem('dgp-planos-ret1')==='1'; }catch(e){} if(hecho) return; let n=0;
   PL.filter(x=>/^pl-(baja|alta)/.test(x.id)).forEach(x=>{ n+=addRetornos(x); }); try{ localStorage.setItem('dgp-planos-ret1','1'); }catch(e){} if(n){ guarda(); pinta(); } }
-pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraRet);
+function migraMue(){ let f=false; try{ f=localStorage.getItem('dgp-planos-mue1'); }catch(e){} if(f) return; let n=0;
+  PL.filter(x=>/^pl-baja/.test(x.id)).forEach(x=>{ if(!x.els.some(e=>e.t==='mueble')){ x.els.unshift({id:uid(),t:'mueble',m:'cama2',x:575,y:2316,r:90}); n++; } });
+  try{ localStorage.setItem('dgp-planos-mue1','1'); }catch(e){} if(n){ guarda(); pinta(); } }
+pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraRet).then(migraMue);
 })();
 </script>
 <script>
 (function(){
-  var BUILD='V2.80', ROOT='../';
+  var BUILD='V2.81', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

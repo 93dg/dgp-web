@@ -197,6 +197,11 @@ function conPuerto(p,i,el,sd,c){ const o=c?hueco(el,sd,c):0; let Q=puerto(el,sd)
   const N=i===0?p[1]:p[p.length-2]; const C=(sd==='t'||sd==='b')?[N[0],S[1]]:[S[0],N[1]];
   const ins=[C,S,Q]; if(i===0){ p.splice(0,1,...ins.reverse()); } else { p.splice(p.length-1,1,...ins); } return p; }
 function ptsVis(c){ let p=c.pts.map(q=>q.slice()); if(p.length<2) return p;
+  if(c.a&&c.b&&c.pa&&c.pb&&p.length<=3){ const A=P.els.find(x=>x.id===c.a), B=P.els.find(x=>x.id===c.b); if(A&&B){ const V=sd=>sd==='t'||sd==='b', ha=hueco(A,c.pa,c), hb=hueco(B,c.pb,c), pA=puerto(A,c.pa), pB=puerto(B,c.pb);
+    if(V(c.pa)&&V(c.pb)){ const x=A.x+ha; if(Math.abs(x-B.x)<=semi(B)[0]) return [[x,pA[1]],[x,pB[1]]]; const ym=(pA[1]+pB[1])/2+ha; return [[x,pA[1]],[x,ym],[B.x+hb,ym],[B.x+hb,pB[1]]]; }
+    if(!V(c.pa)&&!V(c.pb)){ const y=A.y+ha; if(Math.abs(y-B.y)<=semi(B)[1]) return [[pA[0],y],[pB[0],y]]; const xm=(pA[0]+pB[0])/2+ha; return [[pA[0],y],[xm,y],[xm,B.y+hb],[pB[0],B.y+hb]]; }
+    if(V(c.pa)){ const x=A.x+ha, y=B.y+hb; return [[x,pA[1]],[x,y],[pB[0],y]]; }
+    const y=A.y+ha, x=B.x+hb; return [[pA[0],y],[x,y],[x,pB[1]]]; } }
   if(p.length>2){ const ea0=c.a&&c.pa&&P.els.find(x=>x.id===c.a), eb0=c.b&&c.pb&&P.els.find(x=>x.id===c.b), V=sd=>sd==='t'||sd==='b';
     const ha=ea0?hueco(ea0,c.pa,c):0, hb=eb0?hueco(eb0,c.pb,c):0; let ox=0, oy=0; if(ea0){ if(V(c.pa)) ox=ha; else oy=ha; } if(eb0){ if(V(c.pb)){ if(!ea0||!V(c.pa)) ox=hb; } else { if(!ea0||V(c.pa)) oy=hb; } }
     if(ox||oy) for(let i=1;i<p.length-1;i++) p[i]=[p[i][0]+ox,p[i][1]+oy]; }
@@ -594,7 +599,7 @@ pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraR
 </script>
 <script>
 (function(){
-  var BUILD='V2.95', ROOT='../';
+  var BUILD='V2.96', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

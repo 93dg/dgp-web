@@ -99,7 +99,7 @@ async function api(path,opt){ const H=await cab(); if(!H) return null; opt=opt||
 let tG=0;
 function guarda(){ P.act=Date.now(); try{ localStorage.setItem('dgp-planos',JSON.stringify(PL)); localStorage.setItem('dgp-planos-act',P.id); }catch(e){}
   clearTimeout(tG); tG=setTimeout(()=>api('ui_estado?on_conflict=clave',{m:'POST',h:{Prefer:'resolution=merge-duplicates,return=minimal'},b:{clave:'planos_electricos',valor:PL,actualizado:new Date().toISOString()}}),1200); }
-async function cargaSrv(){ const r=await api('ui_estado?clave=eq.planos_electricos&select=valor'); if(r&&r[0]&&Array.isArray(r[0].valor)&&r[0].valor.length){
+async function cargaSrv(){  const r=await api('ui_estado?clave=eq.planos_electricos&select=valor'); if(r&&r[0]&&Array.isArray(r[0].valor)&&r[0].valor.length){
   const srv=r[0].valor, loc=new Map(PL.map(x=>[x.id,x]));
   srv.forEach(x=>{ const l=loc.get(x.id); if(!l||(x.act||0)>(l.act||0)) loc.set(x.id,x); }); PL=[...loc.values()]; P=PL.find(x=>x.id===P.id)||PL[0]; pinta(); ajustar(); } }
 
@@ -302,12 +302,17 @@ function descarga(blob,nombre){ const f=new File([blob],nombre,{type:blob.type})
   if(navigator.canShare&&navigator.canShare({files:[f]})){ navigator.share({files:[f],title:nombre}).catch(()=>{}); return; }
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=nombre; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500); }
 
-pinta(); requestAnimationFrame(ajustar); cargaSrv();
+async function plantillas(){ let hecho=false; try{ hecho=localStorage.getItem('dgp-planos-pl1')==='1'; }catch(e){} if(hecho) return;
+  try{ const r=await fetch('plantillas.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return; const L=await r.json();
+    PL=PL.filter(x=>x.els.length||x.cab.length||x.muros.length||x.fondo);
+    L.forEach(x=>{ if(!PL.some(y=>y.id===x.id)) PL.push(x); }); P=PL.find(x=>x.id===L[0].id)||PL[0]; CIRC=P.circ[0]&&P.circ[0].id;
+    try{ localStorage.setItem('dgp-planos-pl1','1'); }catch(e){} guarda(); pinta(); ajustar(); }catch(e){} }
+pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas);
 })();
 </script>
 <script>
 (function(){
-  var BUILD='V2.52', ROOT='../';
+  var BUILD='V2.53', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

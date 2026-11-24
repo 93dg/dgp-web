@@ -276,13 +276,16 @@ function revisa(){ const R=[], E=P.els.filter(e=>e.t!=='mueble'&&e.t!=='texto'),
     const cs=[...new Set(mis.filter(c=>!c.ret).map(c=>c.c))]; if(cs.length>1) R.push({g:2,id:e.id,t:nom(e)+': mezcla '+cs.map(cn).join(' y ')+' (cortocircuito entre circuitos)'});
     if(e.t==='luz'){ const ret=mis.filter(c=>c.ret); const fed=cs.some(c=>vivo[c]&&vivo[c].has(e.id)); const viaInt=ret.some(c=>c.rl===e.id&&(()=>{ const o=P.els.find(x=>x.id===c.ri); return o&&P.cab.some(k=>!k.ret&&(k.a===o.id||k.b===o.id)&&vivo[k.c]&&vivo[k.c].has(o.id)); })())||ret.some(c=>{ const o=P.els.find(x=>x.id===(c.a===e.id?c.b:c.a)); return o&&o.t==='int'&&P.cab.some(k=>!k.ret&&(k.a===o.id||k.b===o.id)&&vivo[k.c]&&vivo[k.c].has(o.id)); });
       if(!fed&&!viaInt) R.push({g:2,id:e.id,t:nom(e)+': no le llega corriente'}); else if(!ret.length) R.push({g:1,id:e.id,t:nom(e)+': sin interruptor (siempre encendida)'}); return; }
-    if(e.t==='int'){ if(!mis.some(c=>c.ret)) R.push({g:1,id:e.id,t:nom(e)+': no tiene retorno a ninguna bombilla'}); if(!cs.some(c=>vivo[c]&&vivo[c].has(e.id))) R.push({g:2,id:e.id,t:nom(e)+': no le llega fase'}); return; }
+    if(e.t==='int'){ const fed=id=>P.cab.some(k=>!k.ret&&(k.a===id||k.b===id)&&vivo[k.c]&&vivo[k.c].has(id));
+      const viaB=P.cab.some(k=>k.via&&k.rl===e.id&&fed(k.ri)), viaA=P.cab.some(k=>k.via&&k.ri===e.id);
+      if(!mis.some(c=>c.ret&&!c.via)&&!viaA) R.push({g:1,id:e.id,t:nom(e)+': no tiene retorno a ninguna bombilla'});
+      if(!fed(e.id)&&!viaB) R.push({g:2,id:e.id,t:nom(e)+': no le llega fase'}); return; }
     if(!cs.some(c=>vivo[c]&&vivo[c].has(e.id))) R.push({g:2,id:e.id,t:nom(e)+': no le llega corriente desde el cuadro'}); });
   P.cab.filter(c=>c.ret).forEach(c=>{ const a=P.els.find(x=>x.id===c.a), b=P.els.find(x=>x.id===c.b); if(a&&b&&!((a.t==='int'&&b.t==='luz')||(a.t==='luz'&&b.t==='int')||(a.t==='int'&&b.t==='int')||esCaja(a)||esCaja(b))) R.push({g:1,id:b.id,t:'Retorno raro entre '+nom(a)+' y '+nom(b)}); });
-  P.circ.forEach(ci=>{ const ids=new Set(cab.filter(c=>c.c===ci.id).flatMap(c=>[c.a,c.b])), es=E.filter(e=>ids.has(e.id)); const tomas=es.filter(e=>e.t==='ench').reduce((n,e)=>n+(e.n||1),0), luces=es.filter(e=>e.t==='luz').length, d=norm(ci.desc);
+  P.circ.forEach(ci=>{ const ids=new Set(cab.filter(c=>c.c===ci.id).flatMap(c=>[c.a,c.b])), es=E.filter(e=>ids.has(e.id)); const tomas=es.filter(e=>e.t==='ench').length, luces=es.filter(e=>e.t==='luz').length, d=norm(ci.desc);
     if(/ilumin/.test(d)&&luces>30) R.push({g:1,t:ci.nom+': '+luces+' puntos de luz (máx. 30)'});
-    if(/cocina|bano/.test(d)&&tomas>6) R.push({g:1,t:ci.nom+': '+tomas+' tomas (máx. 6)'});
-    else if(/enchuf|general/.test(d)&&tomas>20) R.push({g:1,t:ci.nom+': '+tomas+' tomas (máx. 20, añade otro circuito)'}); });
+    if(/cocina|bano/.test(d)&&tomas>6) R.push({g:1,t:ci.nom+': '+tomas+' puntos (máx. 6)'});
+    else if(/enchuf|general/.test(d)&&tomas>20) R.push({g:1,t:ci.nom+': '+tomas+' puntos de enchufe (máx. 20, añade otro circuito)'}); });
   return R; }
 function pintaCircs(){ $('bDeshacer').disabled=!HIST.length; $('bRehacer').disabled=!REDO.length; const cs=P.circ.find(c=>c.id===FIL); const RV=revisa(), ne=RV.filter(r=>r.g===2).length; $('circs').innerHTML='<button class="chip" data-c="rev" style="'+(ne?'border-color:#ef4444;color:#ef4444':RV.length?'border-color:#f59e0b;color:#f59e0b':'border-color:#22c55e;color:#22c55e')+'">'+(RV.length?'⚠ '+RV.length:'✓ OK')+'</button><button class="chip'+(MODO==='mueble'?' on':'')+'" data-c="mob">Mobiliario</button><button class="chip'+(CORR?' on':'')+'" data-c="corr">Corrugados</button><button class="chip" data-c="sel">'+(cs?'<i style="background:'+cs.col+'"></i>'+esc(cs.nom)+(cs.desc?' <span class="meta">'+esc(cs.desc)+'</span>':''):'Térmicos')+' <span style="color:var(--ac)">▾</span></button>'; }
 function pintaHerr(){ { const bm=$('bMuro'); if(bm){ const on=MODO==='muro'; bm.style.borderColor=on?'var(--ac)':''; bm.style.color=on?'var(--ac)':''; } } $('herr').innerHTML=HERR.map(x=>'<button data-h="'+x[0]+'" class="'+(MODO===x[0]||(x[0]==='anadir'&&PONER.includes(MODO))?'on':'')+'">'+IC[x[0]]+'<span>'+x[1]+'</span></button>').join('');
@@ -488,7 +491,7 @@ $('bPlanos').onclick=()=>{ hoja('<h3>Planos</h3><div class="campo"><label>Nombre
 
 function cuadroSVG(){
   const cs=P.circ.filter(c=>/^C\d/i.test(c.nom));
-  const DEF={C1:[10,'1,5'],C2:[16,'2,5'],C3:[25,'6'],C4:[20,'4'],C5:[16,'2,5'],C6:[16,'2,5'],C7:[20,'4'],C8:[16,'2,5']}, df=c=>DEF[(c.nom||'').toUpperCase()]||[16,'2,5'];
+  const DEF={C1:[10,'1,5'],C2:[16,'2,5'],C3:[25,'6'],C4:[20,'4'],C5:[16,'2,5'],C6:[16,'2,5'],C7:[20,'4'],C8:[16,'2,5'],C9:[16,'2,5']}, df=c=>DEF[(c.nom||'').toUpperCase()]||[16,'2,5'];
   const amp=c=>{const m=(c.desc||'').match(/(\d+)\s*A\b/);return m?+m[1]:df(c)[0]}, sec=c=>{const m=(c.desc||'').match(/([\d,\.]+)\s*mm/i);return (m?m[1]:df(c)[1])+' mm²'};
   const LC='#8b5a2b', NC='#2f6fdc', PW=30, MW=60, G=18, yT=120, yB=250, yUL=30, yUN=44, yPL=70, yPN=84, yOut=330, yPE=420;
   const grupos=[]; for(let i=0;i<cs.length;i+=5) grupos.push(cs.slice(i,i+5));
@@ -610,6 +613,37 @@ function retPorCaja(Q,c){ if(!c.ret||c.paso) return 0; const a=Q.els.find(x=>x.i
   const f=Q.cab.find(k=>!k.ret&&(k.a===I.id||k.b===I.id)&&esCaja(Q.els.find(x=>x.id===(k.a===I.id?k.b:k.a))||{})); if(!f) return 0; const K=f.a===I.id?f.b:f.a;
   const c1=Object.assign({},c,{id:uid(),a:I.id,b:K,paso:true,ri:I.id,rl:L.id}), c2=Object.assign({},c,{id:uid(),a:K,b:L.id,paso:true,ri:I.id,rl:L.id}); limpiaRuta(c1,Q); limpiaRuta(c2,Q);
   const i=Q.cab.indexOf(c); Q.cab.splice(i,1,c1,c2); return 1; }
+function fixC1(){ let f=false; try{ f=localStorage.getItem('dgp-planos-fixc1'); }catch(e){} if(f) return; let n=0;
+  const add=(Q,o)=>{ const c=Object.assign({id:uid(),fl:true,g:3},o); limpiaRuta(c,Q); Q.cab.push(c); return c; };
+  const del=(Q,fn)=>{ const k=Q.cab.length; Q.cab=Q.cab.filter(c=>!fn(c)); return k-Q.cab.length; };
+  const has=(Q,id)=>Q.els.some(e=>e.id===id);
+  const conm=(Q,A,B,K,L)=>{ if(![A,B,K,L].every(id=>has(Q,id))) return; n++;
+    del(Q,c=>!c.ret&&((c.a===A&&c.b===B)||(c.a===B&&c.b===A)));
+    del(Q,c=>c.ret&&(c.ri===A||c.ri===B||c.a===A||c.b===A||c.a===B||c.b===B)&&!c.via);
+    for(let i=0;i<2;i++){ add(Q,{c:'c1',a:A,b:K,ret:true,paso:true,via:true,ri:A,rl:B}); add(Q,{c:'c1',a:K,b:B,ret:true,paso:true,via:true,ri:A,rl:B}); }
+    add(Q,{c:'c1',a:B,b:K,ret:true,paso:true,ri:B,rl:L}); add(Q,{c:'c1',a:K,b:L,ret:true,paso:true,ri:B,rl:L}); };
+  const C9={id:'c9',nom:'C9',desc:'Enchufes planta alta',col:'#00bcd4'};
+  PL.forEach(Q=>{ if(!/^pl-(baja|alta)$/.test(Q.id)) return; if(!Q.circ.some(c=>c.id==='c9')){ Q.circ.push(Object.assign({},C9)); n++; } });
+  PL.forEach(Q=>{
+    if(Q.id==='pl-alta'){ Q.cab.forEach(c=>{ if(c.c==='c2'){ c.c='c9'; n++; } }); }
+    if(Q.id==='pl-baja'){ const sb=Q.els.find(e=>e.t==='subida'), cu=Q.els.find(e=>e.t==='cuadro');
+      if(sb&&cu){ n+=del(Q,c=>(c.a===sb.id||c.b===sb.id)&&c.a!==cu.id&&c.b!==cu.id); Q.cab.forEach(c=>{ if(c.c==='c2'&&((c.a===cu.id&&c.b===sb.id)||(c.b===cu.id&&c.a===sb.id))){ c.c='c9'; n++; } }); } }
+  });
+  PL.forEach(Q=>{
+    if(Q.id==='pl-baja'){
+      if(has(Q,'g0016')&&has(Q,'g0006')&&!has(Q,'ibano1')){ n++; del(Q,c=>(c.a==='g0017'&&c.b==='g0016')||(c.a==='g0016'&&c.b==='g0017'));
+        Q.els.push({id:'ibano1',t:'int',x:640,y:1560,r:0}); add(Q,{c:'c1',a:'g0006',b:'g0016'}); add(Q,{c:'c1',a:'g0006',b:'ibano1'});
+        add(Q,{c:'c1',a:'ibano1',b:'g0006',ret:true,paso:true,ri:'ibano1',rl:'g0016'}); add(Q,{c:'c1',a:'g0006',b:'g0016',ret:true,paso:true,ri:'ibano1',rl:'g0016'}); }
+      if(has(Q,'g0018')&&has(Q,'0vxkeib')&&!Q.cab.some(c=>!c.ret&&(c.a==='g0018'||c.b==='g0018'))){ n++; add(Q,{c:'c1',a:'0vxkeib',b:'g0018'}); }
+      if(has(Q,'sqtb7cs')&&has(Q,'ogtbatt')&&!Q.cab.some(c=>!c.ret&&(c.a==='sqtb7cs'||c.b==='sqtb7cs'))){ n++; add(Q,{c:'c1',a:'ogtbatt',b:'sqtb7cs'}); }
+      Q.cab.filter(c=>c.ret&&!c.paso&&((c.a==='g0058'&&c.b==='g0021')||(c.a==='g0021'&&c.b==='g0058'))).forEach(c=>{ if(retPorCaja(Q,c)) n++; });
+      conm(Q,'g0047','g0051','g0001','g0011'); conm(Q,'g0050','g0049','g0005','g0013'); conm(Q,'g0053','g0060','g0007','g0015'); }
+    if(Q.id==='pl-alta'){
+      if(has(Q,'g0175')&&has(Q,'g0153')){ n++; del(Q,c=>(c.a==='g0157'&&c.b==='g0175')||(c.a==='g0175'&&c.b==='g0157')); add(Q,{c:'c1',a:'g0153',b:'g0175'});
+        add(Q,{c:'c1',a:'g0175',b:'g0153',ret:true,paso:true,ri:'g0175',rl:'g0157'}); add(Q,{c:'c1',a:'g0153',b:'g0157',ret:true,paso:true,ri:'g0175',rl:'g0157'}); }
+      if(has(Q,'g0177')&&has(Q,'g0176')&&has(Q,'g0155')){ del(Q,c=>(c.a==='g0159'&&c.b==='g0177')||(c.a==='g0177'&&c.b==='g0159')); add(Q,{c:'c1',a:'g0155',b:'g0177'}); conm(Q,'g0177','g0176','g0155','g0159'); } }
+  });
+  try{ localStorage.setItem('dgp-planos-fixc1','1'); }catch(e){} if(n){ guarda(); pinta(); } }
 function rpc1(){ let f=false; try{ f=localStorage.getItem('dgp-planos-rpc1'); }catch(e){} if(f) return; let n=0; PL.forEach(Q=>Q.cab.filter(c=>c.ret).forEach(c=>n+=retPorCaja(Q,c))); try{ localStorage.setItem('dgp-planos-rpc1','1'); }catch(e){} if(n){ guarda(); pinta(); } }
 function cruces(){ const S=[]; P.cab.forEach((c,ci)=>{ const q=ptsVis(c); for(let i=0;i<q.length-1;i++) S.push([ci,q[i],q[i+1]]); });
   let n=0; for(let i=0;i<S.length;i++){ const [ci,a,b]=S[i], h1=Math.abs(a[1]-b[1])<.5; for(let j=i+1;j<S.length;j++){ const [cj,c,d]=S[j]; if(ci===cj) continue; const h2=Math.abs(c[1]-d[1])<.5;
@@ -626,12 +660,12 @@ function limpia1(){ let f=false; try{ f=localStorage.getItem('dgp-planos-lim3');
 function reSubida(){ let n=0; PL.filter(x=>/^pl-baja/.test(x.id)).forEach(B=>{ const cu=B.els.find(e=>e.t==='cuadro'), sb=B.els.find(e=>e.t==='subida'); if(!cu||!sb) return;
   ['c1','c2','c8'].filter(c=>B.circ.some(x=>x.id===c)).forEach(c=>{ if(!B.cab.some(k=>k.c===c&&((k.a===cu.id&&k.b===sb.id)||(k.b===cu.id&&k.a===sb.id)))){ B.cab.push({id:uid(),c,pts:[[cu.x,cu.y],[sb.x,cu.y],[sb.x,sb.y]],fl:true,g:3,a:cu.id,b:sb.id}); n++; } }); });
   if(n){ guarda(); pinta(); } }
-pintaNube(); pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraRet).then(migraMue).then(reSubida).then(limpia1).then(rpc1).then(()=>{ if(!P.opt2){ optimiza(2); P.opt2=1; guarda(); pinta(); } });
+pintaNube(); pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraRet).then(migraMue).then(reSubida).then(limpia1).then(rpc1).then(fixC1).then(()=>{ if(!P.opt2){ optimiza(2); P.opt2=1; guarda(); pinta(); } });
 })();
 </script>
 <script>
 (function(){
-  var BUILD='V3.06', ROOT='../';
+  var BUILD='V3.07', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

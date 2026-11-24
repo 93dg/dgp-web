@@ -109,7 +109,7 @@ function rehacer(){ if(!REDO.length) return; HIST.push(JSON.stringify(P)); const
 function deshacer(){ if(!HIST.length) return; REDO.push(JSON.stringify(P)); const o=JSON.parse(HIST.pop()); const i=PL.findIndex(x=>x.id===o.id); PL[i]=o; P=o; SEL=null; guarda(); pinta(); }
 
 /* ---------- herramientas ---------- */
-const IC={anadir:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M7 12h10"/></svg>',mueble:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18V8M3 14h18v4M21 14v-2a3 3 0 0 0-3-3h-7v5"/><circle cx="7" cy="11" r="2"/></svg>',
+const IC={ver:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',anadir:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M7 12h10"/></svg>',mueble:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18V8M3 14h18v4M21 14v-2a3 3 0 0 0-3-3h-7v5"/><circle cx="7" cy="11" r="2"/></svg>',
  mover:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></svg>',
  muro:'<svg viewBox="0 0 24 24"><rect x="2" y="9" width="20" height="6" fill="currentColor"/></svg>',
  cable:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M3 20V8h10V4h7"/><path d="M17 1l3 3-3 3"/></svg>',
@@ -126,7 +126,7 @@ IC.subida='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-wid
 const TODOS=[['mover','Mover'],['cable','Cable'],['caja','Caja'],['luz','Bombilla'],['int','Interruptor'],['ench','Enchufe'],['vent','Ventilador'],['cuadro','Cuadro'],['tv','TV / Red'],['subida','Subida'],['texto','Texto'],['muro','Muro'],['borrar','Borrar']];
 const PONER=['caja','luz','int','ench','vent','cuadro','tv','subida','texto'];
 const TIPOS=TODOS.filter(x=>PONER.includes(x[0]));
-const HERR=[['mover','Mover'],['anadir','Añadir'],['borrar','Borrar']];
+const HERR=[['ver','Bloquear'],['mover','Mover'],['anadir','Añadir'],['borrar','Borrar']];
 let CON=null;
 let CORR=false, VSEL=null; let MODO='mover', CIRC=P.circ[0]&&P.circ[0].id, SEL=null, DIB=null, ORTO=true, FIL=null;
 try{ ORTO=localStorage.getItem('dgp-planos-orto')!=='0'; }catch(e){}
@@ -320,7 +320,7 @@ function reAplica(c,w,elId,sd){ snap(); const el=P.els.find(x=>x.id===elId); if(
   REENG=null; guarda(); pinta(); }
 function reLado(el,x,y){ const dx=x-el.x, dy=y-el.y; return Math.abs(dx)>Math.abs(dy)?(dx>0?'r':'l'):(dy>0?'b':'t'); }
 const PTR=new Map(); let ARR=null, PINCH=null, MOV=false;
-function hit(e){ const t=e.target.closest&&e.target.closest('[data-k]'); return t?{k:t.dataset.k,id:t.dataset.id,i:t.dataset.i!=null?+t.dataset.i:null,w:t.dataset.w,s:t.dataset.s}:null; }
+function hit(e){ if(MODO==='ver') return null; const t=e.target.closest&&e.target.closest('[data-k]'); return t?{k:t.dataset.k,id:t.dataset.id,i:t.dataset.i!=null?+t.dataset.i:null,w:t.dataset.w,s:t.dataset.s}:null; }
 function ortoPt(prev,p){ if(!ORTO||!prev) return p; return Math.abs(p[0]-prev[0])>Math.abs(p[1]-prev[1])?[p[0],prev[1]]:[prev[0],p[1]]; }
 svg.addEventListener('pointerdown',e=>{ svg.setPointerCapture(e.pointerId); PTR.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(PTR.size===2){ const [a,b]=[...PTR.values()]; PINCH={d:Math.hypot(a.x-b.x,a.y-b.y),cx:(a.x+b.x)/2,cy:(a.y+b.y)/2,vx:VX,vy:VY,vs:VS}; ARR=null; if(DIB&&DIB.muro) DIB=null; return; }
@@ -665,7 +665,7 @@ pintaNube(); pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas
 </script>
 <script>
 (function(){
-  var BUILD='V3.07', ROOT='../';
+  var BUILD='V3.08', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }

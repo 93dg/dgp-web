@@ -56,7 +56,7 @@ input,select,textarea{background:var(--s2);border:1px solid var(--bd);border-rad
 <body>
 <div class="top">
   <button id="bPlanos" class="tit"><span id="nombre"></span> <span style="color:var(--ac)">▾</span></button>
-  <button id="bMuro" style="margin-left:auto;width:auto;padding:0 12px;font-weight:600">Muro</button><button id="bCuadro" style="margin-right:8px;width:auto;padding:0 12px;font-weight:600">Cuadro</button><button id="bMas" aria-label="Más opciones">⋯</button>
+  <button id="bNube" aria-label="Estado de la nube" style="width:44px;padding:0;display:inline-flex;align-items:center;justify-content:center;margin-left:auto"></button><button id="bMuro" style="width:auto;padding:0 12px;font-weight:600">Muro</button><button id="bCuadro" style="margin-right:8px;width:auto;padding:0 12px;font-weight:600">Cuadro</button><button id="bMas" aria-label="Más opciones">⋯</button>
 </div>
 <div class="circs" id="circs"></div>
 <div class="lienzo" id="lienzo">
@@ -89,13 +89,16 @@ try{ PL=JSON.parse(localStorage.getItem('dgp-planos')||'[]'); }catch(e){}
 let actId=null; try{ actId=localStorage.getItem('dgp-planos-act'); }catch(e){}
 if(!PL.length) PL=[planoNuevo()];
 P=PL.find(x=>x.id===actId)||PL[0];
-async function cab(){ try{ if(!sbc) return null; const {data:{session}}=await sbc.auth.getSession(); return session?{apikey:KEY,Authorization:'Bearer '+session.access_token}:null; }catch(e){ return null; } }
-async function api(path,opt){ const H=await cab(); if(!H) return null; opt=opt||{};
+let NUBE='?';
+function pintaNube(){ const b=$('bNube'); if(!b) return; const ok=NUBE==='ok', pen=NUBE==='pend'; b.style.color=ok?'#22c55e':pen?'#f59e0b':'#ef4444'; b.style.borderColor=b.style.color; b.title=ok?'Guardado en la nube':pen?'Guardando…':'Sin guardar en la nube'; b.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 9.5 4.25 4.25 0 0 0 7 18z"/>'+(ok?'<path d="M9.5 13.5l2 2 3.5-4"/>':pen?'':'<path d="M10 11l4 4M14 11l-4 4"/>')+'</svg>'; }
+function setNube(v){ NUBE=v; pintaNube(); }
+async function cab(){ try{ if(!sbc) return null; let {data:{session}}=await sbc.auth.getSession(); if(session&&session.expires_at&&session.expires_at*1000<Date.now()+30000){ const r=await sbc.auth.refreshSession(); session=r&&r.data&&r.data.session; } return session?{apikey:KEY,Authorization:'Bearer '+session.access_token}:null; }catch(e){ return null; } }
+async function api(path,opt){ const H=await cab(); if(!H){ setNube('no'); return null; } opt=opt||{};
   const h=Object.assign({'Accept-Profile':'personal','Content-Profile':'personal','Content-Type':'application/json'},H,opt.h||{});
-  try{ const r=await fetch(URL0+'/rest/v1/'+path,{method:opt.m||'GET',headers:h,body:opt.b?JSON.stringify(opt.b):undefined}); if(!r.ok) return null; const t=await r.text(); return t?JSON.parse(t):[]; }catch(e){ return null; } }
+  try{ let r=await fetch(URL0+'/rest/v1/'+path,{method:opt.m||'GET',headers:h,body:opt.b?JSON.stringify(opt.b):undefined}); if(r.status===401){ try{ const q=await sbc.auth.refreshSession(); const ss=q&&q.data&&q.data.session; if(ss){ h.Authorization='Bearer '+ss.access_token; r=await fetch(URL0+'/rest/v1/'+path,{method:opt.m||'GET',headers:h,body:opt.b?JSON.stringify(opt.b):undefined}); } }catch(e){} } if(!r.ok){ setNube('no'); return null; } setNube('ok'); const t=await r.text(); return t?JSON.parse(t):[]; }catch(e){ return null; } }
 let tG=0;
 function guarda(){ P.act=Date.now(); try{ localStorage.setItem('dgp-planos',JSON.stringify(PL)); localStorage.setItem('dgp-planos-act',P.id); }catch(e){}
-  clearTimeout(tG); tG=setTimeout(()=>api('ui_estado?on_conflict=clave',{m:'POST',h:{Prefer:'resolution=merge-duplicates,return=minimal'},b:{clave:'planos_electricos',valor:PL,actualizado:new Date().toISOString()}}),1200); }
+  setNube(NUBE==='no'?'no':'pend'); clearTimeout(tG); tG=setTimeout(()=>api('ui_estado?on_conflict=clave',{m:'POST',h:{Prefer:'resolution=merge-duplicates,return=minimal'},b:{clave:'planos_electricos',valor:PL,actualizado:new Date().toISOString()}}),1200); }
 async function cargaSrv(){  const r=await api('ui_estado?clave=eq.planos_electricos&select=valor'); if(r&&r[0]&&Array.isArray(r[0].valor)&&r[0].valor.length){
   const srv=r[0].valor, loc=new Map(PL.map(x=>[x.id,x]));
   srv.forEach(x=>{ const l=loc.get(x.id); if(!l||(x.act||0)>(l.act||0)) loc.set(x.id,x); }); PL=[...loc.values()]; P=PL.find(x=>x.id===P.id)||PL[0]; pinta(); ajustar(); } }
@@ -527,6 +530,10 @@ function cuadroSVG(){
    '<p style="font-size:13px;opacity:.8">La salida del IGA entra por abajo en la protección de sobretensiones y en cada diferencial. El peine va enchufado arriba, directamente en el diferencial y en sus térmicos (máx. 5). Cada térmico saca fase y neutro de su circuito; la tierra de cada circuito va directa al borne.</p>';
 }
 function cuadroTap(){ const sv=$('qSvg'); if(!sv) return; sv.onclick=e=>{ const t=e.target.closest('.qc'); const id=t&&t.dataset.c; sv.querySelectorAll('.qc').forEach(n=>n.style.opacity=!id||n.dataset.c===id?1:.15); }; }
+$('bNube').onclick=async()=>{ if(NUBE==='ok'){ aviso('Todo guardado en la nube'); return; }
+  const H=await cab(); if(H){ setNube('pend'); await api('ui_estado?on_conflict=clave',{m:'POST',h:{Prefer:'resolution=merge-duplicates,return=minimal'},b:{clave:'planos_electricos',valor:PL,actualizado:new Date().toISOString()}}); if(NUBE==='ok') aviso('Guardado en la nube'); return; }
+  hoja('<h3>Entrar para guardar en la nube</h3><p class="meta">Tus planos están en este dispositivo pero no se están guardando en la nube.</p><input id="lgE" type="email" autocomplete="username" placeholder="Correo" style="width:100%;margin:6px 0"><input id="lgP" type="password" autocomplete="current-password" placeholder="Contraseña" style="width:100%;margin:6px 0"><p id="lgM" style="color:#ef4444"></p><button id="lgOk" style="width:100%">Entrar</button>');
+  $('lgOk').onclick=async()=>{ const {error}=await sbc.auth.signInWithPassword({email:$('lgE').value,password:$('lgP').value}); if(error){ $('lgM').textContent=error.message; return; } cierra(); await cargaSrv(); guarda(); }; };
 $('bMuro').onclick=()=>{ CON=null; SEL=null; MODO=MODO==='muro'?'mover':'muro'; pinta(); };
 $('bCuadro').onclick=()=>(hoja(cuadroSVG()+'<button id="cCerrar" style="margin-top:12px;width:100%">Cerrar</button>'), $('cCerrar').onclick=cierra, cuadroTap());
 $('bMas').onclick=()=>{ hoja('<h3>Plano</h3>'+
@@ -619,12 +626,12 @@ function limpia1(){ let f=false; try{ f=localStorage.getItem('dgp-planos-lim3');
 function reSubida(){ let n=0; PL.filter(x=>/^pl-baja/.test(x.id)).forEach(B=>{ const cu=B.els.find(e=>e.t==='cuadro'), sb=B.els.find(e=>e.t==='subida'); if(!cu||!sb) return;
   ['c1','c2','c8'].filter(c=>B.circ.some(x=>x.id===c)).forEach(c=>{ if(!B.cab.some(k=>k.c===c&&((k.a===cu.id&&k.b===sb.id)||(k.b===cu.id&&k.a===sb.id)))){ B.cab.push({id:uid(),c,pts:[[cu.x,cu.y],[sb.x,cu.y],[sb.x,sb.y]],fl:true,g:3,a:cu.id,b:sb.id}); n++; } }); });
   if(n){ guarda(); pinta(); } }
-pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraRet).then(migraMue).then(reSubida).then(limpia1).then(rpc1).then(()=>{ if(!P.opt2){ optimiza(2); P.opt2=1; guarda(); pinta(); } });
+pintaNube(); pinta(); requestAnimationFrame(ajustar); cargaSrv().then(plantillas).then(migraRet).then(migraMue).then(reSubida).then(limpia1).then(rpc1).then(()=>{ if(!P.opt2){ optimiza(2); P.opt2=1; guarda(); pinta(); } });
 })();
 </script>
 <script>
 (function(){
-  var BUILD='V3.05', ROOT='../';
+  var BUILD='V3.06', ROOT='../';
   var VJ=new URL(ROOT+'version.json',location.href).href, t0=Date.now(), busy=false;
   function intentos(n){ try{ if(n===undefined) return +(sessionStorage.getItem('dgp_upd')||0); sessionStorage.setItem('dgp_upd',n); }catch(e){ return 0; } }
   async function recargar(){ intentos(intentos()+1); try{ await fetch(location.href.split('#')[0],{cache:'reload'}); }catch(e){} location.reload(); }
